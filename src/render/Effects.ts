@@ -152,6 +152,30 @@ export class Effects {
     }
   }
 
+  slam(x: number, y: number) {
+    this.dust.explode(14, x, y);
+    this.stars.explode(3, x, y - 6);
+    const ring = this.scene.add.ellipse(x, y, 20, 8).setStrokeStyle(3, 0xffffff, 0.8).setDepth(31);
+    this.scene.tweens.add({ targets: ring, scaleX: 5, scaleY: 3, alpha: 0, duration: 320, onComplete: () => ring.destroy() });
+  }
+
+  debris(x: number, y: number) {
+    this.smoke.explode(3, x, y);
+    for (let i = 0; i < 4; i++) {
+      const chunk = this.scene.add.rectangle(x + (Math.random() - 0.5) * 30, y, 8 + Math.random() * 8, 6 + Math.random() * 6, 0x8a6a44).setStrokeStyle(2, 0x2b1d10).setDepth(31);
+      this.scene.tweens.add({
+        targets: chunk,
+        y: y + 200 + Math.random() * 100,
+        x: chunk.x + (Math.random() - 0.5) * 60,
+        angle: (Math.random() - 0.5) * 400,
+        alpha: 0,
+        duration: 700,
+        ease: 'Quad.In',
+        onComplete: () => chunk.destroy(),
+      });
+    }
+  }
+
   respawnPuff(x: number, y: number) {
     this.smoke.explode(5, x, y - 20);
     this.stars.explode(3, x, y - 30);

@@ -25,7 +25,9 @@ import {
   WALL_MAX_SPEED,
   WALL_RAMP,
   WALL_START_OFFSET,
-  GROUND_ROW,
+  CRUMBLE_DELAY,
+  CRUMBLE_RESPAWN,
+  LANE_ROWS,
   TILE,
 } from './constants';
 import { applyPads, circleHitsBox, findSafeSpot, isSafeSpot, levelHazard, lowerBound, runnerBox } from './hazards';
@@ -35,6 +37,7 @@ import { Rng } from './rng';
 import { generateTrack } from './track/generator';
 import {
   NO_INPUT,
+  Tile,
   type DeathKind,
   type ItemKind,
   type Projectile,
@@ -52,6 +55,8 @@ export interface RaceSetup {
   runnerCount: number;
   lengthTiles?: number;
   chunkNames?: string[];
+  /** Race on one of the fixed courses. */
+  courseId?: string;
 }
 
 export const SAW_PROJECTILE_RADIUS = 18;
@@ -73,6 +78,9 @@ export function createRunner(id: number, x: number, y: number): RunnerState {
     blocked: false,
     sliding: false,
     diving: false,
+    airJumps: 1,
+    onMover: -1,
+    inWater: false,
     slope: 0,
     coyote: 0,
     jumpBuffer: 0,
@@ -122,11 +130,12 @@ export class Race {
       world: setup.world,
       lengthTiles: setup.lengthTiles,
       chunkNames: setup.chunkNames,
+      courseId: setup.courseId,
     });
     this.rng = new Rng(setup.seed ^ 0xa5a5a5);
     this.runners = [];
     for (let i = 0; i < setup.runnerCount; i++) {
-      this.runners.push(createRunner(i, this.track.startX - i * 4, GROUND_ROW * TILE));
+      this.runners.push(createRunner(i, this.track.startX - i * 4, this.track.startY));
     }
     this.boxCooldown = this.track.boxes.map(() => 0);
     this.coinTaken = this.runners.map(() => new Uint8Array(this.track.coins.length));
@@ -173,6 +182,7 @@ export class Race {
     for (const r of this.runners) this.stepRunner(r, inputs[r.id] ?? NO_INPUT, time, events);
     this.updateProjectiles(events);
     this.updateTraps(events);
+    this.updateCrumbles(events);
     for (let i = 0; i < this.boxCooldown.length; i++) {
       if (this.boxCooldown[i] > 0) this.boxCooldown[i] = Math.max(0, this.boxCooldown[i] - DT);
     }
@@ -218,8 +228,10 @@ export class Race {
     }
     if (r.mode === 'run' && input.use !== 0 && r.item && r.rolling <= 0) this.useItem(r, input.use, events);
 
-    const phys = stepRunnerPhysics(r, r.mode === 'finished' ? NO_INPUT : input, this.track, DT);
-    if (phys.jumped) events.push({ t: 'jump', r: r.id, wall: phys.wallJumped });
+    const phys = stepRunnerPhysics(r, r.mode === 'finished' ? NO_INPUT : input, this.track, DT, this.clock);
+    if (phys.jumped) events.push({ t: 'jump', r: r.id, wall: phys.wallJumped, double: phys.doubleJumped });
+    if (phys.slammed) events.push({ t: 'slam', r: r.id, x: r.x, y: r.y });
+    if (r.grounded && r.mode === 'run') this.touchCrumble(r);
     if (phys.landed && phys.landSpeed > 250) events.push({ t: 'land', r: r.id, v: phys.landSpeed });
     const pad = applyPads(this.track, r);
     if (pad) events.push({ t: 'pad', r: r.id, kind: pad });
@@ -253,7 +265,7 @@ export class Race {
   }
 
   private placeAhead(r: RunnerState) {
-    const spot = findSafeSpot(this.track, this.wallX + SWALLOW_JUMP_AHEAD);
+    const spot = findSafeSpot(this.track, this.wallX + SWALLOW_JUMP_AHEAD, this.laneRowOf(r.y));
     r.x = spot.x;
     r.y = spot.y;
     r.safeX = spot.x;
@@ -267,6 +279,59 @@ export class Race {
     r.slope = 0;
     r.boost = 0;
     r.ghost = GHOST_TIME;
+  }
+
+  /** Floor row of the storey closest to feet height y (keeps teleported runners on their storey). */
+  private laneRowOf(y: number): number {
+    let best: number = LANE_ROWS[1];
+    for (const row of LANE_ROWS) if (Math.abs(row * TILE - y) < Math.abs(best * TILE - y)) best = row;
+    return best;
+  }
+
+  // --- crumbling platforms --------------------------------------------------------------
+
+  /** tile index → seconds left; negative while broken (counts up to 0 = regrow). */
+  crumbles = new Map<number, { t: number; broken: boolean }>();
+
+  private touchCrumble(r: RunnerState) {
+    const row = Math.floor((r.y + 1) / TILE);
+    for (const px of [r.x - 9, r.x + 9]) {
+      const col = Math.floor(px / TILE);
+      if (col < 0 || col >= this.track.cols) continue;
+      const idx = row * this.track.cols + col;
+      if (this.track.tiles[idx] === Tile.Crumble && !this.crumbles.has(idx)) this.crumbles.set(idx, { t: CRUMBLE_DELAY, broken: false });
+    }
+  }
+
+  private updateCrumbles(events: SimEvent[]) {
+    const tiles = this.track.tiles;
+    const cols = this.track.cols;
+    for (const [idx, c] of this.crumbles) {
+      c.t -= DT;
+      if (c.t > 0) continue;
+      if (!c.broken) {
+        tiles[idx] = Tile.Empty;
+        c.broken = true;
+        c.t = CRUMBLE_RESPAWN;
+        events.push({ t: 'crumble', tile: idx, broken: true });
+        // the break spreads along the bridge
+        for (const n of [idx - 1, idx + 1]) {
+          if (Math.floor(n / cols) === Math.floor(idx / cols) && tiles[n] === Tile.Crumble && !this.crumbles.has(n)) {
+            this.crumbles.set(n, { t: 0.14, broken: false });
+          }
+        }
+      } else {
+        const col = idx % cols;
+        const row = Math.floor(idx / cols);
+        const x0 = col * TILE;
+        const y0 = row * TILE;
+        const blocked = this.runners.some((o) => o.x + 13 > x0 && o.x - 13 < x0 + TILE && o.y > y0 && o.y - 46 < y0 + TILE);
+        if (blocked) continue;
+        tiles[idx] = Tile.Crumble;
+        this.crumbles.delete(idx);
+        events.push({ t: 'crumble', tile: idx, broken: false });
+      }
+    }
   }
 
   kill(r: RunnerState, kind: DeathKind, byItem: boolean, events: SimEvent[]): KillResult {

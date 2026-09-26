@@ -2,7 +2,7 @@ import { COUNTDOWN_TIME, DT, TICKS_PER_SEC } from '../sim/constants';
 import { applyPads } from '../sim/hazards';
 import { stepRunnerPhysics } from '../sim/physics';
 import { Race, createRunner } from '../sim/race';
-import type { RunnerState, SimEvent } from '../sim/types';
+import { Tile, type RunnerState, type SimEvent } from '../sim/types';
 import { unpackProjectile, unpackRunner, unpackTrap, type HostMsg, type SnapshotMsg } from './protocol';
 import type { NetRoom } from './room';
 import type { LocalInput, RaceSession, RacerInfo } from './session';
@@ -42,7 +42,7 @@ export class ClientSession implements RaceSession {
     private room: NetRoom,
     start: Extract<HostMsg, { t: 'start' }>,
   ) {
-    this.race = new Race({ seed: start.seed, world: start.world, runnerCount: start.racers.length });
+    this.race = new Race({ seed: start.seed, world: start.world, runnerCount: start.racers.length, courseId: start.courseId });
     this.racers = start.racers;
     this.localId = start.you;
     const me = this.race.runners[this.localId];
@@ -80,9 +80,10 @@ export class ClientSession implements RaceSession {
       const me = this.local;
       this.prevLocal = { x: me.x, y: me.y };
       if (this.canPredict()) {
-        const res = stepRunnerPhysics(me, { jump: input.jump, slide: input.slide, use: 0 }, this.race.track, DT);
+        const res = stepRunnerPhysics(me, { jump: input.jump, slide: input.slide, use: 0 }, this.race.track, DT, this.hostTick * DT);
         applyPads(this.race.track, me);
-        if (res.jumped) events.push({ t: 'jump', r: this.localId, wall: res.wallJumped });
+        if (res.jumped) events.push({ t: 'jump', r: this.localId, wall: res.wallJumped, double: res.doubleJumped });
+        if (res.slammed) events.push({ t: 'slam', r: this.localId, x: me.x, y: me.y });
         if (res.landed && res.landSpeed > 250) events.push({ t: 'land', r: this.localId, v: res.landSpeed });
       }
     }
@@ -118,6 +119,13 @@ export class ClientSession implements RaceSession {
     race.traps = snap.tr.map(unpackTrap);
     race.boxCooldown.fill(0);
     for (const [i, cd] of snap.b) race.boxCooldown[i] = cd;
+    // crumbling slabs: mirror the host's state into our copy of the track
+    const tiles = race.track.tiles;
+    const next = new Map<number, { t: number; broken: boolean }>();
+    for (const [idx, t, broken] of snap.cr) next.set(idx, { t, broken: broken === 1 });
+    for (const [idx, c] of race.crumbles) if (c.broken && !next.get(idx)?.broken) tiles[idx] = Tile.Crumble;
+    for (const [idx, c] of next) if (c.broken) tiles[idx] = Tile.Empty;
+    race.crumbles = next;
 
     const states = snap.r.map((a, i) => unpackRunner(a, createRunner(i, 0, 0)));
     this.buffer.push({ k: snap.k, states });
@@ -126,7 +134,7 @@ export class ClientSession implements RaceSession {
     this.reconcile(states[this.localId], snap.a);
 
     for (const e of snap.ev) {
-      if ((e.t === 'jump' || e.t === 'land') && e.r === this.localId) continue;
+      if ((e.t === 'jump' || e.t === 'land' || e.t === 'slam') && e.r === this.localId) continue;
       if (e.t === 'coin') race.coinTaken[e.r][e.coin] = 1;
       events.push(e);
     }
@@ -141,7 +149,7 @@ export class ClientSession implements RaceSession {
     this.history = this.history.filter((h) => h.s > ack);
     if (this.canPredict()) {
       for (const h of this.history) {
-        stepRunnerPhysics(me, { jump: h.j === 1, slide: h.d === 1, use: 0 }, this.race.track, DT);
+        stepRunnerPhysics(me, { jump: h.j === 1, slide: h.d === 1, use: 0 }, this.race.track, DT, this.hostTick * DT);
         applyPads(this.race.track, me);
       }
     }

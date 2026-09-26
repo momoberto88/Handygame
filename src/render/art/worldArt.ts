@@ -9,7 +9,12 @@ export const TILE_SLOPE_UP = 128;
 export const TILE_SLOPE_DOWN = 136;
 export const TILE_PLATFORM = 144;
 export const TILE_SPIKES = 146;
-export const TILESET_COUNT = 147;
+// Special grounds (4 texture sections each): conveyors, mud/quicksand, crumbling slabs.
+export const TILE_CONV_FWD = 147;
+export const TILE_CONV_BACK = 151;
+export const TILE_MUD = 155;
+export const TILE_CRUMBLE = 159;
+export const TILESET_COUNT = 163;
 /** Exposure bits for solid tiles. */
 export const EDGE_TOP = 1;
 export const EDGE_RIGHT = 2;
@@ -295,6 +300,90 @@ function drawSpikes(ctx: CanvasRenderingContext2D, w: WorldTheme, p: PaintedTile
   }
 }
 
+function drawConveyor(ctx: CanvasRenderingContext2D, w: WorldTheme, p: PaintedTiles | null, x: number, vx: number, dir: number) {
+  fillArea(ctx, w, p, x, vx, 0, 55);
+  ctx.fillStyle = '#2e2f38';
+  ctx.fillRect(x, 0, T, 12);
+  ctx.fillStyle = '#4a4c5a';
+  ctx.fillRect(x, 1, T, 3);
+  ctx.fillStyle = dir > 0 ? '#ffd24a' : '#ff6a4a';
+  for (let i = 0; i < 2; i++) {
+    const cx = x + 10 + i * 20;
+    ctx.beginPath();
+    ctx.moveTo(cx - 4 * dir, 4);
+    ctx.lineTo(cx + 4 * dir, 7.5);
+    ctx.lineTo(cx - 4 * dir, 11);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.strokeStyle = w.outline;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(x, 1.2);
+  ctx.lineTo(x + T, 1.2);
+  ctx.moveTo(x, 12);
+  ctx.lineTo(x + T, 12);
+  ctx.stroke();
+}
+
+function drawMud(ctx: CanvasRenderingContext2D, w: WorldTheme, p: PaintedTiles | null, x: number, vx: number) {
+  fillArea(ctx, w, p, x, vx, 0, 66);
+  const sand = w.id === 'desert';
+  const goo = sand ? '#d8a852' : w.id === 'shroom' ? '#6a3f8a' : '#5a3d24';
+  const hi = sand ? '#f2cf7a' : w.id === 'shroom' ? '#a86ad0' : '#7a5634';
+  ctx.fillStyle = goo;
+  ctx.beginPath();
+  ctx.moveTo(x, 0);
+  ctx.lineTo(x + T, 0);
+  ctx.lineTo(x + T, 13);
+  for (let i = 4; i >= 0; i--) ctx.quadraticCurveTo(x + (T * i) / 4 + 5, 19 + (i % 2) * 3, x + (T * i) / 4, 13);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = hi;
+  ctx.fillRect(x, 0, T, 4);
+  for (const [bx, by, r] of [
+    [x + 8 + vx * 3, 8, 2.5],
+    [x + 26 - vx * 2, 6, 1.8],
+  ]) {
+    ctx.beginPath();
+    ctx.arc(bx, by, r, 0, Math.PI * 2);
+    ctx.strokeStyle = hi;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+  ctx.strokeStyle = w.outline;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(x, 1.2);
+  ctx.lineTo(x + T, 1.2);
+  ctx.stroke();
+}
+
+function drawCrumble(ctx: CanvasRenderingContext2D, w: WorldTheme, x: number, vx: number) {
+  const base = shade(w.platform, -0.05);
+  ctx.fillStyle = base;
+  ctx.strokeStyle = w.outline;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(x + 1, 1.5, T - 2, 22, 3);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = shade(w.platform, -0.45);
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  const o = vx * 5;
+  ctx.moveTo(x + 8 + o, 2);
+  ctx.lineTo(x + 13 + o, 10);
+  ctx.lineTo(x + 9 + o, 16);
+  ctx.moveTo(x + 13 + o, 10);
+  ctx.lineTo(x + 22 + o, 12);
+  ctx.moveTo(x + 30 - o, 22);
+  ctx.lineTo(x + 27 - o, 13);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(x + 3, 23, T - 6, 4);
+}
+
 export function tilesetKey(world: WorldId): string {
   return `tiles-${world}`;
 }
@@ -344,8 +433,16 @@ export function makeTileset(scene: Phaser.Scene, world: WorldId): string {
       drawSlope(tctx, w, painted, 0, false, k % 4, Math.floor(k / 4));
     } else if (i < TILE_SPIKES) {
       drawPlatform(tctx, w, painted, 0, i - TILE_PLATFORM);
-    } else {
+    } else if (i === TILE_SPIKES) {
       drawSpikes(tctx, w, painted, 0);
+    } else if (i < TILE_CONV_BACK) {
+      drawConveyor(tctx, w, painted, 0, i - TILE_CONV_FWD, 1);
+    } else if (i < TILE_MUD) {
+      drawConveyor(tctx, w, painted, 0, i - TILE_CONV_BACK, -1);
+    } else if (i < TILE_CRUMBLE) {
+      drawMud(tctx, w, painted, 0, i - TILE_MUD);
+    } else {
+      drawCrumble(tctx, w, 0, i - TILE_CRUMBLE);
     }
     const x = (i % TILESET_COLS) * cell + TILE_PAD;
     const y = Math.floor(i / TILESET_COLS) * cell + TILE_PAD;

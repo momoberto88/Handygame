@@ -3,9 +3,17 @@ export const TICKS_PER_SEC = 60;
 export const DT = 1 / TICKS_PER_SEC;
 
 export const TILE = 40;
-export const ROWS = 16;
-/** Row index of the top of the regular ground line. Every chunk enters and exits at this height. */
-export const GROUND_ROW = 12;
+export const ROWS = 26;
+/**
+ * The three storeys ("lanes") of every track: the tile row whose top is the floor of that lane.
+ * 5 rows (200 px) apart – a double jump just reaches the next lane up through a one-way ledge.
+ */
+export const LANE_ROWS = [11, 16, 21] as const;
+export const LANE_TOP = 0;
+export const LANE_MID = 1;
+export const LANE_LOW = 2;
+/** Row of the default ground (the middle lane). */
+export const GROUND_ROW = LANE_ROWS[LANE_MID];
 export const LEVEL_BOTTOM = ROWS * TILE;
 
 export const RUNNER_W = 26;
@@ -25,6 +33,8 @@ export const OVERSPEED_DECAY = 240;
 export const RESPAWN_SPEED = 170;
 
 export const JUMP_V = 780;
+export const DOUBLE_JUMP_V = 640;
+export const AIR_JUMPS = 1;
 export const JUMP_CUT_V = 330;
 export const COYOTE_TIME = 0.09;
 export const JUMP_BUFFER_TIME = 0.12;
@@ -39,6 +49,20 @@ export const DIVE_ACCEL = 4200;
 export const DIVE_MAX = 1150;
 
 export const JUMP_PAD_V = 1180;
+export const MEGA_PAD_V = 1500;
+
+// world mechanics
+export const CONVEYOR_SPEED = 150;
+export const MUD_SPEED = 0.55;
+export const MUD_JUMP = 0.72;
+export const WATER_GRAVITY = 0.32;
+export const WATER_MAX_FALL = 230;
+export const WATER_SWIM_V = 470;
+export const WATER_SPEED = 0.82;
+export const WIND_MAX_UP = 520;
+export const CRUMBLE_DELAY = 0.45;
+export const CRUMBLE_RESPAWN = 3.5;
+export const CANNONBALL_RADIUS = 14;
 export const BOOST_SPEED = 580;
 export const PAD_BOOST_TIME = 0.8;
 
@@ -52,7 +76,7 @@ export const WALL_BASE_SPEED = 170;
 export const WALL_RAMP = 4;
 export const WALL_MAX_SPEED = 320;
 /** The chaos wall is never further than this behind the leader. */
-export const WALL_LEASH = 1250;
+export const WALL_LEASH = 1500;
 export const SWALLOW_JUMP_AHEAD = 380;
 
 export const BOX_RADIUS = 21;

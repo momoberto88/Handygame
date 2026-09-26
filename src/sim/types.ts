@@ -8,17 +8,79 @@ export const Tile = {
   /** One-way platform: can be jumped through from below. */
   Platform: 4,
   Spikes: 5,
+  /** Solid ground whose surface pushes runners forward / backward. */
+  ConveyorFwd: 6,
+  ConveyorBack: 7,
+  /** Solid ground that slows runners down (mud, quicksand). */
+  Mud: 8,
+  /** Solid ground that breaks shortly after someone stands on it and grows back later. */
+  Crumble: 9,
 } as const;
 export type TileId = (typeof Tile)[keyof typeof Tile];
 
-export type WorldId = 'mine' | 'jungle' | 'sky' | 'neon';
+/** Every tile type that behaves like solid ground for collisions. */
+export function isSolidTile(t: number): boolean {
+  return t === Tile.Solid || t === Tile.ConveyorFwd || t === Tile.ConveyorBack || t === Tile.Mud || t === Tile.Crumble;
+}
+
+export type WorldId = 'jungle' | 'mine' | 'sky' | 'neon' | 'water' | 'pirates' | 'desert' | 'shroom';
+export const WORLD_IDS: WorldId[] = ['jungle', 'mine', 'sky', 'neon', 'water', 'pirates', 'desert', 'shroom'];
+
+export type SawMotion = 'still' | 'vertical' | 'horizontal' | 'pendulum';
 
 export interface Saw {
   x: number;
   y: number;
-  /** Vertical swing range in px (0 = stationary). */
+  motion: SawMotion;
+  /** Swing range in px (vertical/horizontal) or rope length (pendulum). */
   range: number;
   phase: number;
+}
+
+/** Moving platform (elevator / hover plank). Its top surface is one-way like a ledge. */
+export interface Mover {
+  /** Centre x and top y at rest. */
+  x: number;
+  y: number;
+  /** Width in px. */
+  w: number;
+  axis: 'x' | 'y';
+  range: number;
+  period: number;
+  phase: number;
+}
+
+/** Areas with special physics: water (floaty swimming) or wind (updraft / headwind). */
+export interface Zone {
+  kind: 'water' | 'wind';
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  /** Wind force in px/s² (ignored for water). */
+  fx: number;
+  fy: number;
+}
+
+/** Vertical laser beam that switches on and off in a rhythm. */
+export interface Laser {
+  x: number;
+  y0: number;
+  y1: number;
+  on: number;
+  off: number;
+  phase: number;
+}
+
+/** Cannon that fires a ball horizontally every `period` seconds. */
+export interface Cannon {
+  x: number;
+  y: number;
+  dir: -1 | 1;
+  period: number;
+  phase: number;
+  speed: number;
+  range: number;
 }
 
 export interface Crusher {
@@ -31,7 +93,7 @@ export interface Crusher {
 }
 
 export interface Pad {
-  kind: 'jump' | 'boost';
+  kind: 'jump' | 'boost' | 'mega';
   x: number;
   /** Floor height the pad sits on. */
   y: number;
@@ -53,9 +115,15 @@ export interface Track {
   pads: Pad[];
   boxes: Pickup[];
   coins: Pickup[];
+  movers: Mover[];
+  zones: Zone[];
+  lasers: Laser[];
+  cannons: Cannon[];
   startX: number;
+  /** Feet height where runners line up. */
+  startY: number;
   finishX: number;
-  /** Names of the chunks the track was built from, for debugging and tests. */
+  /** Names of the modules the track was built from, for debugging and tests. */
   chunks: { name: string; col: number; width: number }[];
 }
 
@@ -77,7 +145,13 @@ export interface RunnerState {
   /** Pressing against a wall while on the ground. */
   blocked: boolean;
   sliding: boolean;
+  /** Slamming down (slide pressed in the air). */
   diving: boolean;
+  /** Mid-air jumps left (double jump). */
+  airJumps: number;
+  /** Index of the moving platform the runner stands on, or -1. */
+  onMover: number;
+  inWater: boolean;
   /** -1 uphill, 0 flat, 1 downhill. */
   slope: number;
   coyote: number;
@@ -139,9 +213,11 @@ export interface Trap {
 export type SimEvent =
   | { t: 'countdown'; n: number }
   | { t: 'go' }
-  | { t: 'jump'; r: number; wall: boolean }
+  | { t: 'jump'; r: number; wall: boolean; double?: boolean }
+  | { t: 'slam'; r: number; x: number; y: number }
+  | { t: 'crumble'; tile: number; broken: boolean }
   | { t: 'land'; r: number; v: number }
-  | { t: 'pad'; r: number; kind: 'jump' | 'boost' }
+  | { t: 'pad'; r: number; kind: 'jump' | 'boost' | 'mega' }
   | { t: 'death'; r: number; kind: DeathKind; x: number; y: number }
   | { t: 'respawn'; r: number }
   | { t: 'swallowed'; r: number; fromX: number; fromY: number }

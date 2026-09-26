@@ -192,7 +192,7 @@ export class RaceScene extends Phaser.Scene {
     const vib = loadSave().settings.vibration;
     switch (e.t) {
       case 'jump':
-        this.views[e.r].onJump();
+        this.views[e.r].onJump(e.double);
         if (this.isLocal(e.r)) sfx.play(e.wall ? 'walljump' : 'jump');
         if (e.wall) this.fx.footDust(race.runners[e.r].x + 12, race.runners[e.r].y - 10, 3);
         break;
@@ -205,9 +205,27 @@ export class RaceScene extends Phaser.Scene {
         }
         break;
       case 'pad':
-        if (e.kind === 'jump') this.trackView.bouncePadNear(race.runners[e.r].x);
-        if (this.isLocal(e.r) || this.nearCamera(race.runners[e.r].x)) sfx.play(e.kind === 'jump' ? 'pad' : 'turbo');
+        if (e.kind !== 'boost') this.trackView.bouncePadNear(race.runners[e.r].x);
+        if (this.isLocal(e.r) || this.nearCamera(race.runners[e.r].x)) sfx.play(e.kind === 'boost' ? 'turbo' : 'pad');
         break;
+      case 'slam':
+        this.fx.slam(e.x, e.y);
+        this.views[e.r].onLand(1100);
+        if (this.isLocal(e.r)) {
+          sfx.play('squash');
+          this.camera.shake(0.45);
+        }
+        break;
+      case 'crumble': {
+        const col = e.tile % race.track.cols;
+        const row = Math.floor(e.tile / race.track.cols);
+        this.trackView.refreshTile(col, row);
+        if (e.broken && this.nearCamera(col * 40)) {
+          this.fx.debris(col * 40 + 20, row * 40 + 10);
+          sfx.play('land');
+        }
+        break;
+      }
       case 'death': {
         this.fx.death(e.kind, e.x, e.y);
         if (this.nearCamera(e.x)) {

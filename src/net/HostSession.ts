@@ -20,6 +20,7 @@ interface RemotePlayer {
 export interface HostSetup {
   seed: number;
   world: WorldId;
+  courseId?: string;
   racers: RacerInfo[];
   /** seat → racer id for every remote human. */
   seatToRacer: Map<number, number>;
@@ -43,7 +44,7 @@ export class HostSession implements RaceSession {
     private room: NetRoom,
     setup: HostSetup,
   ) {
-    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length });
+    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId });
     this.racers = setup.racers.map((r) => ({ ...r }));
     this.brains = this.racers.map((r, i) => (r.isBot ? new BotBrain(setup.seed + i * 7919, botProfile('normal', i)) : null));
     for (const [seat, id] of setup.seatToRacer) {
@@ -140,6 +141,7 @@ export class HostSession implements RaceSession {
       p: race.projectiles.map(packProjectile),
       tr: race.traps.map(packTrap),
       b,
+      cr: [...race.crumbles].map(([idx, c]) => [idx, Math.round(c.t * 100) / 100, c.broken ? 1 : 0]),
       ev: this.outEvents,
     };
     this.outEvents = [];

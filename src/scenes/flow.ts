@@ -9,6 +9,7 @@ import type { RaceSession, RacerInfo } from '../net/session';
 import { Rng, randomSeed } from '../sim/rng';
 import type { WorldId } from '../sim/types';
 import { WORLD_ORDER } from '../render/worlds';
+import { COURSES, courseById } from '../sim/track/courses';
 
 export function playerName(): string {
   const s = loadSave();
@@ -38,16 +39,20 @@ export function debugParam(name: string): string | null {
   return new URLSearchParams(window.location.search).get(name);
 }
 
-export function startLocalRace(scene: Phaser.Scene, world?: WorldId) {
+export function startLocalRace(scene: Phaser.Scene, opts: { courseId?: string; world?: WorldId } = {}) {
   const save = loadSave();
   const seed = Number(debugParam('seed')) || randomSeed();
-  world = (debugParam('world') as WorldId | null) ?? world;
+  let world = (debugParam('world') as WorldId | null) ?? opts.world;
+  let courseId = debugParam('course') ?? opts.courseId;
+  if (!courseId && !world) courseId = COURSES[seed % COURSES.length].id;
+  if (courseId) world = courseById(courseId).world;
   const autoplay = debugParam('autoplay') !== null;
   const me: RacerInfo = { id: 0, name: playerName(), character: save.character, isBot: autoplay, cosmetics: save.equipped };
   const racers = fillWithBots([me], 4, seed);
   const session = new LocalSession({
     seed,
     world: world ?? randomWorld(seed),
+    courseId,
     racers,
     botLevel: save.stats.races < 2 ? 'easy' : save.stats.wins > save.stats.races * 0.5 ? 'hard' : 'normal',
     localId: 0,
@@ -88,7 +93,9 @@ export function wireClientRoom(game: Phaser.Game, room: NetRoom) {
 /** Host: start a race with everyone currently in the room (empty seats become bots). */
 export function hostStartRace(scene: Phaser.Scene, room: NetRoom) {
   const seed = randomSeed();
-  const world = room.world === 'random' ? randomWorld(seed) : room.world;
+  const course = COURSES[seed % COURSES.length];
+  const courseId = room.world === 'random' ? course.id : undefined;
+  const world = room.world === 'random' ? course.world : room.world;
   const humans: RacerInfo[] = room.players.map((p, i) => ({
     id: i,
     name: p.name,
@@ -101,8 +108,8 @@ export function hostStartRace(scene: Phaser.Scene, room: NetRoom) {
   room.players.forEach((p, i) => {
     if (p.seat !== 0) seatToRacer.set(p.seat, i);
   });
-  for (const [seat, id] of seatToRacer) room.sendTo(seat, { t: 'start', seed, world, racers, you: id });
+  for (const [seat, id] of seatToRacer) room.sendTo(seat, { t: 'start', seed, world, courseId, racers, you: id });
   room.racing = true;
   room.broadcastLobby();
-  startRace(scene, new HostSession(room, { seed, world, racers, seatToRacer }));
+  startRace(scene, new HostSession(room, { seed, world, courseId, racers, seatToRacer }));
 }

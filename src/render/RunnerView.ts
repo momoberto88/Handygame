@@ -218,9 +218,12 @@ export class RunnerView {
     this.earSpring.vel += speed * 0.25;
   }
 
-  onJump() {
+  private spin = 0;
+
+  onJump(double = false) {
     this.squash = -0.6;
     this.earSpring.vel -= 250;
+    if (double) this.spin = 1;
   }
 
   update(r: RunnerState, x: number, y: number, dt: number, time: number) {
@@ -248,6 +251,16 @@ export class RunnerView {
     const sy = 1 - this.squash * 0.28;
     const sx = 1 + this.squash * 0.22;
     this.root.setScale(sx * pop, sy * pop);
+    // a forward flip on double jumps
+    if (this.spin > 0) {
+      this.spin = Math.max(0, this.spin - dt * 2.6);
+      const k = 1 - this.spin;
+      this.root.setRotation(Phaser.Math.Easing.Cubic.Out(k) * Math.PI * 2);
+      if (this.spin === 0 || r.grounded) {
+        this.spin = 0;
+        this.root.setRotation(0);
+      }
+    }
 
     // ears & tail springs
     const accel = (r.vy - this.lastVy) / Math.max(dt, 1e-3);

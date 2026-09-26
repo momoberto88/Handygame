@@ -26,6 +26,7 @@ export class TickClock {
 export interface LocalSetup {
   seed: number;
   world: WorldId;
+  courseId?: string;
   racers: RacerInfo[];
   botLevel: 'easy' | 'normal' | 'hard';
   localId: number;
@@ -42,7 +43,7 @@ export class LocalSession implements RaceSession {
   private pendingUse: -1 | 0 | 1 = 0;
 
   constructor(setup: LocalSetup) {
-    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length });
+    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId });
     this.racers = setup.racers;
     this.localId = setup.localId;
     this.brains = setup.racers.map((r, i) =>

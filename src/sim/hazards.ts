@@ -2,8 +2,10 @@ import {
   CRUSHER_HALF_W,
   CRUSHER_HEAD_H,
   CRUSHER_PERIOD,
+  CANNONBALL_RADIUS,
   JUMP_PAD_V,
   LEVEL_BOTTOM,
+  MEGA_PAD_V,
   PAD_BOOST_TIME,
   BOOST_SPEED,
   GROUND_ROW,
@@ -12,7 +14,7 @@ import {
   TILE,
 } from './constants';
 import { runnerHeight, tileAt } from './physics';
-import { Tile, type Crusher, type DeathKind, type RunnerState, type Saw, type Track } from './types';
+import { Tile, isSolidTile, type Cannon, type Crusher, type DeathKind, type Laser, type RunnerState, type Saw, type Track } from './types';
 
 /** Index of the first element with x >= value in an x-sorted list. */
 export function lowerBound(list: { x: number }[], value: number): number {
@@ -27,7 +29,36 @@ export function lowerBound(list: { x: number }[], value: number): number {
 }
 
 export function sawPosition(s: Saw, clock: number): { x: number; y: number } {
-  return { x: s.x, y: s.range ? s.y + s.range * Math.sin(clock * 2.2 + s.phase) : s.y };
+  switch (s.motion) {
+    case 'vertical':
+      return { x: s.x, y: s.y + s.range * Math.sin(clock * 2.2 + s.phase) };
+    case 'horizontal':
+      return { x: s.x + s.range * Math.sin(clock * 1.8 + s.phase), y: s.y };
+    case 'pendulum': {
+      // (x, y) is the pivot; the blade swings on a rope of length `range`.
+      const a = Math.sin(clock * 2.1 + s.phase) * 1.05;
+      return { x: s.x + Math.sin(a) * s.range, y: s.y + Math.cos(a) * s.range };
+    }
+    default:
+      return { x: s.x, y: s.y };
+  }
+}
+
+/** Is the laser beam on right now? */
+export function laserOn(l: Laser, clock: number): boolean {
+  const period = l.on + l.off;
+  let t = (clock + l.phase * period) % period;
+  if (t < 0) t += period;
+  return t < l.on;
+}
+
+/** Position of the cannon's current ball, or null between shots. */
+export function cannonBall(c: Cannon, clock: number): { x: number; y: number } | null {
+  let p = (clock / c.period + c.phase) % 1;
+  if (p < 0) p += 1;
+  const dist = p * c.period * c.speed;
+  if (dist > c.range || dist < 20) return null;
+  return { x: c.x + c.dir * dist, y: c.y };
 }
 
 /** Current distance the crusher head has moved down (0 = fully up). */
@@ -100,23 +131,38 @@ export function levelHazard(track: Track, r: RunnerState, clock: number): DeathK
     const head: Box = { left: c.x - CRUSHER_HALF_W, right: c.x + CRUSHER_HALF_W, top, bottom: top + CRUSHER_HEAD_H };
     if (boxesOverlap(b, head)) return 'squash';
   }
+
+  for (const l of track.lasers) {
+    if (Math.abs(l.x - r.x) > 30) continue;
+    if (!laserOn(l, clock)) continue;
+    const beam: Box = { left: l.x - 5, right: l.x + 5, top: l.y0, bottom: l.y1 };
+    if (boxesOverlap(b, beam)) return 'zap';
+  }
+
+  for (const c of track.cannons) {
+    if (Math.abs(c.x - r.x) > c.range + 40) continue;
+    const ball = cannonBall(c, clock);
+    if (ball && circleHitsBox(ball.x, ball.y, CANNONBALL_RADIUS - 2, b)) return 'boom';
+  }
   return null;
 }
 
 /** Launch / boost pads. Returns the kind of pad triggered, if any. */
-export function applyPads(track: Track, r: RunnerState): 'jump' | 'boost' | null {
+export function applyPads(track: Track, r: RunnerState): 'jump' | 'boost' | 'mega' | null {
   if (!r.grounded) return null;
   for (let i = lowerBound(track.pads, r.x - 22); i < track.pads.length; i++) {
     const p = track.pads[i];
     if (p.x > r.x + 22) break;
     if (Math.abs(r.y - p.y) > 4) continue;
-    if (p.kind === 'jump') {
-      r.vy = -JUMP_PAD_V;
+    if (p.kind === 'jump' || p.kind === 'mega') {
+      r.vy = -(p.kind === 'mega' ? MEGA_PAD_V : JUMP_PAD_V);
       r.grounded = false;
+      r.onMover = -1;
       r.sliding = false;
+      r.diving = false;
       r.canCut = false;
       r.coyote = 0;
-      return 'jump';
+      return p.kind;
     }
     if (r.boost < PAD_BOOST_TIME * 0.5) {
       r.boost = PAD_BOOST_TIME;
@@ -131,28 +177,31 @@ export function applyPads(track: Track, r: RunnerState): 'jump' | 'boost' | null
 export function isSafeSpot(track: Track, x: number, feetY: number): boolean {
   const col = Math.floor(x / TILE);
   const row = Math.floor((feetY - 1) / TILE);
-  if (tileAt(track, col, row + 1) !== Tile.Solid) return false;
+  const ground = tileAt(track, col, row + 1);
+  if (!isSolidTile(ground) || ground === Tile.Crumble) return false;
   for (let dc = -1; dc <= 1; dc++) {
     if (tileAt(track, col + dc, row) === Tile.Spikes) return false;
-    if (tileAt(track, col + dc, row) === Tile.Solid) return false;
-    if (tileAt(track, col + dc, row - 1) === Tile.Solid) return false;
+    if (isSolidTile(tileAt(track, col + dc, row))) return false;
+    if (isSolidTile(tileAt(track, col + dc, row - 1))) return false;
   }
-  for (let i = lowerBound(track.saws, x - 110); i < track.saws.length && track.saws[i].x < x + 110; i++) return false;
+  for (let i = lowerBound(track.saws, x - 150); i < track.saws.length && track.saws[i].x < x + 150; i++) return false;
   for (let i = lowerBound(track.crushers, x - 90); i < track.crushers.length && track.crushers[i].x < x + 90; i++) return false;
+  for (const l of track.lasers) if (Math.abs(l.x - x) < 70) return false;
+  for (const z of track.zones) if (x > z.x0 - 20 && x < z.x1 + 20 && feetY > z.y0 && feetY - 40 < z.y1 && z.kind === 'wind') return false;
   return true;
 }
 
-/** First safe standing spot at or after x, preferring surfaces close to the regular ground line. */
-export function findSafeSpot(track: Track, x: number): { x: number; y: number } {
+/** First safe standing spot at or after x, preferring surfaces close to `preferRow`. */
+export function findSafeSpot(track: Track, x: number, preferRow: number = GROUND_ROW): { x: number; y: number } {
   const startCol = Math.max(1, Math.floor(x / TILE));
   for (let col = startCol; col < startCol + 80; col++) {
     let best: { x: number; y: number } | null = null;
     let bestDist = Infinity;
     for (let row = 3; row < track.rows; row++) {
-      if (tileAt(track, col, row) !== Tile.Solid || tileAt(track, col, row - 1) === Tile.Solid) continue;
+      if (!isSolidTile(tileAt(track, col, row)) || isSolidTile(tileAt(track, col, row - 1))) continue;
       const px = col * TILE + TILE / 2;
       const py = row * TILE;
-      const dist = Math.abs(row - GROUND_ROW);
+      const dist = Math.abs(row - preferRow);
       if (dist < bestDist && isSafeSpot(track, px, py)) {
         best = { x: px, y: py };
         bestDist = dist;

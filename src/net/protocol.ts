@@ -47,6 +47,8 @@ export interface SnapshotMsg {
   tr: number[][];
   /** Item boxes that are currently cooling down: [index, seconds]. */
   b: number[][];
+  /** Crumbling tiles: [tile index, seconds, broken 0/1]. */
+  cr: number[][];
   /** Last input sequence number of the receiving client the host has applied. */
   a: number;
   ev: SimEvent[];
@@ -56,7 +58,7 @@ export type HostMsg =
   | { t: 'welcome'; seat: number }
   | { t: 'reject'; reason: string }
   | { t: 'lobby'; players: LobbyPlayer[]; world: WorldChoice; racing: boolean }
-  | { t: 'start'; seed: number; world: WorldId; racers: RacerInfo[]; you: number }
+  | { t: 'start'; seed: number; world: WorldId; courseId?: string; racers: RacerInfo[]; you: number }
   | SnapshotMsg;
 
 // ---------------------------------------------------------------------------------------------
@@ -81,6 +83,9 @@ export function packRunner(r: RunnerState): number[] {
     b(r.blocked),
     b(r.sliding),
     b(r.diving),
+    r.airJumps,
+    r.onMover,
+    b(r.inWater),
     r.slope,
     r2(r.coyote),
     r2(r.jumpBuffer),
@@ -116,6 +121,9 @@ export function unpackRunner(a: number[], into: RunnerState): RunnerState {
   into.blocked = a[i++] === 1;
   into.sliding = a[i++] === 1;
   into.diving = a[i++] === 1;
+  into.airJumps = a[i++];
+  into.onMover = a[i++];
+  into.inWater = a[i++] === 1;
   into.slope = a[i++];
   into.coyote = a[i++];
   into.jumpBuffer = a[i++];

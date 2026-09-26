@@ -1,5 +1,5 @@
 import { BOOST_SPEED, DT, TURBO_TIME } from './constants';
-import { applyPads, levelHazard } from './hazards';
+import { applyPads, levelHazard, lowerBound } from './hazards';
 import { stepRunnerPhysics } from './physics';
 import type { Race } from './race';
 import { Rng } from './rng';
@@ -33,8 +33,14 @@ function buildPlans(horizon: number): Plan[] {
   for (const gap of [18, 24]) {
     make((t) => (t % gap < 13 ? JUMP : IDLE));
   }
-  // Jump, then dive down (fast fall) to dodge something overhead.
-  for (const diveAt of [14, 22]) make((t) => (t < 12 ? JUMP : t >= diveAt ? SLIDE : IDLE));
+  // Quick double jumps (up through a ledge to the next storey).
+  for (const delay of [0, 4]) {
+    for (const second of [10, 14, 18, 22]) {
+      make((t) => ((t >= delay && t < delay + 9) || (t >= delay + second && t < delay + second + 10) ? JUMP : IDLE));
+    }
+  }
+  // Jump, then slam down (fast fall; drops through ledges to the storey below).
+  for (const diveAt of [6, 14, 22]) make((t) => (t < Math.min(12, diveAt - 2) ? JUMP : t >= diveAt ? SLIDE : IDLE));
   return plans;
 }
 
@@ -46,38 +52,55 @@ interface Outcome {
   dead: boolean;
   deathTick: number;
   x: number;
+  y: number;
   blocked: number;
   climb: number;
+  coins: number;
 }
 
 function simulate(race: Race, start: RunnerState, plan: Plan, from: number, horizon: number): Outcome {
   const r = cloneRunner(start);
   let blocked = 0;
+  let coins = 0;
+  const coinList = race.track.coins;
+  const taken = race.coinTaken[start.id];
+  let nextCoin = lowerBound(coinList, start.x - 20);
   for (let t = 0; t < horizon; t++) {
     const input = plan[from + t] ?? IDLE;
-    stepRunnerPhysics(r, input, race.track, DT);
+    const clock = race.clock + (t + 1) * DT;
+    stepRunnerPhysics(r, input, race.track, DT, clock);
     applyPads(race.track, r);
     if (r.blocked) blocked++;
-    if (levelHazard(race.track, r, race.clock + (t + 1) * DT)) {
-      return { dead: true, deathTick: t, x: r.x, blocked, climb: 0 };
+    if (levelHazard(race.track, r, clock)) {
+      return { dead: true, deathTick: t, x: r.x, y: r.y, blocked, climb: 0, coins };
     }
     for (const trap of race.traps) {
       if (r.grounded && Math.abs(r.x - trap.x) < 20 && Math.abs(r.y - trap.y) < 10) {
-        return { dead: true, deathTick: t, x: r.x, blocked, climb: 0 };
+        return { dead: true, deathTick: t, x: r.x, y: r.y, blocked, climb: 0, coins };
       }
     }
+    while (nextCoin < coinList.length && coinList[nextCoin].x < r.x - 20) nextCoin++;
+    for (let i = nextCoin; i < coinList.length && coinList[i].x < r.x + 20; i++) {
+      if (!taken?.[i] && Math.abs(coinList[i].y - (r.y - 23)) < 30) coins++;
+    }
   }
-  return { dead: false, deathTick: horizon, x: r.x, blocked, climb: r.onWall ? start.y - r.y : 0 };
+  return { dead: false, deathTick: horizon, x: r.x, y: r.y, blocked, climb: r.onWall ? start.y - r.y : 0, coins };
 }
 
-function score(o: Outcome, start: RunnerState): number {
+function score(o: Outcome, start: RunnerState, profile: BotProfile): number {
   if (o.dead) return -100000 + o.deathTick * 100 + (o.x - start.x) * 0.1;
-  return o.x - start.x - o.blocked * 6 + o.climb * 0.5;
+  const lane = profile.lanePref ? profile.lanePref * (start.y - o.y) * 0.35 : 0;
+  const coins = profile.coinLover ? Math.min(o.coins, 6) * 10 : 0;
+  return o.x - start.x - o.blocked * 6 + o.climb * 0.5 + lane + coins;
 }
 
 export interface BotProfile {
   /** 0 = clumsy, 1 = sharp. */
   skill: number;
+  /** Route taste: 1 = likes the high (fast, risky) storeys, -1 = prefers the safe low ones. */
+  lanePref?: number;
+  /** Detours for coins. */
+  coinLover?: boolean;
 }
 
 /** Computer opponent: reads the track by simulating a few possible input plans ahead of time. */
@@ -130,9 +153,9 @@ export class BotBrain {
     const scored: { plan: Plan; s: number }[] = [];
     // Keeping the current plan gets a small bonus so bots don't twitch.
     const keepPlan = this.plan.slice(this.planPos);
-    scored.push({ plan: keepPlan, s: score(current, r) + 4 });
+    scored.push({ plan: keepPlan, s: score(current, r, this.profile) + 4 });
     for (const plan of this.plans) {
-      scored.push({ plan, s: score(simulate(race, r, plan, 0, horizon), r) });
+      scored.push({ plan, s: score(simulate(race, r, plan, 0, horizon), r, this.profile) });
     }
     scored.sort((a, b) => b.s - a.s);
     let pick = scored[0];
@@ -182,7 +205,14 @@ export class BotBrain {
   }
 }
 
+const PERSONALITIES: Pick<BotProfile, 'lanePref' | 'coinLover'>[] = [
+  { lanePref: 1 },
+  { lanePref: -1 },
+  { lanePref: 0, coinLover: true },
+  { lanePref: 0.5 },
+];
+
 export function botProfile(level: 'easy' | 'normal' | 'hard', index: number): BotProfile {
   const base = level === 'easy' ? 0.25 : level === 'normal' ? 0.55 : 0.85;
-  return { skill: Math.max(0, Math.min(1, base + (index - 1) * 0.07)) };
+  return { skill: Math.max(0, Math.min(1, base + (index - 1) * 0.07)), ...PERSONALITIES[index % PERSONALITIES.length] };
 }
