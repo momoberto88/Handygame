@@ -7,6 +7,8 @@ import { RaceScene } from './scenes/RaceScene';
 import { HudScene } from './scenes/HudScene';
 import { ResultScene } from './scenes/ResultScene';
 import { LobbyScene } from './scenes/LobbyScene';
+import { CourseSelectScene } from './scenes/CourseSelectScene';
+import { PodiumScene } from './scenes/PodiumScene';
 
 const { w, h, dpr } = canvasSize();
 
@@ -23,7 +25,7 @@ const game = new Phaser.Game({
   input: { activePointers: 4 },
   render: { antialias: true, roundPixels: false, powerPreference: 'high-performance' },
   fps: { target: 60, smoothStep: true },
-  scene: [BootScene, MenuScene, LobbyScene, RaceScene, HudScene, ResultScene],
+  scene: [BootScene, MenuScene, LobbyScene, CourseSelectScene, RaceScene, HudScene, ResultScene, PodiumScene],
 });
 
 let resizeTimer = 0;

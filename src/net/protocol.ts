@@ -10,6 +10,7 @@ import {
   type Trap,
   type WorldId,
 } from '../sim/types';
+import type { CupState } from '../meta/cup';
 import type { RacerInfo } from './session';
 
 /** Bump when the messages change so old and new app versions don't try to play together. */
@@ -25,7 +26,14 @@ export interface LobbyPlayer {
   cosmetics?: RacerInfo['cosmetics'];
 }
 
-export type WorldChoice = WorldId | 'random';
+/**
+ * What the host picked in the lobby: an empty course list means a random course every race,
+ * one course is a single race, several courses are a cup.
+ */
+export interface Playlist {
+  name: string;
+  courses: string[];
+}
 
 export type ClientMsg =
   | { t: 'hello'; v: number; name: string; character: string; cosmetics?: RacerInfo['cosmetics'] }
@@ -57,8 +65,8 @@ export interface SnapshotMsg {
 export type HostMsg =
   | { t: 'welcome'; seat: number }
   | { t: 'reject'; reason: string }
-  | { t: 'lobby'; players: LobbyPlayer[]; world: WorldChoice; racing: boolean }
-  | { t: 'start'; seed: number; world: WorldId; courseId?: string; racers: RacerInfo[]; you: number }
+  | { t: 'lobby'; players: LobbyPlayer[]; playlist: Playlist; racing: boolean }
+  | { t: 'start'; seed: number; world: WorldId; courseId?: string; racers: RacerInfo[]; you: number; cup?: CupState }
   | SnapshotMsg;
 
 // ---------------------------------------------------------------------------------------------

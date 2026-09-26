@@ -50,10 +50,13 @@ export class HostSession implements RaceSession {
     for (const [seat, id] of setup.seatToRacer) {
       this.remotes.set(id, { seat, queue: [], last: { j: 0, d: 0 }, ack: 0, use: 0 });
     }
-    room.onClientMessage = (seat, msg) => this.onMessage(seat, msg);
-    room.onSeatLeft = (seat, name) => this.onLeft(seat, name);
+    room.onClientMessage = this.onClientMessage;
+    room.onSeatLeft = this.onSeatLeft;
     this.clock.snapshot(this.race);
   }
+
+  private onClientMessage = (seat: number, msg: ClientMsg) => this.onMessage(seat, msg);
+  private onSeatLeft = (seat: number, name: string) => this.onLeft(seat, name);
 
   private racerForSeat(seat: number): number {
     for (const [id, rp] of this.remotes) if (rp.seat === seat) return id;
@@ -158,7 +161,8 @@ export class HostSession implements RaceSession {
   }
 
   destroy() {
-    if (this.room.onClientMessage) this.room.onClientMessage = null;
-    this.room.onSeatLeft = null;
+    // The next race's session may already be listening: only unhook our own handlers.
+    if (this.room.onClientMessage === this.onClientMessage) this.room.onClientMessage = null;
+    if (this.room.onSeatLeft === this.onSeatLeft) this.room.onSeatLeft = null;
   }
 }

@@ -21,7 +21,7 @@ const tap = (page, x, y) => page.mouse.click(x * S, y * S);
 const host = await phone('host');
 const client = await phone('client');
 
-await tap(host, W * 0.7, 272); // Mit Freunden
+await tap(host, W * 0.7, 320); // Mit Freunden
 await host.waitForTimeout(400);
 await tap(host, W / 2, 230); // Raum erstellen
 let code = null;
@@ -32,7 +32,7 @@ for (let i = 0; i < 40 && !code; i++) {
 console.log('room code', code);
 await host.screenshot({ path: `${shots}/host-lobby.png` });
 
-await tap(client, W * 0.7, 272);
+await tap(client, W * 0.7, 320);
 await client.waitForTimeout(400);
 await tap(client, W / 2, 316); // Raum beitreten
 await client.waitForTimeout(300);
@@ -52,6 +52,15 @@ for (let i = 0; i < 40; i++) {
 await host.waitForTimeout(500);
 await host.screenshot({ path: `${shots}/host-lobby-2.png` });
 await client.screenshot({ path: `${shots}/client-lobby.png` });
+if (process.env.CUP) {
+  // a two-race cup, set the way the course screen would
+  await host.evaluate(() => {
+    window.chaosRoom.playlist = { name: 'Test-Cup', courses: ['lianen-lauf', 'zahnrad-express'] };
+    window.chaosRoom.broadcastLobby();
+  });
+  await host.waitForTimeout(500);
+  await client.screenshot({ path: `${shots}/client-lobby-cup.png` });
+}
 await tap(host, W / 2 + 150, 380); // Rennen starten
 
 const state = (page) =>
@@ -80,4 +89,26 @@ await Promise.all([host.screenshot({ path: `${shots}/host-result.png` }), client
 const fin = (page) => page.evaluate(() => window.game.scene.getScene('race').session.race.standings().map((r) => [r.id, r.place, +r.finishTime.toFixed(2)]));
 console.log('host standings  ', JSON.stringify(await fin(host)));
 console.log('client standings', JSON.stringify(await fin(client)));
+const table = (page) => page.evaluate(() => window.chaosCup && { i: window.chaosCup.index, t: window.chaosCup.table.map((e) => [e.name, e.points]) });
+if (process.env.CUP) {
+  console.log('cup after race 1 host  ', JSON.stringify(await table(host)));
+  console.log('cup after race 1 client', JSON.stringify(await table(client)));
+  await tap(host, W / 2 - 110, 430); // Weiter
+  for (let i = 0; i < 100; i++) {
+    const k = await client.evaluate(() => window.chaosCup?.index ?? -1);
+    if (k === 1 && !(await client.evaluate(() => window.game.scene.isActive('result')))) break;
+    await client.waitForTimeout(200);
+  }
+  for (let i = 0; i < 600; i++) {
+    if (await client.evaluate(() => window.game.scene.isActive('result'))) break;
+    await client.waitForTimeout(200);
+  }
+  await client.waitForTimeout(1500);
+  await Promise.all([host.screenshot({ path: `${shots}/host-result-2.png` }), client.screenshot({ path: `${shots}/client-result-2.png` })]);
+  console.log('cup after race 2 host  ', JSON.stringify(await table(host)));
+  console.log('cup after race 2 client', JSON.stringify(await table(client)));
+  await tap(client, W / 2 - 110, 430); // Siegerehrung
+  await client.waitForTimeout(3500);
+  await client.screenshot({ path: `${shots}/client-podium.png` });
+}
 await browser.close();

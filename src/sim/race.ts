@@ -125,7 +125,11 @@ export class Race {
   private rng: Rng;
   private nextId = 1;
 
+  /** The fixed course being raced, if any. */
+  readonly courseId: string | undefined;
+
   constructor(setup: RaceSetup) {
+    this.courseId = setup.courseId;
     this.track = generateTrack({
       seed: setup.seed,
       world: setup.world,

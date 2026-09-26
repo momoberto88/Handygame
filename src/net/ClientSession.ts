@@ -47,13 +47,17 @@ export class ClientSession implements RaceSession {
     this.localId = start.you;
     const me = this.race.runners[this.localId];
     this.prevLocal = { x: me.x, y: me.y };
-    room.onHostMessage = (msg) => {
-      if (msg.t === 'snap') this.inbox.push(msg);
-    };
-    room.onClosed = (reason) => {
-      this.lost = reason;
-    };
+    room.onHostMessage = this.onHostMessage;
+    room.onClosed = this.onClosed;
   }
+
+  private onHostMessage = (msg: HostMsg) => {
+    if (msg.t === 'snap') this.inbox.push(msg);
+  };
+
+  private onClosed = (reason: string) => {
+    this.lost = reason;
+  };
 
   private get local(): RunnerState {
     return this.race.runners[this.localId];
@@ -217,6 +221,8 @@ export class ClientSession implements RaceSession {
   }
 
   destroy() {
-    this.room.onHostMessage = null;
+    // The next race's session may already be listening: only unhook our own handlers.
+    if (this.room.onHostMessage === this.onHostMessage) this.room.onHostMessage = null;
+    if (this.room.onClosed === this.onClosed) this.room.onClosed = null;
   }
 }

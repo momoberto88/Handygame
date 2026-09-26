@@ -18,6 +18,10 @@ export interface SaveData {
   equipped: { hat: string | null; glasses: string | null; outfit: string | null };
   settings: { sound: boolean; music: boolean; leftHanded: boolean; vibration: boolean; camera: CameraDistance };
   stats: { races: number; wins: number };
+  /** Best finishing time per course id (seconds). */
+  best: Record<string, number>;
+  /** Best cup result per cup id (1 = won). */
+  cups: Record<string, number>;
 }
 
 const DEFAULT: SaveData = {
@@ -30,6 +34,8 @@ const DEFAULT: SaveData = {
   equipped: { hat: null, glasses: null, outfit: null },
   settings: { sound: true, music: true, leftHanded: false, vibration: true, camera: 'mid' },
   stats: { races: 0, wins: 0 },
+  best: {},
+  cups: {},
 };
 
 let cache: SaveData | null = null;
@@ -47,6 +53,8 @@ export function loadSave(): SaveData {
         equipped: { ...data.equipped, ...parsed.equipped },
         settings: { ...data.settings, ...parsed.settings },
         stats: { ...data.stats, ...parsed.stats },
+        best: { ...parsed.best },
+        cups: { ...parsed.cups },
       };
     }
   } catch {

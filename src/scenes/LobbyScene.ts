@@ -1,20 +1,26 @@
 import Phaser from 'phaser';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
 import { characterById } from '../meta/characters';
-import { MAX_PLAYERS, type WorldChoice } from '../net/protocol';
+import { MAX_PLAYERS, type Playlist } from '../net/protocol';
 import { NetRoom, currentRoom, setCurrentRoom } from '../net/room';
 import { headIcon } from '../render/art/skins';
-import { WORLDS, WORLD_ORDER } from '../render/worlds';
 import { panel, textButton } from '../ui/widgets';
 import { goToMenu, hostStartRace, myProfile, wireClientRoom } from './flow';
 import { uiText } from './HudScene';
+import { COURSES } from '../sim/track/courses';
 
 type View = 'choose' | 'join' | 'busy' | 'room';
 
-const WORLD_CHOICES: WorldChoice[] = ['random', ...WORLD_ORDER];
+/** Short description of the host's course choice, e.g. "Pilz-Cup (4 Rennen)". */
+function playlistLabel(p: Playlist): string {
+  if (!p.courses.length) return 'Zufall';
+  if (p.courses.length === 1) return p.name;
+  return `${p.name} (${p.courses.length} Rennen)`;
+}
 
-function worldLabel(w: WorldChoice): string {
-  return w === 'random' ? 'Zufall' : WORLDS[w].name;
+function playlistCourses(p: Playlist): string {
+  if (p.courses.length < 2) return '';
+  return p.courses.map((id) => COURSES.find((c) => c.id === id)?.name ?? id).join(' → ');
 }
 
 export class LobbyScene extends Phaser.Scene {
@@ -203,20 +209,19 @@ export class LobbyScene extends Phaser.Scene {
 
     if (room.role === 'host') {
       this.ui.add(
-        textButton(this, W / 2 - 150, 380, 250, 54, `Welt: ${worldLabel(room.world)}`, 0x9b7aff, () => {
-          const i = WORLD_CHOICES.indexOf(room.world);
-          room.world = WORLD_CHOICES[(i + 1) % WORLD_CHOICES.length];
-          room.broadcastLobby();
-          this.render();
-        }, 18).container,
+        textButton(this, W / 2 - 150, 380, 250, 54, `Strecken: ${playlistLabel(room.playlist)}`, 0x9b7aff, () => {
+          this.scene.start('courses', { mode: 'room' });
+        }, 16).container,
       );
       const start = textButton(this, W / 2 + 150, 380, 250, 54, room.racing ? 'Rennen läuft …' : 'Rennen starten!', 0x5fd35a, () => hostStartRace(this, room), 22);
       start.setEnabled(!room.racing);
       this.ui.add(start.container);
     } else {
-      const text = room.racing ? 'Ein Rennen läuft gerade – du bist beim nächsten dabei.' : `Welt: ${worldLabel(room.world)} · Warte auf den Gastgeber …`;
+      const text = room.racing ? 'Ein Rennen läuft gerade – du bist beim nächsten dabei.' : `${playlistLabel(room.playlist)} · Warte auf den Gastgeber …`;
       this.ui.add(uiText(this, W / 2, 380, text, 20, '#e6e0ff').setOrigin(0.5));
     }
+    const courses = playlistCourses(room.playlist);
+    if (courses) this.ui.add(uiText(this, W / 2, 338, courses, 14, '#c9c2e8').setOrigin(0.5).setWordWrapWidth((W - 60) * 2).setAlign('center'));
     this.ui.add(
       textButton(this, W / 2, 460, 220, 48, 'Raum verlassen', 0xe0604a, () => {
         setCurrentRoom(null);

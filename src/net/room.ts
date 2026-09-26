@@ -7,7 +7,7 @@ import {
   type ClientMsg,
   type HostMsg,
   type LobbyPlayer,
-  type WorldChoice,
+  type Playlist,
 } from './protocol';
 import type { RacerInfo } from './session';
 
@@ -90,7 +90,7 @@ export class NetRoom {
   // host side
   private seats = new Map<number, RemoteSeat>();
   players: LobbyPlayer[] = [];
-  world: WorldChoice = 'random';
+  playlist: Playlist = { name: 'Zufall', courses: [] };
   racing = false;
 
   // client side
@@ -251,7 +251,7 @@ export class NetRoom {
   }
 
   broadcastLobby() {
-    this.broadcast({ t: 'lobby', players: this.players, world: this.world, racing: this.racing });
+    this.broadcast({ t: 'lobby', players: this.players, playlist: this.playlist, racing: this.racing });
     this.onLobby?.();
   }
 
@@ -275,7 +275,7 @@ export class NetRoom {
     switch (msg.t) {
       case 'lobby':
         this.players = msg.players;
-        this.world = msg.world;
+        this.playlist = msg.playlist;
         this.racing = msg.racing;
         this.onLobby?.();
         break;

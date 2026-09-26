@@ -92,11 +92,12 @@ export class MenuScene extends Phaser.Scene {
     // main buttons
     const bx = W * 0.7;
     const bw = Math.min(330, W * 0.36);
-    this.ui.add(textButton(this, bx, 190, bw, 64, 'Schnelles Rennen', 0x5fd35a, () => startLocalRace(this), 26).container);
-    const friends = textButton(this, bx, 272, bw, 64, 'Mit Freunden', 0x4aa3ff, () => this.scene.start('lobby'), 26);
+    this.ui.add(textButton(this, bx, 172, bw, 60, 'Schnelles Rennen', 0x5fd35a, () => startLocalRace(this), 25).container);
+    this.ui.add(textButton(this, bx, 246, bw, 60, '🏆 Cups & Strecken', 0xffd84a, () => this.scene.start('courses', { mode: 'solo' }), 25).container);
+    const friends = textButton(this, bx, 320, bw, 60, 'Mit Freunden', 0x4aa3ff, () => this.scene.start('lobby'), 25);
     friends.setEnabled(this.scene.manager.keys['lobby'] !== undefined);
     this.ui.add(friends.container);
-    const wardrobe = textButton(this, bx, 354, bw, 64, 'Garderobe', 0xffa94a, () => this.scene.start('wardrobe'), 26);
+    const wardrobe = textButton(this, bx, 394, bw, 60, 'Garderobe', 0xffa94a, () => this.scene.start('wardrobe'), 25);
     wardrobe.setEnabled(this.scene.manager.keys['wardrobe'] !== undefined);
     this.ui.add(wardrobe.container);
 
