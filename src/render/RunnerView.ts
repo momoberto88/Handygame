@@ -3,7 +3,8 @@ import { DEATH_TIME } from '../sim/constants';
 import type { RunnerState } from '../sim/types';
 import type { CharacterDef } from '../meta/characters';
 import { ART_RES } from './art/canvas';
-import { headLayout, partKey, type Expression } from './art/characterArt';
+import { headLayout, type Expression } from './art/characterArt';
+import { skinFor, type Skin, type SkinPart } from './art/skins';
 
 interface Pose {
   bodyX: number;
@@ -70,6 +71,8 @@ class Spring {
   }
 }
 
+const BACK_TINT = 0xc8c0c0;
+
 function part(scene: Phaser.Scene, key: string, ox = 0.5, oy = 0.5): Phaser.GameObjects.Image {
   return scene.add.image(0, 0, key).setOrigin(ox, oy).setScale(1 / ART_RES);
 }
@@ -108,6 +111,8 @@ export class RunnerView {
   private popIn = 1;
   private readonly earBase: { fx: number; fy: number; bx: number; by: number; rot: number };
   private readonly allParts: Phaser.GameObjects.Image[];
+  private readonly skin: Skin;
+  private headTex = '';
 
   constructor(
     scene: Phaser.Scene,
@@ -117,26 +122,28 @@ export class RunnerView {
   ) {
     const c = character;
     const hl = headLayout(c);
+    const skin = skinFor(scene, c);
+    this.skin = skin;
     this.root = scene.add.container(0, 0);
+    const P = (p: SkinPart, which: 'F' | 'B' = 'F', ox = 0.5, oy = 0.5) =>
+      part(scene, skin.key(p, which) ?? '__MISSING', ox, oy).setScale(skin.scale(p));
 
-    const earKey = partKey(c, 'ear');
-    const hasEar = scene.textures.exists(earKey);
-    const tailKey = partKey(c, 'tail');
-
-    if (scene.textures.exists(tailKey)) {
-      this.tail = part(scene, tailKey, c.tail === 'puff' ? 0.5 : 0.95, 0.5);
+    if (skin.key('tail')) {
+      const ox = skin.tail?.originX ?? (c.tail === 'puff' ? 0.5 : 0.95);
+      this.tail = P('tail', 'F', ox, 0.5);
       this.root.add(this.tail);
     }
-    this.footB = part(scene, partKey(c, 'foot'), 0.45, 0.8).setTint(0xc8c0c0);
-    this.handB = part(scene, partKey(c, 'hand')).setTint(0xc8c0c0);
-    this.body = part(scene, partKey(c, 'body'));
-    this.bodyLower = part(scene, partKey(c, 'body')).setVisible(false);
-    this.footF = part(scene, partKey(c, 'foot'), 0.45, 0.8);
+    this.footB = P('foot', 'B', 0.45, 0.8).setTint(BACK_TINT);
+    this.handB = P('hand', 'B').setTint(BACK_TINT);
+    this.body = P('body');
+    this.bodyLower = P('body').setVisible(false);
+    this.footF = P('foot', 'F', 0.45, 0.8);
     this.head = scene.add.container(0, 0);
-    this.headImg = part(scene, partKey(c, 'head'));
-    this.eyes = part(scene, 'eyes-normal').setPosition(hl.eyeX, hl.eyeY).setScale(0.85 / ART_RES);
+    this.headImg = part(scene, skin.head('normal')).setScale(skin.scale('head'));
+    this.eyes = part(scene, 'eyes-normal').setPosition(hl.eyeX, hl.eyeY).setScale(0.85 / ART_RES).setVisible(skin.eyeOverlay);
 
     let earPos = { fx: 0, fy: -12, bx: -5, by: -12, rot: 0 };
+    const hasEar = !!skin.key('earF');
     if (hasEar) {
       switch (c.ears) {
         case 'long':
@@ -155,11 +162,12 @@ export class RunnerView {
           earPos = { fx: -12, fy: -6, bx: -12, by: -6, rot: 0.4 };
           break;
       }
+      if (skin.ears) earPos = skin.ears;
       const oy = c.ears === 'ponytail' ? 0.08 : 0.95;
       if (c.ears !== 'feathers' && c.ears !== 'ponytail') {
-        this.earB = part(scene, earKey, 0.5, oy).setTint(0xc8c0c0).setPosition(earPos.bx, earPos.by);
+        this.earB = P(skin.painted ? 'earB' : 'earF', 'F', 0.5, oy).setTint(BACK_TINT).setPosition(earPos.bx, earPos.by);
       }
-      this.earF = part(scene, earKey, 0.5, oy).setPosition(earPos.fx, earPos.fy);
+      this.earF = P('earF', 'F', 0.5, oy).setPosition(earPos.fx, earPos.fy);
     }
     this.earBase = earPos;
     if (this.earB) this.head.add(this.earB);
@@ -168,7 +176,7 @@ export class RunnerView {
     this.head.add(this.eyes);
     if (this.earF && c.ears !== 'ponytail') this.head.add(this.earF);
 
-    this.handF = part(scene, partKey(c, 'hand'));
+    this.handF = P('hand', 'F');
     this.shield = scene.add.image(0, -24, 'shield-bubble').setScale(1 / ART_RES).setVisible(false);
     this.magnet = scene.add.image(0, -68, 'item-magnet').setScale(0.5 / ART_RES).setVisible(false);
 
@@ -250,13 +258,14 @@ export class RunnerView {
     if (this.earB) this.earB.setRotation(this.earBase.rot - 0.25 + ear * 0.8);
     if (this.tail) {
       const tailT = this.tailSpring.step(Phaser.Math.Clamp(r.vy * 0.0008, -0.6, 0.6) + Math.sin(this.phase) * 0.15, dt);
-      this.tail.setPosition(this.pose.bodyX - 11, this.pose.bodyY + 4).setRotation(tailT);
+      const tp = this.skin.tail ?? { x: -11, y: 4 };
+      this.tail.setPosition(this.pose.bodyX + tp.x, this.pose.bodyY + tp.y).setRotation(tailT);
     }
 
     // face
     this.blinkTimer -= dt;
     if (this.blinkTimer < -0.12) this.blinkTimer = 1.5 + ((time * 7.3 + r.id) % 2.5);
-    this.eyes.setTexture(`eyes-${this.expression(r)}`);
+    this.setFace(this.expression(r));
 
     const ghost = r.ghost > 0 ? (Math.floor(time * 16) % 2 ? 0.35 : 0.9) : 1;
     this.root.setAlpha(ghost);
@@ -265,6 +274,18 @@ export class RunnerView {
     if (r.shield > 0) {
       const flicker = r.shield < 1.5 && Math.floor(time * 10) % 2 === 0;
       this.shield.setAlpha(flicker ? 0.25 : 0.9).setScale((1 + Math.sin(time * 6) * 0.04) / ART_RES);
+    }
+  }
+
+  private setFace(expr: Expression) {
+    if (this.skin.eyeOverlay) {
+      this.eyes.setTexture(`eyes-${expr}`);
+      return;
+    }
+    const key = this.skin.head(expr);
+    if (key !== this.headTex) {
+      this.headTex = key;
+      this.headImg.setTexture(key);
     }
   }
 
@@ -426,7 +447,7 @@ export class RunnerView {
     this.root.setScale(1).setAlpha(1);
     this.shield.setVisible(false);
     this.magnet.setVisible(false);
-    this.eyes.setTexture('eyes-dead');
+    this.setFace('dead');
     const kind = r.deathKind;
     const rnd = (i: number) => Math.sin(i * 12.9898 + r.id * 78.233 + r.deaths * 3.1) * 0.5 + 0.5;
     const fling = (obj: Debris['obj'], i: number, power: number) => {
@@ -479,11 +500,11 @@ export class RunnerView {
       this.pose.hfY = -36;
       this.pose.hbY = -35;
       this.applyPose();
-      this.eyes.setTexture(t < 0.35 ? 'eyes-scared' : 'eyes-blink');
+      this.setFace(t < 0.35 ? 'scared' : 'blink');
       this.root.setAlpha(t > 0.8 ? 1 - (t - 0.8) / 0.2 : 1);
     } else if (kind === 'trap') {
       this.root.x += Math.sin(t * 50) * 1.5;
-      this.eyes.setTexture('eyes-strain');
+      this.setFace('strain');
       this.pose.hfY = -38 + Math.sin(t * 30) * 4;
       this.pose.hbY = -36 - Math.sin(t * 30) * 4;
       this.applyPose();
@@ -506,9 +527,9 @@ export class RunnerView {
     this.body.setCrop();
     this.bodyLower.setVisible(false);
     for (const p of this.allParts) p.clearTint();
-    this.footB.setTint(0xc8c0c0);
-    this.handB.setTint(0xc8c0c0);
-    if (this.earB) this.earB.setTint(0xc8c0c0);
+    this.footB.setTint(BACK_TINT);
+    this.handB.setTint(BACK_TINT);
+    if (this.earB) this.earB.setTint(BACK_TINT);
     this.root.setRotation(0).setAlpha(1).setScale(1);
     this.popIn = 0;
   }

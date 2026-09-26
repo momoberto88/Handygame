@@ -6,7 +6,7 @@ import { loadSave } from '../meta/save';
 import type { LocalInput } from '../net/session';
 import { ITEM_KINDS } from '../sim/types';
 import { ART_RES } from '../render/art/canvas';
-import { partKey } from '../render/art/characterArt';
+import { headIcon } from '../render/art/skins';
 import { itemIconKey } from '../render/art/entityArt';
 import type { RaceScene } from './RaceScene';
 import { setCurrentRoom } from '../net/room';
@@ -105,14 +105,16 @@ export class HudScene extends Phaser.Scene {
     const session = this.raceScene.session;
     for (const info of session.racers) {
       const c = characterById(info.character);
-      const head = this.add.image(0, 0, partKey(c, 'head')).setScale((info.id === session.localId ? 0.75 : 0.55) / ART_RES);
+      const icon = headIcon(this, c, info.id === session.localId ? 28 : 21);
+      const head = this.add.image(0, 0, icon.key).setScale(icon.scale);
       this.progressHeads.push(head);
     }
     for (const info of session.racers) {
       const c = characterById(info.character);
       const root = this.add.container(0, 0).setVisible(false);
       const bg = this.add.circle(0, 0, 19, 0x1d1a2f, 0.75).setStrokeStyle(3, c.marker);
-      const head = this.add.image(0, 0, partKey(c, 'head')).setScale(0.62 / ART_RES);
+      const icon = headIcon(this, c, 24);
+      const head = this.add.image(0, 0, icon.key).setScale(icon.scale);
       const arrow = this.add.triangle(0, 0, 0, -7, 12, 0, 0, 7, c.marker);
       const dist = uiText(this, 0, 24, '', 12).setOrigin(0.5, 0);
       root.add([bg, head, arrow, dist]);
@@ -307,16 +309,21 @@ export class HudScene extends Phaser.Scene {
 
   inkSplat() {
     this.inkLayer.removeAll(true);
-    for (let i = 0; i < 4; i++) {
+    // Big blots, but the runner's own spot (left third) stays readable.
+    const spots = [
+      [0.55, 0.3],
+      [0.78, 0.55],
+      [0.4, 0.62],
+    ];
+    spots.forEach(([fx, fy], i) => {
       const img = this.add
-        .image(this.W * (0.25 + Math.random() * 0.5), VIEW_H * (0.25 + Math.random() * 0.5), 'ink-splat')
-        .setScale((0.9 + Math.random() * 0.8) / ART_RES)
+        .image(this.W * fx + (Math.random() - 0.5) * 60, VIEW_H * fy + (Math.random() - 0.5) * 40, 'ink-splat')
         .setRotation(Math.random() * 6)
-        .setAlpha(0.95);
+        .setAlpha(0.92);
       this.inkLayer.add(img);
       img.setScale(0);
-      this.tweens.add({ targets: img, scale: (1.2 + Math.random() * 0.8) / ART_RES, duration: 180, delay: i * 70, ease: 'Back.Out' });
-    }
+      this.tweens.add({ targets: img, scale: (0.8 + Math.random() * 0.45) / ART_RES, duration: 180, delay: i * 70, ease: 'Back.Out' });
+    });
   }
 
   update(_t: number, delta: number) {

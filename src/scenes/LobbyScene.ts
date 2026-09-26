@@ -3,8 +3,7 @@ import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
 import { characterById } from '../meta/characters';
 import { MAX_PLAYERS, type WorldChoice } from '../net/protocol';
 import { NetRoom, currentRoom, setCurrentRoom } from '../net/room';
-import { ART_RES } from '../render/art/canvas';
-import { partKey } from '../render/art/characterArt';
+import { headIcon } from '../render/art/skins';
 import { WORLDS, WORLD_ORDER } from '../render/worlds';
 import { panel, textButton } from '../ui/widgets';
 import { goToMenu, hostStartRace, myProfile, wireClientRoom } from './flow';
@@ -192,7 +191,8 @@ export class LobbyScene extends Phaser.Scene {
       this.ui.add(g);
       if (p) {
         const c = characterById(p.character);
-        this.ui.add(this.add.image(x, y - 14, partKey(c, 'head')).setScale(1.3 / ART_RES));
+        const icon = headIcon(this, c, 56);
+        this.ui.add(this.add.image(x, y - 14, icon.key).setScale(icon.scale));
         this.ui.add(uiText(this, x, y + 38, p.name, 18).setOrigin(0.5));
         if (seat === 0) this.ui.add(uiText(this, x, y - 52, 'Gastgeber', 12, '#ffd84a').setOrigin(0.5));
       } else {
