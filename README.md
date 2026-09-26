@@ -3,6 +3,8 @@
 Chaotisches Jump-’n’-Run-Rennen fürs Handy – bis zu 4 Spieler, niedliche Comic-Tiere, ziemlich derbe Sprüche.
 Leere Plätze füllen Bots. Kein Konto, kein App-Store: ein Link genügt.
 
+**▶ Jetzt spielen: https://runaway-rivals.github.io**
+
 ## So holst du dir das Spiel aufs Handy
 1. Öffne den Spiele-Link im Browser (iPhone: **Safari**, Android: **Chrome**).
 2. Handy **quer** halten.
