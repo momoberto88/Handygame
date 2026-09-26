@@ -97,5 +97,17 @@ export class LocalSession implements RaceSession {
     return null;
   }
 
+  private emotes: [number, number][] = [];
+
+  sendEmote(e: number) {
+    if (!this.spectator) this.emotes.push([this.localId, e]);
+  }
+
+  takeEmotes() {
+    const out = this.emotes;
+    this.emotes = [];
+    return out;
+  }
+
   destroy() {}
 }

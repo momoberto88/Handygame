@@ -84,6 +84,7 @@ export class HostSession implements RaceSession {
     if (msg.t === 'in') rp.queue.push({ s: msg.s, j: msg.j, d: msg.d });
     else if (msg.t === 'use') rp.use = msg.dir;
     else if (msg.t === 'ab') rp.ability = true;
+    else if (msg.t === 'emote') this.emote(id, msg.e);
   }
 
   private onLeft(seat: number, name: string) {
@@ -179,6 +180,25 @@ export class HostSession implements RaceSession {
   status() {
     if (this.notice && performance.now() < this.notice.until) return this.notice.text;
     return null;
+  }
+
+  private emotes: [number, number][] = [];
+
+  /** Shows an emote here and on every other phone. */
+  private emote(r: number, e: number) {
+    this.emotes.push([r, e]);
+    for (const rp of this.remotes.values()) this.room.sendTo(rp.seat, { t: 'emote', r, e });
+    for (const seat of this.watchers) this.room.sendTo(seat, { t: 'emote', r, e });
+  }
+
+  sendEmote(e: number) {
+    if (!this.spectator) this.emote(this.localId, e);
+  }
+
+  takeEmotes() {
+    const out = this.emotes;
+    this.emotes = [];
+    return out;
   }
 
   destroy() {

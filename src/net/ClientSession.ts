@@ -57,6 +57,7 @@ export class ClientSession implements RaceSession {
 
   private onHostMessage = (msg: HostMsg) => {
     if (msg.t === 'snap') this.inbox.push(msg);
+    else if (msg.t === 'emote') this.emotes.push([msg.r, msg.e]);
   };
 
   private onClosed = (reason: string) => {
@@ -224,6 +225,18 @@ export class ClientSession implements RaceSession {
     if (this.started && performance.now() - this.lastSnapAt > 1500) return 'Verbindung wackelt …';
     if (!this.started) return 'Warte auf den Gastgeber …';
     return null;
+  }
+
+  private emotes: [number, number][] = [];
+
+  sendEmote(e: number) {
+    if (!this.spectator) this.room.send({ t: 'emote', e });
+  }
+
+  takeEmotes() {
+    const out = this.emotes;
+    this.emotes = [];
+    return out;
   }
 
   destroy() {

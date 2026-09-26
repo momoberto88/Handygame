@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { TEAMS, scoreLine, teamScores } from '../meta/teams';
+import { EMOTES, emoteChoices } from '../meta/emotes';
 import { sfx } from '../audio/sfx';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
 import { ABILITIES, characterById } from '../meta/characters';
@@ -152,6 +153,7 @@ export class HudScene extends Phaser.Scene {
       this.quitRace();
     });
 
+    if (!session.spectator && session.sendEmote) this.makeEmotes();
     this.layout();
     if (session.spectator) {
       // knocked out of a K.-o. cup: no controls, just a banner
@@ -191,6 +193,38 @@ export class HudScene extends Phaser.Scene {
       if (['ArrowLeft', 'a', 'A', 'q', 'Q'].includes(ev.key)) this.pendingUse = -1;
       if (['f', 'F', 'r', 'R', 'Shift'].includes(ev.key)) this.pendingAbility = true;
       if (ev.key === 'Escape') this.quitRace();
+    });
+  }
+
+  private emoteBtn?: Phaser.GameObjects.Text;
+  private emoteBar?: Phaser.GameObjects.Container;
+  private lastEmote = 0;
+
+  /** 😀 button in the top bar; opens a row of emotes (also in the top bar, away from the controls). */
+  private makeEmotes() {
+    const stop = (ev: Phaser.Types.Input.EventData) => ev.stopPropagation();
+    this.emoteBtn = uiText(this, 0, 14, '😀', 30).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
+    this.emoteBtn.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => {
+      stop(ev);
+      sfx.unlock();
+      this.emoteBar?.setVisible(!this.emoteBar.visible);
+    });
+    this.emoteBar = this.add.container(0, 0).setVisible(false);
+    const choices = emoteChoices();
+    const bg = this.add.graphics();
+    bg.fillStyle(0x1d1a2f, 0.75).fillRoundedRect(-choices.length * 46 - 10, 4, choices.length * 46 + 12, 56, 16);
+    this.emoteBar.add(bg);
+    choices.forEach((e, k) => {
+      const t = uiText(this, -choices.length * 46 + 18 + k * 46, 12, EMOTES[e], 32).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
+      t.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => {
+        stop(ev);
+        const now = this.time.now;
+        if (now - this.lastEmote < 1200) return;
+        this.lastEmote = now;
+        this.raceScene.session.sendEmote?.(e);
+        this.emoteBar?.setVisible(false);
+      });
+      this.emoteBar!.add(t);
     });
   }
 
@@ -255,6 +289,8 @@ export class HudScene extends Phaser.Scene {
     this.coinText.setPosition(W - 70, 16);
     this.coinIcon.setPosition(W - 56, 30);
     this.quitBtn.setPosition(W - 16, 14);
+    this.emoteBtn?.setPosition(W - 172, 10);
+    this.emoteBar?.setPosition(W - 196, 0);
     this.bigText.setX(W / 2);
     this.toastText.setX(W / 2);
     this.statusText.setX(W / 2);

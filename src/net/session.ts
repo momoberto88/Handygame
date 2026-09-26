@@ -40,6 +40,10 @@ export interface RaceSession {
   prevPosition(id: number): { x: number; y: number };
   /** Visual correction applied on top of the simulated position (smooths network corrections). */
   renderOffset?(id: number): { x: number; y: number };
+  /** Shows an emote over your runner (and on the other phones online). */
+  sendEmote?(e: number): void;
+  /** Emotes that arrived since the last call ([racer id, emote index]). */
+  takeEmotes?(): [number, number][];
   /** Status line shown in the HUD (e.g. connection problems). */
   status(): string | null;
   destroy(): void;

@@ -55,6 +55,7 @@ export type ClientMsg =
   | { t: 'in'; s: number; j: 0 | 1; d: 0 | 1 }
   | { t: 'use'; dir: -1 | 1 }
   | { t: 'ab' }
+  | { t: 'emote'; e: number }
   | { t: 'vote'; i: number }
   | { t: 'profile'; name: string; character: string; cosmetics?: RacerInfo['cosmetics'] };
 
@@ -84,6 +85,7 @@ export type HostMsg =
   | { t: 'reject'; reason: string }
   | { t: 'lobby'; players: LobbyPlayer[]; playlist: Playlist; racing: boolean; vote?: VoteState }
   | { t: 'start'; seed: number; world: WorldId; courseId?: string; racers: RacerInfo[]; you: number; cup?: CupState; spectator?: boolean }
+  | { t: 'emote'; r: number; e: number }
   | SnapshotMsg;
 
 // ---------------------------------------------------------------------------------------------

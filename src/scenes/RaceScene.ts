@@ -1,5 +1,6 @@
 import { TEAMS } from '../meta/teams';
 import { TRAILS } from '../meta/cosmetics';
+import { EMOTES } from '../meta/emotes';
 import { announce, deathLine, finishLine, goLine, robbedLine, shieldLine, stoleLine, stunnedLine, swallowedLine, talk, type Line, type TalkMoment } from '../meta/lines';
 import clipList from '../audio/clips.json';
 import Phaser from 'phaser';
@@ -177,6 +178,11 @@ export class RaceScene extends Phaser.Scene {
     this.updateBubbles();
     this.updateTalk();
     this.updateTrails(dt);
+    for (const [id, e] of this.session.takeEmotes?.() ?? []) {
+      if (!this.session.racers[id]) continue;
+      this.showBubble(id, EMOTES[e] ?? '❓', true);
+      if (this.nearCamera(race.runners[id].x)) sfx.play('click');
+    }
 
     this.dustTimer -= dt;
     if (this.dustTimer <= 0) {
@@ -285,12 +291,12 @@ export class RaceScene extends Phaser.Scene {
     if (line?.clip) sfx.speak(line.clip, priority, 1);
   }
 
-  private showBubble(id: number, line: string) {
+  private showBubble(id: number, line: string, emote = false) {
     const now = this.time.now;
     for (const b of this.bubbles.filter((b) => b.id === id)) b.until = 0;
     // comic speech bubble: rounded box with a border and a little tail
     const text = this.add
-      .text(0, 0, line, { fontFamily: 'system-ui, sans-serif', fontSize: '26px', fontStyle: 'bold', color: '#1d1a2f', align: 'center', wordWrap: { width: 360 } })
+      .text(0, 0, line, { fontFamily: 'system-ui, sans-serif', fontSize: emote ? '56px' : '26px', fontStyle: 'bold', color: '#1d1a2f', align: 'center', wordWrap: { width: 360 } })
       .setOrigin(0.5, 1);
     const w = text.width + 28;
     const h = text.height + 16;
