@@ -228,7 +228,7 @@ export type SimEvent =
   | { t: 'crumble'; tile: number; broken: boolean }
   | { t: 'land'; r: number; v: number }
   | { t: 'pad'; r: number; kind: 'jump' | 'boost' | 'mega' }
-  | { t: 'death'; r: number; kind: DeathKind; x: number; y: number }
+  | { t: 'death'; r: number; kind: DeathKind; x: number; y: number; /** Runner whose item did it. */ by?: number }
   | { t: 'respawn'; r: number }
   | { t: 'swallowed'; r: number; fromX: number; fromY: number }
   | { t: 'box'; r: number; box: number }
@@ -241,6 +241,6 @@ export type SimEvent =
   | { t: 'sawBreak'; x: number; y: number }
   | { t: 'trapSet'; x: number; y: number }
   | { t: 'ability'; r: number; kind: AbilityKind; x: number; y: number; target?: number }
-  | { t: 'stunned'; r: number }
+  | { t: 'stunned'; r: number; by?: number }
   | { t: 'finish'; r: number; place: number }
   | { t: 'end' };

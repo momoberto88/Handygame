@@ -1,6 +1,8 @@
+import clipList from './clips.json';
+
 /**
- * Tiny synthesizer for sound effects. Used until (and as a fallback for) recorded sounds.
- * Everything is generated with the Web Audio API, so no files are needed.
+ * Sound effects: recorded clips (public/assets/audio, made with ElevenLabs) where they exist,
+ * otherwise a tiny Web Audio synthesizer, so the game never needs the files to work.
  */
 export type SfxName =
   | 'jump'
@@ -26,7 +28,54 @@ export type SfxName =
   | 'lose'
   | 'click'
   | 'ink'
-  | 'trap';
+  | 'trap'
+  | 'slide'
+  | 'slam'
+  | 'slice'
+  | 'fall'
+  | 'doublejump'
+  | 'shieldblock'
+  | 'rocket'
+  | 'stunned'
+  | 'lightning'
+  | 'magnet'
+  | 'crumble'
+  | 'ab-megajump'
+  | 'ab-sprint'
+  | 'ab-spores'
+  | 'ab-tongue'
+  | 'ab-steal'
+  | 'ab-quake'
+  | 'ab-mask'
+  | 'ab-bash'
+  | 'ab-fireworks';
+
+const CLIPS = new Set(clipList as string[]);
+
+/** Recorded variants of a sound ("jump" → sfx/jump-1, sfx/jump-2). */
+function variants(name: string): string[] {
+  if (CLIPS.has(`sfx/${name}`)) return [`sfx/${name}`];
+  const out: string[] = [];
+  for (let i = 1; CLIPS.has(`sfx/${name}-${i}`); i++) out.push(`sfx/${name}-${i}`);
+  return out;
+}
+
+/** Per sound: loudness and the longest it may ring (long clips are faded out). */
+const MIX: Partial<Record<SfxName, { vol?: number; max?: number }>> = {
+  coin: { vol: 0.35, max: 0.6 },
+  jump: { vol: 0.55, max: 0.5 },
+  doublejump: { vol: 0.6, max: 0.5 },
+  land: { vol: 0.5, max: 0.4 },
+  slide: { vol: 0.8, max: 1.1 },
+  roll: { vol: 0.5, max: 1.2 },
+  swallow: { max: 2.2 },
+  stunned: { vol: 0.7, max: 1.6 },
+  shield: { max: 1.2 },
+  shieldblock: { max: 0.8 },
+  magnet: { max: 1.2 },
+  click: { vol: 0.6, max: 0.3 },
+  finish: { max: 3 },
+};
 
 class Synth {
   private ctx: AudioContext | null = null;
@@ -34,6 +83,89 @@ class Synth {
   private noiseBuf: AudioBuffer | null = null;
   enabled = true;
   volume = 0.6;
+  private buffers = new Map<string, AudioBuffer | 'loading' | 'failed'>();
+  /** Clip currently speaking (voices don't talk over each other). */
+  private voice: { src: AudioBufferSourceNode; priority: number; until: number } | null = null;
+
+  /** Starts loading recorded clips (paths like "sfx/jump-1"); safe to call repeatedly. */
+  preload(paths: string[]) {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    for (const path of paths) {
+      if (!CLIPS.has(path) || this.buffers.has(path)) continue;
+      this.buffers.set(path, 'loading');
+      fetch(`${import.meta.env.BASE_URL}assets/audio/${path}.mp3`)
+        .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+        .then((data) => ctx.decodeAudioData(data))
+        .then((buf) => this.buffers.set(path, buf))
+        .catch(() => this.buffers.set(path, 'failed'));
+    }
+  }
+
+  /** Loads every recorded sound effect. */
+  preloadEffects() {
+    this.preload([...CLIPS].filter((c) => c.startsWith('sfx/')));
+  }
+
+  hasClip(path: string): boolean {
+    return CLIPS.has(path);
+  }
+
+  /** Plays a loaded clip; returns its length in seconds (0 if it isn't loaded yet). */
+  playClip(path: string, vol = 1, maxDur = 0, rate = 1): number {
+    if (!this.enabled || !this.ctx || !this.master || this.ctx.state !== 'running') return 0;
+    const buf = this.buffers.get(path);
+    if (!(buf instanceof AudioBuffer)) {
+      this.preload([path]);
+      return 0;
+    }
+    const ctx = this.ctx;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.playbackRate.value = rate;
+    const g = ctx.createGain();
+    g.gain.value = vol;
+    const len = buf.duration / rate;
+    const dur = maxDur > 0 ? Math.min(len, maxDur) : len;
+    if (dur < len) {
+      g.gain.setValueAtTime(vol, ctx.currentTime + dur - 0.15);
+      g.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + dur);
+    }
+    src.connect(g).connect(this.master);
+    src.start();
+    src.stop(ctx.currentTime + dur + 0.02);
+    return dur;
+  }
+
+  /**
+   * A spoken line: only one at a time. A line with a higher priority cuts the current one off,
+   * otherwise it is skipped. Returns false if it wasn't played.
+   */
+  speak(path: string, priority: number, vol = 1): boolean {
+    if (!this.enabled || !this.ctx || this.ctx.state !== 'running') return false;
+    const now = this.ctx.currentTime;
+    if (this.voice && now < this.voice.until) {
+      if (priority <= this.voice.priority) return false;
+      try {
+        this.voice.src.stop();
+      } catch {
+        // already stopped
+      }
+    }
+    const buf = this.buffers.get(path);
+    if (!(buf instanceof AudioBuffer)) {
+      this.preload([path]);
+      return false;
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const g = this.ctx.createGain();
+    g.gain.value = vol;
+    src.connect(g).connect(this.master!);
+    src.start();
+    this.voice = { src, priority, until: now + buf.duration };
+    return true;
+  }
 
   /** Must be called from a user gesture (browsers block audio before that). */
   unlock() {
@@ -48,6 +180,7 @@ class Synth {
       this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
       const data = this.noiseBuf.getChannelData(0);
       for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      this.preloadEffects();
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume();
   }
@@ -99,8 +232,15 @@ class Synth {
     src.stop(t + dur + 0.02);
   }
 
-  play(name: SfxName) {
+  play(name: SfxName, vol = 1) {
     if (!this.enabled || !this.ctx || !this.master || this.ctx.state !== 'running') return;
+    const rec = variants(name);
+    if (rec.length) {
+      const mix = MIX[name] ?? {};
+      // slight pitch variation so repeated sounds don't get annoying
+      const rate = 0.94 + Math.random() * 0.12;
+      if (this.playClip(rec[Math.floor(Math.random() * rec.length)], (mix.vol ?? 0.9) * vol, mix.max ?? 2.5, rate) > 0) return;
+    }
     switch (name) {
       case 'jump':
         this.tone('square', 320, 720, 0.14, 0.12);

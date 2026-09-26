@@ -1,5 +1,6 @@
 import type { DeathKind } from '../sim/types';
 import { loadSave } from './save';
+import voiceLines from './voice-lines.json';
 
 /**
  * All the trash talk of Runaway Rivals. The game looks cute on purpose; the texts are the dirty
@@ -49,20 +50,15 @@ export function robbedLine(by: string): string {
   return rude() ? pick([`${by} hat dein Power-Up geklaut, der Bastard!`, `${by} klaut wie ein Rabe. Scheiße!`]) : `${by} hat dein Power-Up geklaut!`;
 }
 
-export function goLine(): string {
-  if (!rude()) return 'LOS!';
-  return pick(['LOS!', 'LOS, IHR PFEIFEN!', 'RENNT, IHR SÄCKE!', 'LOS, VERDAMMT!', 'ABFAHRT!']);
+export function goLine(): Line {
+  if (!rude()) return { text: 'LOS!', clip: '' };
+  return announce('go')!;
 }
 
 /** Big toast when you cross the finish line. */
-export function finishLine(place: number): string {
-  if (!rude()) return place === 1 ? 'SIEG!' : `${place}. Platz!`;
-  return [
-    pick(['SIEG, BITCHES!', 'ERSTER! FUCK YEAH!', 'SIEG! Weint leise.']),
-    pick(['2. – erster Verlierer.', '2. Platz. Knapp daneben ist auch vorbei.']),
-    pick(['3. Platz. Naja.', '3. – immerhin nicht Letzter.']),
-    pick(['Letzter. Peinlich, Digga.', 'Letzter. Die Bots lachen dich aus.']),
-  ][Math.min(place, 4) - 1];
+export function finishLine(place: number): Line {
+  if (!rude()) return { text: place === 1 ? 'SIEG!' : `${place}. Platz!`, clip: '' };
+  return announce(`place${Math.min(place, 4)}`)!;
 }
 
 /** Title of the result board. */
@@ -91,70 +87,35 @@ export function podiumLine(place: number): string {
   return 'Siegerehrung';
 }
 
-// --- character trash talk (speech bubbles over the runners) ------------------------------
+// --- character trash talk and the announcer (texts + recorded voices) ---------------------
 
-interface Talk {
-  /** When using the character ability. */
-  ability: readonly string[];
-  /** When dying. */
-  death: readonly string[];
-  /** When winning the race. */
-  win: readonly string[];
+type Moment = 'ability' | 'death' | 'win' | 'hit' | 'pass' | 'passed' | 'swallowed' | 'stunned' | 'start';
+const TALK = (voiceLines as unknown as { talk: Record<string, Record<Moment, string[]>> }).talk;
+const ANNOUNCER = (voiceLines as unknown as { announcer: Record<string, string[]> }).announcer;
+
+export type TalkMoment = Moment;
+
+export interface Line {
+  text: string;
+  /** Recorded voice clip (public/assets/audio/…, without .mp3). */
+  clip: string;
 }
 
-const TALK: Record<string, Talk> = {
-  hase: {
-    ability: ['Hoch wie ich, Baby!', 'Chill mal, Digga.', 'Das Kraut gibt Flügel.'],
-    death: ['Sorry, war high.', 'Scheiße, wo bin ich?', 'Mein Königreich für ’nen Snack.'],
-    win: ['Ganz entspannt. Hab ich doch gesagt.', 'Der König hat gesprochen. Oder gelallt.'],
-  },
-  katze: {
-    ability: ['NEUN ESPRESSO, FICK DICH!', 'Koffein > Talent.', 'Zu langsam, Schlafmütze!'],
-    death: ['Verdammt, mein Becher!', 'Ich brauch mehr Kaffee. Und ’ne Waffe.', 'Fuck. Einfach nur fuck.'],
-    win: ['Morgens halb zehn und du bist Letzter.', 'Wach sein ist ein Vorteil, du Penner.'],
-  },
-  ratte: {
-    ability: ['BOOM, Bitch!', 'Geht hoch, meine Kleinen!', 'Hoppla, Lunte!'],
-    death: ['Scheiße, falsches Kabel!', 'Upsi. Das war ein Körperteil.', 'Hab mich selbst gezündet. Klassiker.'],
-    win: ['Alles in die Luft, nur ich nicht!', 'Wer zuletzt explodiert, gewinnt.'],
-  },
-  otter: {
-    ability: ['Probier mal. Schmeckt nach Tod.', 'Frisch aus dem Labor, Baby.', 'Nicht legal, aber geil.'],
-    death: ['Shit, die Dosis war zu hoch.', 'Nebenwirkungen: sterben.', 'Das war nicht das Gegengift.'],
-    win: ['Chemie, du Opfer!', 'Doping? Nennen wir es Wissenschaft.'],
-  },
-  kraehe: {
-    ability: ['Deine Mutter lutscht Schwänze in der Hölle!', 'Verflucht! Gegen Aufpreis doppelt.', 'Dein Pech ist mein Geschäftsmodell.'],
-    death: ['Wer hat mich verflucht?! Ich will Provision!', 'Verdammter Mist, Rabattaktion vorbei.'],
-    win: ['Glück kann man kaufen. Bei mir.', 'Eure Seelen gehören jetzt mir. AGB lesen!'],
-  },
-  dachs: {
-    ability: ['Fass, ihr kleinen Scheißer!', 'Sitz. Platz. Verrecke.', 'Meine Ratten haben Tollwut. Viel Spaß.'],
-    death: ['Böse Ratten! Kein Käse heute!', 'Verdammte Viecher, ihr solltet DIE beißen!'],
-    win: ['Applaus für die Ratten. Und für mich.', 'Dressur ist alles, ihr Amateure.'],
-  },
-  maulwurf: {
-    ability: ['Der Herr vergibt. Ich nicht.', 'Steine heilen. Dich nicht.', 'Unverwundbar durch Quarz, Bitch!'],
-    death: ['Amen, Arschloch.', 'Der Stein war wohl gefälscht.', 'Scheiße, falsches Chakra.'],
-    win: ['Gesegnet sei mein Vorsprung.', 'Gott ist mit mir. Ihr seid mit euch.'],
-  },
-  chinchilla: {
-    ability: ['Das Orakel sagt: Fuck you.', 'Du wirst weich fallen. Oder auch nicht.', 'Die Sterne lügen nie, du Lappen.'],
-    death: ['Das hab ich nicht kommen sehen. Peinlich.', 'Meine Kristallkugel ist kaputt, verdammt!'],
-    win: ['Ich sah es voraus, Schätzchen.', 'Die Karten sagen: Ihr seid Opfer.'],
-  },
-  schildkroete: {
-    ability: ['DAS WIRD FARBENFROH!', 'Feuerwerk ist Kunst, du Banause!', 'Ohren zu, Arsch auf!'],
-    death: ['Oh shit, zu früh gezündet.', 'Panzer hilft auch nicht gegen alles.', 'Meine Augenbrauen! Schon wieder!'],
-    win: ['Langsam? Ich? Fick dich, Hase!', 'Das große Finale, Baby!'],
-  },
-};
-
-export type TalkMoment = keyof Talk;
-
 /** A trash-talk line of a character, or null when rude lines are off. */
-export function talk(character: string, moment: TalkMoment): string | null {
+export function talk(character: string, moment: TalkMoment): Line | null {
   if (!rude()) return null;
-  const t = TALK[character];
-  return t ? pick(t[moment]) : null;
+  const list = TALK[character]?.[moment];
+  if (!list?.length) return null;
+  const i = Math.floor(Math.random() * list.length);
+  return { text: list[i], clip: `voice/${character}/${moment}-${i}` };
+}
+
+/** A line of the announcer (key as in voice-lines.json, e.g. "go", "place1", "lead"). */
+export function announce(key: string): Line | null {
+  // family mode: the announcer only counts down
+  if (!rude() && !key.startsWith('count')) return null;
+  const list = ANNOUNCER[key];
+  if (!list?.length) return null;
+  const i = Math.floor(Math.random() * list.length);
+  return { text: list[i], clip: `voice/announcer/${key}-${i}` };
 }

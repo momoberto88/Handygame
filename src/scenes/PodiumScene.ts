@@ -9,7 +9,7 @@ import { createRunner } from '../sim/race';
 import { panel, textButton } from '../ui/widgets';
 import { goToMenu } from './flow';
 import { uiText } from './HudScene';
-import { podiumLine } from '../meta/lines';
+import { announce, podiumLine } from '../meta/lines';
 import { TEAMS, cupTeamScores, scoreLine } from '../meta/teams';
 
 export interface PodiumData {
@@ -59,6 +59,8 @@ export class PodiumScene extends Phaser.Scene {
       });
     }
     sfx.play(myPlace === 1 ? 'finish' : 'go');
+    const cheer = myPlace === 1 ? announce('cupWin') : null;
+    if (cheer) this.time.delayedCall(1500, () => sfx.speak(cheer.clip, 5));
 
     // background: evening sky with light beams
     const bg = this.add.graphics();

@@ -10,7 +10,7 @@ import { currentRoom } from '../net/room';
 import { hostStartRace, startCupRace, startLocalRace } from './flow';
 import { activeCup, addRaceResult, cupRanking, isLastRace, lastOut, racerKey, setActiveCup } from '../meta/cup';
 import { uiText } from './HudScene';
-import { resultComment, resultTitle } from '../meta/lines';
+import { announce, resultComment, resultTitle } from '../meta/lines';
 import { TEAMS, cupTeamScores, scoreLine, teamScores } from '../meta/teams';
 
 export const TROPHIES_FOR_PLACE = [10, 6, 3, 1];
@@ -54,6 +54,10 @@ export class ResultScene extends Phaser.Scene {
     const cup = activeCup();
     if (cup) addRaceResult(cup, standings.map((r) => session.racers[r.id]));
     sfx.play(place === 1 ? 'finish' : place <= 2 ? 'go' : 'lose');
+    // the announcer: team result, or who is out of the K.-o. cup
+    const koOut = cup && lastOut(cup);
+    const shout = teams && !watching ? announce(teamWin ? 'teamWin' : 'teamLose') : koOut ? announce('out') : null;
+    if (shout) this.time.delayedCall(700, () => sfx.speak(shout.clip, 5));
 
     this.add.rectangle(0, 0, W, H, 0x0d0a1a, 0.55).setOrigin(0, 0);
     const pw = Math.min(560, W - 40);

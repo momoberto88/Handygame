@@ -380,7 +380,7 @@ export class Race {
     }
   }
 
-  kill(r: RunnerState, kind: DeathKind, byItem: boolean, events: SimEvent[]): KillResult {
+  kill(r: RunnerState, kind: DeathKind, byItem: boolean, events: SimEvent[], by?: number): KillResult {
     if (r.mode !== 'run') return 'immune';
     if (kind !== 'fall') {
       if (r.ghost > 0) return 'immune';
@@ -397,7 +397,7 @@ export class Race {
     r.boost = 0;
     r.sliding = false;
     r.diving = false;
-    events.push({ t: 'death', r: r.id, kind, x: r.x, y: r.y });
+    events.push(by === undefined ? { t: 'death', r: r.id, kind, x: r.x, y: r.y } : { t: 'death', r: r.id, kind, x: r.x, y: r.y, by });
     r.vx = 0;
     r.vy = 0;
     return 'killed';
@@ -473,7 +473,7 @@ export class Race {
       o.stun = STUN_TIME;
       o.boost = 0;
       o.vx *= 0.4;
-      events.push({ t: 'stunned', r: o.id });
+      events.push({ t: 'stunned', r: o.id, by: r.id });
     }
   }
 
@@ -579,7 +579,7 @@ export class Race {
         break;
       case 'lightning':
         events.push({ t: 'lightning', r: r.id });
-        for (const o of this.runners) if (this.isRival(r.id, o.id)) this.kill(o, 'zap', true, events);
+        for (const o of this.runners) if (this.isRival(r.id, o.id)) this.kill(o, 'zap', true, events, r.id);
         break;
       case 'shield':
         r.shield = SHIELD_TIME;
@@ -674,7 +674,7 @@ export class Race {
         for (const o of this.runners) {
           if (o.mode !== 'run' || (o.id === p.owner && p.ownerSafe > 0) || this.isTeammate(p.owner, o.id)) continue;
           if (!circleHitsBox(p.x, p.y, radius, runnerBox(o))) continue;
-          const res = this.kill(o, p.kind === 'saw' ? 'slice' : 'boom', true, events);
+          const res = this.kill(o, p.kind === 'saw' ? 'slice' : 'boom', true, events, p.owner);
           if (res === 'immune') continue;
           alive = false;
           if (p.kind === 'rocket') events.push({ t: 'explode', x: p.x, y: p.y });
@@ -694,7 +694,7 @@ export class Race {
       for (const o of this.runners) {
         if (o.mode !== 'run' || !o.grounded || (o.id === trap.owner && trap.ownerSafe > 0) || this.isTeammate(trap.owner, o.id)) continue;
         if (Math.abs(o.x - trap.x) > 18 || Math.abs(o.y - trap.y) > 10) continue;
-        if (this.kill(o, 'trap', true, events) !== 'immune') return false;
+        if (this.kill(o, 'trap', true, events, trap.owner) !== 'immune') return false;
       }
       return true;
     });
