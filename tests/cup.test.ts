@@ -43,3 +43,35 @@ describe('cup', () => {
     expect(randomCourses(8, 42)).toEqual(list);
   });
 });
+
+import { GhostRecorder, ghostAt, GHOST_EVERY } from '../src/meta/ghost';
+import { createRunner } from '../src/sim/race';
+import { DT } from '../src/sim/constants';
+
+describe('ghost of the best run', () => {
+  it('records every few ticks and replays smoothly in between', () => {
+    const rec = new GhostRecorder();
+    const r = createRunner(0, 0, 400);
+    for (let tick = 0; tick <= 60; tick++) {
+      r.x = tick * 5;
+      r.grounded = tick < 30;
+      rec.sample(tick, tick * DT, r);
+    }
+    expect(rec.frames.length / 3).toBe(Math.floor(60 / GHOST_EVERY) + 1);
+    // slow frame rate: only every 7th tick is sampled, the timeline must still line up
+    const slow = new GhostRecorder();
+    for (let tick = 0; tick <= 60; tick += 7) {
+      r.x = tick * 5;
+      slow.sample(tick, tick * DT, r);
+    }
+    expect(slow.frames.length / 3).toBe(Math.floor(56 / GHOST_EVERY) + 1);
+    const g = { courseId: 'x', time: 1, character: 'hase', frames: rec.frames };
+    const s = createRunner(1, 0, 0);
+    expect(ghostAt(g, 10 * DT, s)).toBe(true);
+    expect(s.x).toBeCloseTo(50, 5);
+    expect(s.grounded).toBe(true);
+    expect(ghostAt(g, 45 * DT, s)).toBe(true);
+    expect(s.grounded).toBe(false);
+    expect(ghostAt(g, 5, s)).toBe(false); // finished
+  });
+});

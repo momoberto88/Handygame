@@ -15,6 +15,8 @@ import { TrackView } from '../render/TrackView';
 import type { HudScene } from './HudScene';
 import { BotBrain } from '../sim/bot';
 import { debugParam } from './flow';
+import { GhostRecorder, ghostAt, loadGhost, offerGhost, type Ghost } from '../meta/ghost';
+import { createRunner } from '../sim/race';
 
 /** World pixels visible from top to bottom of the race view (camera distance setting). */
 function raceViewH(): number {
@@ -69,6 +71,7 @@ export class RaceScene extends Phaser.Scene {
       view.setDepth(isLocal ? 36 : 32 + info.id * 0.1);
       this.views.push(view);
     }
+    this.setupGhost();
 
     // The race camera is a bit closer than the menus so the runners read well on small phones.
     this.camera = new CameraDirector(this.cameras.main, () => viewZoom(this) * (VIEW_H / raceViewH()));
@@ -87,6 +90,49 @@ export class RaceScene extends Phaser.Scene {
     return input;
   }
 
+  /** Offline races on a fixed or editor course record the run and replay the best one as a ghost. */
+  private recorder: GhostRecorder | null = null;
+  private ghost: Ghost | null = null;
+  private ghostView: RunnerView | null = null;
+  private ghostState = createRunner(99, 0, 0);
+  private ghostSaved = false;
+
+  private setupGhost() {
+    this.recorder = null;
+    this.ghost = null;
+    this.ghostView = null;
+    this.ghostSaved = false;
+    const courseId = this.session.race.courseId;
+    if (this.session.online || !courseId) return;
+    this.recorder = new GhostRecorder();
+    this.ghost = loadGhost(courseId);
+    if (this.ghost) {
+      this.ghostView = new RunnerView(this, characterById(this.ghost.character), false, `Geist ${this.ghost.time.toFixed(1)} s`);
+      this.ghostView.setDepth(19);
+    }
+  }
+
+  private updateGhost(dt: number) {
+    const { race } = this.session;
+    const me = race.runners[this.session.localId];
+    this.recorder?.sample(race.tick, race.time, me);
+    if (this.ghost && this.ghostView) {
+      const visible = ghostAt(this.ghost, race.time, this.ghostState);
+      this.ghostView.root.setVisible(visible);
+      if (visible) {
+        this.ghostView.update(this.ghostState, this.ghostState.x, this.ghostState.y, dt, race.clock);
+        this.ghostView.root.setAlpha(0.4); // the view animates its own alpha; keep the ghost see-through
+      }
+    }
+    if (this.recorder && !this.ghostSaved && me.mode === 'finished' && me.finishTime > 0 && race.courseId) {
+      this.ghostSaved = true;
+      const info = this.session.racers[this.session.localId];
+      const allowed = !info.isBot || debugParam('ghost') !== null; // autopilot tests can record too
+      const saved = allowed && offerGhost({ courseId: race.courseId, time: me.finishTime, character: info.character, frames: this.recorder.frames });
+      if (saved && this.ghost) this.hud?.toast('Neue Bestzeit – dein Geist ist gespeichert!', '#9ff3ff');
+    }
+  }
+
   update(_time: number, delta: number) {
     const dt = delta / 1000;
     const events = this.session.update(delta, this.readInput());
@@ -99,6 +145,7 @@ export class RaceScene extends Phaser.Scene {
       this.views[i].update(r, x, y, dt, race.clock);
       if (r.boost > 0 && r.mode === 'run') this.fx.boostTrail(x, y);
     });
+    this.updateGhost(dt);
 
     this.dustTimer -= dt;
     if (this.dustTimer <= 0) {
