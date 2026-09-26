@@ -27,8 +27,15 @@ function covers(t: number): boolean {
   return isSolidTile(t) || t === Tile.SlopeUp || t === Tile.SlopeDown;
 }
 
+/** A ramp on a plank storey: a slope tile with nothing underneath. Drawn as a tilted plank. */
+export function isLedgeRamp(track: Track, col: number, row: number): boolean {
+  const t = tileAt(track, col, row);
+  return (t === Tile.SlopeUp || t === Tile.SlopeDown) && tileAt(track, col, row + 1) === Tile.Empty;
+}
+
 export function tileIndexFor(track: Track, col: number, row: number): number {
   const t = tileAt(track, col, row);
+  if (isLedgeRamp(track, col, row)) return -1;
   const vx = ((col % 4) + 4) % 4;
   const vy = ((row % 2) + 2) % 2;
   switch (t) {
@@ -234,8 +241,28 @@ export class TrackView {
       this.padBounce.push(p.kind === 'mega' ? -1 : 0);
     }
 
-    // moving platforms: the world's plank texture, repeated
+    // moving platforms and ramps on plank storeys: the world's plank texture, repeated
     const plankKey = scene.textures.exists(worldAssetKey(track.world, 'plank')) ? worldAssetKey(track.world, 'plank') : null;
+    for (let c = 0; c < track.cols; c++) {
+      for (let r = 0; r < track.rows; r++) {
+        if (!isLedgeRamp(track, c, r)) continue;
+        const up = tileAt(track, c, r) === Tile.SlopeUp;
+        const len = TILE * Math.SQRT2 + 4;
+        const cx = c * TILE + TILE / 2;
+        const cy = r * TILE + TILE / 2;
+        let obj: Phaser.GameObjects.TileSprite;
+        if (plankKey) {
+          const frame = scene.textures.getFrame(plankKey);
+          const scale = 16 / frame.height;
+          obj = scene.add.tileSprite(cx, cy, len / scale, frame.height, plankKey).setOrigin(0.5, 0.1).setScale(scale);
+          obj.tilePositionX = (c * 37) % frame.width;
+        } else {
+          obj = scene.add.tileSprite(cx, cy, len * ART_RES, 16 * ART_RES, `tiles-${track.world}`, 't144').setOrigin(0.5, 0).setScale(s);
+        }
+        obj.setRotation(up ? -Math.PI / 4 : Math.PI / 4).setDepth(11);
+        this.cull(obj, cx - TILE, cx + TILE);
+      }
+    }
     for (const m of track.movers) {
       let obj: Phaser.GameObjects.TileSprite;
       if (plankKey) {

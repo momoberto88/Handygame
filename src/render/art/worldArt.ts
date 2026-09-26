@@ -110,7 +110,7 @@ interface PaintedTiles {
   spikes: HTMLImageElement;
 }
 
-export const PAINTED_WORLDS: WorldId[] = ['jungle'];
+export const PAINTED_WORLDS: WorldId[] = ['jungle', 'mine', 'sky', 'neon', 'water', 'pirates', 'desert', 'shroom'];
 const PAINTED_TILE_FILES = ['fill', 'top', 'plank', 'spikes', 'bg'] as const;
 
 export function worldAssetKey(world: WorldId, file: string): string {

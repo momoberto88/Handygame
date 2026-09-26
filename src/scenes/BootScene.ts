@@ -20,6 +20,6 @@ export class BootScene extends Phaser.Scene {
     makeEyes(this);
     for (const c of CHARACTERS) makeCharacterArt(this, c);
     makeEntityArt(this);
-    this.scene.start('menu');
+    this.scene.start(new URLSearchParams(window.location.search).has('lineup') ? 'lineup' : 'menu');
   }
 }

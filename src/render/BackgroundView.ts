@@ -22,6 +22,9 @@ export class BackgroundView {
       const frame = scene.textures.getFrame(paintedKey);
       this.paintedH = frame.height;
       this.painted = scene.add.tileSprite(0, 0, frame.width, frame.height, paintedKey).setOrigin(0, 0).setDepth(-10).setScrollFactor(0);
+      // Dim the busy painting a little so platforms and runners stand out (Fun Run keeps its
+      // backdrops calm for the same reason).
+      this.painted.setTint(0xa9aebc);
       return;
     }
     const keys = makeBackground(scene, world);
