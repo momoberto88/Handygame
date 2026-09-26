@@ -141,6 +141,18 @@ export class HudScene extends Phaser.Scene {
     });
 
     this.layout();
+    if (session.spectator) {
+      // knocked out of a K.-o. cup: no controls, just a banner
+      for (const b of [this.jumpBtn, this.slideBtn, this.itemBtn, this.abilityBtn]) {
+        b.bg.setVisible(false);
+        b.icon.setVisible(false);
+      }
+      this.abilityIcon.setVisible(false);
+      this.abilityRing.setVisible(false);
+      this.itemIcon.setAlpha(0);
+      const watched = session.racers[session.localId]?.name ?? '';
+      uiText(this, this.W / 2, VIEW_H - 40, `👀 Du bist raus – du schaust ${watched} zu`, 22, '#ffd84a').setOrigin(0.5);
+    }
     this.scale.on('resize', this.onResize, this);
     this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
 
@@ -254,6 +266,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   readInput(): LocalInput {
+    if (this.raceScene.session.spectator) return { jump: false, slide: false, use: 0 };
     let jump = false;
     let slide = false;
     for (const p of this.input.manager.pointers) {
@@ -377,7 +390,11 @@ export class HudScene extends Phaser.Scene {
     });
     this.wallMarker.setPosition(toBar(race.wallX), y).setVisible(race.wallX > t.startX);
 
-    // item slot
+    // item slot (spectators have no controls)
+    if (session.spectator) {
+      this.updateEdgeMarkers();
+      return;
+    }
     if (me.rolling > 0) {
       this.rollTimer -= dt;
       if (this.rollTimer <= 0) {

@@ -6,6 +6,8 @@ export interface RacerInfo {
   name: string;
   character: string;
   isBot: boolean;
+  /** Room seat of a human player (stable between races, unlike the racer id). */
+  seat?: number;
   /** Accessories (hat, glasses, outfit ids). */
   cosmetics?: { hat: string | null; glasses: string | null; outfit: string | null };
 }
@@ -30,6 +32,8 @@ export interface RaceSession {
   /** 0..1 position between the previous and the current tick, for smooth rendering. */
   readonly alpha: number;
   readonly online: boolean;
+  /** Knocked out of a K.-o. cup: just watching `localId`, no controls. */
+  readonly spectator?: boolean;
   update(dtMs: number, input: LocalInput): SimEvent[];
   prevPosition(id: number): { x: number; y: number };
   /** Visual correction applied on top of the simulated position (smooths network corrections). */

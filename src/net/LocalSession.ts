@@ -31,6 +31,8 @@ export interface LocalSetup {
   racers: RacerInfo[];
   botLevel: 'easy' | 'normal' | 'hard';
   localId: number;
+  /** Only bots race; the phone watches racer `localId`. */
+  spectator?: boolean;
 }
 
 /** Offline race against computer opponents. */
@@ -39,6 +41,7 @@ export class LocalSession implements RaceSession {
   readonly racers: RacerInfo[];
   readonly localId: number;
   readonly online = false;
+  readonly spectator: boolean;
   private brains: (BotBrain | null)[];
   private clock = new TickClock();
   private pendingUse: -1 | 0 | 1 = 0;
@@ -48,6 +51,7 @@ export class LocalSession implements RaceSession {
     this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers) });
     this.racers = setup.racers;
     this.localId = setup.localId;
+    this.spectator = setup.spectator ?? false;
     this.brains = setup.racers.map((r, i) =>
       r.isBot ? new BotBrain(setup.seed + i * 7919, botProfile(setup.botLevel, i)) : null,
     );

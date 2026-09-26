@@ -26,6 +26,7 @@ export class ClientSession implements RaceSession {
   readonly racers: RacerInfo[];
   readonly localId: number;
   readonly online = true;
+  readonly spectator: boolean;
   alpha = 0;
   private acc = 0;
   private seq = 0;
@@ -46,6 +47,7 @@ export class ClientSession implements RaceSession {
     this.race = new Race({ seed: start.seed, world: start.world, runnerCount: start.racers.length, courseId: start.courseId, abilities: abilitiesOf(start.racers) });
     this.racers = start.racers;
     this.localId = start.you;
+    this.spectator = start.spectator ?? false;
     const me = this.race.runners[this.localId];
     this.prevLocal = { x: me.x, y: me.y };
     room.onHostMessage = this.onHostMessage;
@@ -74,12 +76,13 @@ export class ClientSession implements RaceSession {
     this.hostTick += dt * TICKS_PER_SEC;
     this.race.tick = Math.max(0, Math.floor(this.hostTick));
 
-    if (input.use) this.room.send({ t: 'use', dir: input.use });
-    if (input.ability) this.room.send({ t: 'ab' });
+    if (!this.spectator && input.use) this.room.send({ t: 'use', dir: input.use });
+    if (!this.spectator && input.ability) this.room.send({ t: 'ab' });
     this.acc += dt * 1000;
     while (this.acc >= TICK_MS) {
       this.acc -= TICK_MS;
       const inp = { s: ++this.seq, j: (input.jump ? 1 : 0) as 0 | 1, d: (input.slide ? 1 : 0) as 0 | 1 };
+      if (this.spectator) continue;
       this.history.push(inp);
       if (this.history.length > 180) this.history.shift();
       this.room.send({ t: 'in', ...inp });
@@ -103,7 +106,7 @@ export class ClientSession implements RaceSession {
   }
 
   private canPredict(): boolean {
-    return this.started && this.local.mode === 'run' && !this.race.over && this.hostTick >= COUNTDOWN_TIME * TICKS_PER_SEC;
+    return !this.spectator && this.started && this.local.mode === 'run' && !this.race.over && this.hostTick >= COUNTDOWN_TIME * TICKS_PER_SEC;
   }
 
   private applySnapshot(snap: SnapshotMsg, events: SimEvent[]) {
@@ -137,10 +140,10 @@ export class ClientSession implements RaceSession {
     this.buffer.push({ k: snap.k, states });
     if (this.buffer.length > 40) this.buffer.shift();
 
-    this.reconcile(states[this.localId], snap.a);
+    if (!this.spectator) this.reconcile(states[this.localId], snap.a);
 
     for (const e of snap.ev) {
-      if ((e.t === 'jump' || e.t === 'land' || e.t === 'slam') && e.r === this.localId) continue;
+      if ((e.t === 'jump' || e.t === 'land' || e.t === 'slam') && e.r === this.localId && !this.spectator) continue;
       if (e.t === 'coin') race.coinTaken[e.r][e.coin] = 1;
       events.push(e);
     }
@@ -187,7 +190,7 @@ export class ClientSession implements RaceSession {
     const span = b.k - a.k;
     const t = span > 0 ? Math.min(1, Math.max(0, (rt - a.k) / span)) : 1;
     this.race.runners.forEach((r, id) => {
-      if (id === this.localId) return;
+      if (id === this.localId && !this.spectator) return;
       const sa = a.states[id];
       const sb = b.states[id];
       const x = sa.x + (sb.x - sa.x) * t;
@@ -202,7 +205,7 @@ export class ClientSession implements RaceSession {
   }
 
   prevPosition(id: number) {
-    if (id === this.localId) {
+    if (id === this.localId && !this.spectator) {
       const me = this.local;
       if (Math.abs(this.prevLocal.x - me.x) > 80 || Math.abs(this.prevLocal.y - me.y) > 80) return { x: me.x, y: me.y };
       return this.prevLocal;

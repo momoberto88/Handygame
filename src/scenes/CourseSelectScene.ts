@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
-import { randomCourses } from '../meta/cup';
+import { KO_RACES, randomCourses } from '../meta/cup';
 import { loadSave } from '../meta/save';
 import { currentRoom } from '../net/room';
 import { WORLDS } from '../render/worlds';
@@ -68,10 +68,10 @@ export class CourseSelectScene extends Phaser.Scene {
   }
 
   /** Room mode: store the choice for the lobby and go back there. */
-  private useForRoom(name: string, courses: string[]) {
+  private useForRoom(name: string, courses: string[], ko = false) {
     const room = currentRoom();
     if (room) {
-      room.playlist = { name, courses };
+      room.playlist = ko ? { name, courses, ko } : { name, courses };
       room.broadcastLobby();
     }
     this.scene.start('lobby');
@@ -108,15 +108,22 @@ export class CourseSelectScene extends Phaser.Scene {
       this.ui.add(b.container);
     });
     this.ui.add(
-      textButton(this, lx, 292, lw, 50, '🎲 Zufalls-Cup (4)', 0x9b7aff, () => {
+      textButton(this, lx, 290, lw, 46, '🎲 Zufalls-Cup (4)', 0x9b7aff, () => {
         const courses = randomCourses(4, randomSeed());
         if (room) this.useForRoom('Zufalls-Cup', courses);
         else startSoloCup(this, 'random', 'Zufalls-Cup', courses);
       }, 18).container,
     );
+    this.ui.add(
+      textButton(this, lx, 344, lw, 46, '🥊 K.-o.-Cup', 0xe05aa8, () => {
+        const courses = randomCourses(KO_RACES, randomSeed());
+        if (room) this.useForRoom('K.-o.-Cup', courses, true);
+        else startSoloCup(this, 'ko', 'K.-o.-Cup', courses, 'ko');
+      }, 18).container,
+    );
     if (room) {
       this.ui.add(
-        textButton(this, lx, 352, lw, 50, '🎲 Jedes Rennen neu', 0x8a84a8, () => this.useForRoom('Zufall', []), 18).container,
+        textButton(this, lx, 398, lw, 46, '🎲 Jedes Rennen neu', 0x8a84a8, () => this.useForRoom('Zufall', []), 18).container,
       );
     }
 
@@ -124,9 +131,9 @@ export class CourseSelectScene extends Phaser.Scene {
     const own = textButton(
       this,
       lx,
-      room ? 422 : 372,
+      room ? 452 : 406,
       lw,
-      54,
+      48,
       this.building ? 'Auswahl abbrechen' : '✏️ Eigener Cup',
       this.building ? 0x8a84a8 : 0xffa94a,
       () => {
@@ -139,14 +146,14 @@ export class CourseSelectScene extends Phaser.Scene {
     this.ui.add(own.container);
     if (this.building) {
       const n = this.picked.length;
-      const go = textButton(this, lx, room ? 486 : 436, lw, 54, n >= 2 ? `${room ? 'Übernehmen' : 'Cup starten'} (${n})` : 'Tippe 2–8 Strecken', 0x5fd35a, () => {
+      const go = textButton(this, lx, room ? 506 : 462, lw, 48, n >= 2 ? `${room ? 'Übernehmen' : 'Cup starten'} (${n})` : 'Tippe 2–8 Strecken', 0x5fd35a, () => {
         if (room) this.useForRoom('Eigener Cup', this.picked);
         else startSoloCup(this, 'custom', 'Eigener Cup', this.picked);
       }, 19);
       go.setEnabled(n >= 2);
       this.ui.add(go.container);
     } else if (!room) {
-      this.ui.add(uiText(this, lx, 436, 'oder rechts eine Strecke\nfür ein Einzelrennen antippen', 15, '#c9c2e8').setOrigin(0.5).setAlign('center'));
+      this.ui.add(uiText(this, lx, 470, 'oder rechts eine Strecke\nfür ein Einzelrennen antippen', 15, '#c9c2e8').setOrigin(0.5).setAlign('center'));
     }
 
     // --- right: the 12 courses ----------------------------------------------------------

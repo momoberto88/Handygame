@@ -103,7 +103,7 @@ export class RaceScene extends Phaser.Scene {
     this.ghostView = null;
     this.ghostSaved = false;
     const courseId = this.session.race.courseId;
-    if (this.session.online || !courseId) return;
+    if (this.session.online || this.session.spectator || !courseId) return;
     this.recorder = new GhostRecorder();
     this.ghost = loadGhost(courseId);
     if (this.ghost) {

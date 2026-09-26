@@ -15,6 +15,7 @@ type View = 'choose' | 'join' | 'busy' | 'room';
 /** Short description of the host's course choice, e.g. "Pilz-Cup (4 Rennen)". */
 function playlistLabel(p: Playlist): string {
   if (p.vote) return '🗳 Abstimmung';
+  if (p.ko) return `🥊 K.-o.-Cup (${p.courses.length} Rennen)`;
   if (!p.courses.length) return 'Zufall';
   if (p.courses.length === 1) return p.name;
   return `${p.name} (${p.courses.length} Rennen)`;

@@ -35,6 +35,8 @@ export interface Playlist {
   courses: string[];
   /** Before every race the phones vote on three random courses. */
   vote?: boolean;
+  /** K.-o. cup: the last one of every race is out. */
+  ko?: boolean;
 }
 
 /** A running course vote: the options, who voted for what ([seat, option]) and seconds left. */
@@ -79,7 +81,7 @@ export type HostMsg =
   | { t: 'welcome'; seat: number }
   | { t: 'reject'; reason: string }
   | { t: 'lobby'; players: LobbyPlayer[]; playlist: Playlist; racing: boolean; vote?: VoteState }
-  | { t: 'start'; seed: number; world: WorldId; courseId?: string; racers: RacerInfo[]; you: number; cup?: CupState }
+  | { t: 'start'; seed: number; world: WorldId; courseId?: string; racers: RacerInfo[]; you: number; cup?: CupState; spectator?: boolean }
   | SnapshotMsg;
 
 // ---------------------------------------------------------------------------------------------

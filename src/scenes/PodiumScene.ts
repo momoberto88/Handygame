@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { sfx } from '../audio/sfx';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
 import { characterById } from '../meta/characters';
-import { cupRanking, setActiveCup, type CupState } from '../meta/cup';
+import { cupRanking, setActiveCup, type CupEntry, type CupState } from '../meta/cup';
 import { writeSave } from '../meta/save';
 import { RunnerView } from '../render/RunnerView';
 import { createRunner } from '../sim/race';
@@ -37,6 +37,14 @@ export class PodiumScene extends Phaser.Scene {
     const H = VIEW_H;
     const ranking = cupRanking(data.cup);
     const myPlace = ranking.findIndex((e) => e.key === data.me) + 1;
+    const out = data.cup.out ?? [];
+    // points cup: points; K.-o. cup: how far each one got
+    const result = (e: CupEntry, place: number) => {
+      if (data.cup.mode !== 'ko') return `${e.points} Punkte`;
+      if (place === 1) return '🏆 Sieger';
+      if (place === 2) return 'im Finale';
+      return `raus in Rennen ${out.indexOf(e.key) + 1}`;
+    };
 
     // rewards (once per cup)
     if (myPlace > 0) {
@@ -89,13 +97,13 @@ export class PodiumScene extends Phaser.Scene {
       });
       const isMe = e.key === data.me;
       uiText(this, x, baseY + 16, `${e.name}${e.isBot ? ' 🤖' : ''}`, 20, isMe ? '#fff2b0' : '#ffffff').setOrigin(0.5, 0);
-      uiText(this, x, baseY + 42, `${e.points} Punkte`, 17, '#ffd84a').setOrigin(0.5, 0);
+      uiText(this, x, baseY + 42, result(e, b.place), 17, '#ffd84a').setOrigin(0.5, 0);
     }
     // 4th place and my reward on a small panel
     const fourth = ranking[3];
     const px = W - 150;
     panel(this, px, 170, 250, 150);
-    uiText(this, px, 118, fourth ? `4. ${fourth.name} – ${fourth.points} P.` : '', 16, '#1d1a2f').setOrigin(0.5).setStroke('#a39c8c', 0);
+    uiText(this, px, 118, fourth ? `4. ${fourth.name} – ${result(fourth, 4).replace(' Punkte', ' P.')}` : '', 16, '#1d1a2f').setOrigin(0.5).setStroke('#a39c8c', 0);
     if (myPlace > 0) {
       uiText(this, px, 160, `+${CUP_COINS[myPlace - 1]} Münzen`, 22, '#ffe68a').setOrigin(0.5);
       uiText(this, px, 196, `+${CUP_TROPHIES[myPlace - 1]} Pokale`, 22, '#ffffff').setOrigin(0.5);

@@ -75,3 +75,24 @@ describe('ghost of the best run', () => {
     expect(ghostAt(g, 5, s)).toBe(false); // finished
   });
 });
+
+import { KO_RACES, lastOut, stillIn } from '../src/meta/cup';
+
+describe('K.-o. cup', () => {
+  it('drops the last one every race and ranks by who lasted longest', () => {
+    const P = (id: number, name: string, isBot = true): RacerInfo => ({ id, name, character: name, isBot, seat: isBot ? undefined : id });
+    const [me, b1, b2, b3] = [P(0, 'Ich', false), P(1, 'A'), P(2, 'B'), P(3, 'C')];
+    const cup = newCup('ko', 'K.-o.', ['a', 'b', 'c'], 1, 'ko');
+    expect(cup.courses).toHaveLength(KO_RACES);
+    addRaceResult(cup, [b1, me, b2, b3]); // C is out
+    expect(lastOut(cup)?.name).toBe('C');
+    expect(stillIn(cup, [me, b1, b2, b3]).map((r) => r.name)).toEqual(['Ich', 'A', 'B']);
+    cup.index = 1;
+    addRaceResult(cup, [me, b1, b2]); // B is out
+    expect(stillIn(cup, [me, b1, b2, b3]).map((r) => r.name)).toEqual(['Ich', 'A']);
+    cup.index = 2;
+    addRaceResult(cup, [b1, me]); // final: A wins
+    expect(isLastRace(cup)).toBe(true);
+    expect(cupRanking(cup).map((e) => e.name)).toEqual(['A', 'Ich', 'B', 'C']);
+  });
+});

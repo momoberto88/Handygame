@@ -26,13 +26,17 @@ export interface HostSetup {
   racers: RacerInfo[];
   /** seat → racer id for every remote human. */
   seatToRacer: Map<number, number>;
+  /** The host is knocked out and watches racer `watch`. */
+  spectator?: boolean;
+  watch?: number;
 }
 
 /** The hosting phone: runs the authoritative race and streams snapshots to the others. */
 export class HostSession implements RaceSession {
   readonly race: Race;
   readonly racers: RacerInfo[];
-  readonly localId = 0;
+  readonly localId: number;
+  readonly spectator: boolean;
   readonly online = true;
   private brains: (BotBrain | null)[];
   private remotes = new Map<number, RemotePlayer>();
@@ -49,6 +53,8 @@ export class HostSession implements RaceSession {
   ) {
     this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers) });
     this.racers = setup.racers.map((r) => ({ ...r }));
+    this.spectator = setup.spectator ?? false;
+    this.localId = this.spectator ? (setup.watch ?? 0) : 0;
     this.brains = this.racers.map((r, i) => (r.isBot ? new BotBrain(setup.seed + i * 7919, botProfile('normal', i)) : null));
     for (const [seat, id] of setup.seatToRacer) {
       this.remotes.set(id, { seat, queue: [], last: { j: 0, d: 0 }, ack: 0, use: 0, ability: false });
@@ -99,7 +105,7 @@ export class HostSession implements RaceSession {
       const inputs: RunnerInput[] = this.racers.map((info) => {
         const brain = this.brains[info.id];
         if (brain) return brain.think(this.race, info.id);
-        if (info.id === this.localId) {
+        if (info.id === this.localId && !this.spectator) {
           const use = this.pendingUse;
           const ability = this.pendingAbility;
           this.pendingUse = 0;

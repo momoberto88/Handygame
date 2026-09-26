@@ -10,7 +10,7 @@ import { Rng, randomSeed } from '../sim/rng';
 import type { WorldId } from '../sim/types';
 import { WORLD_ORDER } from '../render/worlds';
 import { COURSES, courseById } from '../sim/track/courses';
-import { activeCup, isLastRace, newCup, randomCourses, setActiveCup, type CupState } from '../meta/cup';
+import { activeCup, isLastRace, newCup, randomCourses, setActiveCup, stillIn, type CupState } from '../meta/cup';
 import { VOTE_SECONDS } from '../net/protocol';
 
 export function playerName(): string {
@@ -41,7 +41,10 @@ export function debugParam(name: string): string | null {
   return new URLSearchParams(window.location.search).get(name);
 }
 
-export function startLocalRace(scene: Phaser.Scene, opts: { courseId?: string; world?: WorldId; racers?: RacerInfo[]; keepCup?: boolean } = {}) {
+export function startLocalRace(
+  scene: Phaser.Scene,
+  opts: { courseId?: string; world?: WorldId; racers?: RacerInfo[]; keepCup?: boolean; spectator?: boolean } = {},
+) {
   if (!opts.keepCup) setActiveCup(null);
   const save = loadSave();
   const seed = Number(debugParam('seed')) || randomSeed();
@@ -50,7 +53,7 @@ export function startLocalRace(scene: Phaser.Scene, opts: { courseId?: string; w
   if (!courseId && !world) courseId = COURSES[seed % COURSES.length].id;
   if (courseId) world = courseById(courseId).world;
   const autoplay = debugParam('autoplay') !== null;
-  const me: RacerInfo = { id: 0, name: playerName(), character: save.character, isBot: autoplay, cosmetics: save.equipped };
+  const me: RacerInfo = { id: 0, seat: 0, name: playerName(), character: save.character, isBot: autoplay, cosmetics: save.equipped };
   const racers = opts.racers ?? fillWithBots([me], 4, seed);
   const session = new LocalSession({
     seed,
@@ -59,15 +62,16 @@ export function startLocalRace(scene: Phaser.Scene, opts: { courseId?: string; w
     racers,
     botLevel: save.stats.races < 2 ? 'easy' : save.stats.wins > save.stats.races * 0.5 ? 'hard' : 'normal',
     localId: 0,
+    spectator: opts.spectator,
   });
   startRace(scene, session);
 }
 
 /** Starts an offline cup against bots (fixed cups, a custom selection or random courses). */
-export function startSoloCup(scene: Phaser.Scene, id: string, name: string, courses: string[]) {
+export function startSoloCup(scene: Phaser.Scene, id: string, name: string, courses: string[], mode: 'points' | 'ko' = 'points') {
   const save = loadSave();
-  const cup = newCup(id, name, courses, randomSeed());
-  const me: RacerInfo = { id: 0, name: playerName(), character: save.character, isBot: false, cosmetics: save.equipped };
+  const cup = newCup(id, name, courses, randomSeed(), mode);
+  const me: RacerInfo = { id: 0, seat: 0, name: playerName(), character: save.character, isBot: debugParam('autoplay') !== null, cosmetics: save.equipped };
   cup.racers = fillWithBots([me], 4, cup.seed);
   setActiveCup(cup);
   startCupRace(scene);
@@ -78,7 +82,10 @@ export function startCupRace(scene: Phaser.Scene) {
   const cup = activeCup();
   if (!cup) return startLocalRace(scene);
   if (cup.counted >= cup.index && !isLastRace(cup)) cup.index++;
-  startLocalRace(scene, { courseId: cup.courses[cup.index], racers: cup.racers, keepCup: true });
+  // K.-o. cup: only the ones still in race; if that's no longer you, you watch
+  const racers = stillIn(cup, cup.racers ?? []).map((r, i) => ({ ...r, id: i }));
+  const spectator = !racers.some((r) => r.seat === 0);
+  startLocalRace(scene, { courseId: cup.courses[cup.index], racers, keepCup: true, spectator });
 }
 
 export function startRace(scene: Phaser.Scene, session: RaceSession) {
@@ -160,8 +167,9 @@ export function hostStartRace(scene: Phaser.Scene, room: NetRoom, forcedCourse?:
     // a cup: continue the running one or start it fresh
     cup = activeCup();
     const finished = cup && cup.counted >= cup.index && isLastRace(cup);
-    const same = cup && cup.courses.join() === list.join() && !finished;
-    if (!cup || !same) cup = newCup('room', room.playlist.name, list, seed);
+    const mode = room.playlist.ko ? 'ko' : 'points';
+    const same = cup && cup.courses.join() === list.join() && (cup.mode ?? 'points') === mode && !finished;
+    if (!cup || !same) cup = newCup('room', room.playlist.name, list, seed, mode);
     else if (cup.counted >= cup.index) cup.index++; // previous race is done: on to the next course
     courseId = cup.courses[cup.index];
   } else {
@@ -171,19 +179,26 @@ export function hostStartRace(scene: Phaser.Scene, room: NetRoom, forcedCourse?:
   const world = courseById(courseId).world;
   const humans: RacerInfo[] = room.players.map((p, i) => ({
     id: i,
+    seat: p.seat,
     name: p.name,
     character: p.character,
     isBot: false,
     cosmetics: p.cosmetics,
   }));
-  // in a cup the same bots come back every race (same seed, same free characters)
-  const racers = fillWithBots(humans, 4, cup ? cup.seed : seed);
+  // in a cup the same bots come back every race (same seed, same free characters);
+  // in a K.-o. cup only the ones still in take part, the others watch
+  const lineup = fillWithBots(humans, 4, cup ? cup.seed : seed);
+  const racers = (cup ? stillIn(cup, lineup) : lineup).map((r, i) => ({ ...r, id: i }));
   const seatToRacer = new Map<number, number>();
-  room.players.forEach((p, i) => {
-    if (p.seat !== 0) seatToRacer.set(p.seat, i);
-  });
-  for (const [seat, id] of seatToRacer) room.sendTo(seat, { t: 'start', seed, world, courseId, racers, you: id, cup: cup ?? undefined });
+  for (const r of racers) if (!r.isBot && r.seat !== undefined && r.seat !== 0) seatToRacer.set(r.seat, r.id);
+  for (const p of room.players) {
+    if (p.seat === 0) continue;
+    const id = seatToRacer.get(p.seat);
+    const spectator = id === undefined;
+    room.sendTo(p.seat, { t: 'start', seed, world, courseId, racers, you: spectator ? 0 : id, cup: cup ?? undefined, spectator });
+  }
   room.racing = true;
   room.broadcastLobby();
-  startRace(scene, new HostSession(room, { seed, world, courseId, racers, seatToRacer }));
+  const hostIn = racers.some((r) => !r.isBot && r.seat === 0);
+  startRace(scene, new HostSession(room, { seed, world, courseId, racers, seatToRacer, spectator: !hostIn, watch: 0 }));
 }

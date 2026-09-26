@@ -8,7 +8,7 @@ import { headIcon } from '../render/art/skins';
 import { panel, textButton } from '../ui/widgets';
 import { currentRoom } from '../net/room';
 import { hostStartRace, startCupRace, startLocalRace } from './flow';
-import { activeCup, addRaceResult, cupRanking, isLastRace, racerKey, setActiveCup } from '../meta/cup';
+import { activeCup, addRaceResult, cupRanking, isLastRace, lastOut, racerKey, setActiveCup } from '../meta/cup';
 import { uiText } from './HudScene';
 
 export const TROPHIES_FOR_PLACE = [10, 6, 3, 1];
@@ -31,12 +31,13 @@ export class ResultScene extends Phaser.Scene {
     const me = race.runners[session.localId];
 
     // rewards
+    const watching = !!session.spectator;
     const place = me.place;
-    const trophies = TROPHIES_FOR_PLACE[place - 1] ?? 0;
+    const trophies = watching ? 0 : (TROPHIES_FOR_PLACE[place - 1] ?? 0);
     const bonus = [30, 15, 5, 0][place - 1] ?? 0;
-    const coins = me.coins + bonus;
+    const coins = watching ? 0 : me.coins + bonus;
     const courseId = race.courseId;
-    writeSave((s) => {
+    if (!watching) writeSave((s) => {
       s.coins += coins;
       s.trophies += trophies;
       s.stats.races += 1;
@@ -84,13 +85,15 @@ export class ResultScene extends Phaser.Scene {
       content.add(uiText(this, timeX, y, time, 20, isMe ? '#3a2a10' : '#ffffff').setOrigin(1, 0.5).setStroke(isMe ? '#fff2b0' : '#1d1a2f', 6));
       if (cup) {
         const entry = cup.table.find((e) => e.key === racerKey(info));
-        const pts = entry ? `+${entry.last}  = ${entry.points}` : '';
+        const ko = cup.mode === 'ko';
+        const knocked = ko && !isLastRace(cup) && lastOut(cup)?.key === racerKey(info);
+        const pts = ko ? (isLastRace(cup) ? '' : knocked ? '❌ raus' : '✔ weiter') : entry ? `+${entry.last}  = ${entry.points}` : '';
         content.add(uiText(this, cx + pw / 2 - 46, y, pts, 20, isMe ? '#3a2a10' : '#ffd84a').setOrigin(1, 0.5).setStroke(isMe ? '#fff2b0' : '#1d1a2f', 6));
       }
     });
 
     content.add(
-      uiText(this, cx, cy + ph / 2 - 92, `+${coins} Münzen    +${trophies} Pokale`, 22, '#ffe68a').setOrigin(0.5),
+      uiText(this, cx, cy + ph / 2 - 92, watching ? '👀 Du hast zugeschaut' : `+${coins} Münzen    +${trophies} Pokale`, 22, '#ffe68a').setOrigin(0.5),
     );
 
     const room = currentRoom();
@@ -98,7 +101,11 @@ export class ResultScene extends Phaser.Scene {
     const isHost = online && room.role === 'host';
     const cupDone = cup && isLastRace(cup);
     const leader = cup ? cupRanking(cup)[0] : null;
-    if (cup && leader && !cupDone) {
+    const out = cup ? lastOut(cup) : null;
+    if (cup && out) {
+      const next = cup.index + 1 >= cup.courses.length - 1 ? ' – jetzt kommt das Finale!' : '';
+      content.add(uiText(this, cx, cy + ph / 2 - 118, `❌ ${out.name} scheidet aus${next}`, 17, '#ffb0b0').setOrigin(0.5));
+    } else if (cup && leader && !cupDone && cup.mode !== 'ko') {
       content.add(uiText(this, cx, cy + ph / 2 - 118, `Cup-Führung: ${leader.name} mit ${leader.points} Punkten`, 17, '#fff2b0').setOrigin(0.5));
     }
     const nextLabel = cupDone ? 'Siegerehrung 🏆' : cup ? `Weiter (${cup.index + 2}/${cup.courses.length})` : 'Nochmal!';
@@ -115,7 +122,10 @@ export class ResultScene extends Phaser.Scene {
         if (cup && cupDone) {
           const mgr = this.game.scene;
           for (const key of ['hud', 'race', 'result']) if (mgr.isActive(key)) mgr.stop(key);
-          mgr.start('podium', { cup, me: racerKey(session.racers[session.localId]), online: !!online });
+          // a knocked-out spectator watches someone else: find this phone's own racer key
+          const mySeat = !online ? 0 : room!.role === 'host' ? 0 : room!.mySeat;
+          const mine = watching ? cup.table.find((e) => !e.isBot && e.key.startsWith(`p:${mySeat}:`))?.key : racerKey(session.racers[session.localId]);
+          mgr.start('podium', { cup, me: mine ?? '', online: !!online });
         } else if (isHost) hostStartRace(this, room);
         else if (cup) startCupRace(this);
         else startLocalRace(this);
