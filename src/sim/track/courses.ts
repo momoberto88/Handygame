@@ -1,4 +1,5 @@
 import type { WorldId } from '../types';
+import { customCourse, isCustomId } from './customTrack';
 
 /** A fixed, named track: always the same pieces in the same order. */
 export interface CourseDef {
@@ -9,6 +10,8 @@ export interface CourseDef {
   /** Seed for small details (saw phases etc.) so the course looks the same every time. */
   seed: number;
   modules: string[];
+  /** Editor tracks: pieces from any world, each with its own terrain height. */
+  pieces?: { world: WorldId; name: string; dy: number }[];
 }
 
 export const COURSES: CourseDef[] = [
@@ -124,8 +127,17 @@ export const CUPS: CupDef[] = [
   { id: 'blitz', name: 'Blitz-Cup', difficulty: 3, courses: ['kanonen-kurs', 'sturm-inseln', 'tiefer-schacht', 'laser-highway'] },
 ];
 
+/** Display name of any course id (fixed or editor track); falls back to the id. */
+export function courseName(id: string): string {
+  try {
+    return courseById(id).name;
+  } catch {
+    return id;
+  }
+}
+
 export function courseById(id: string): CourseDef {
-  const c = COURSES.find((x) => x.id === id);
+  const c = isCustomId(id) ? customCourse(id) : COURSES.find((x) => x.id === id);
   if (!c) throw new Error(`Unknown course ${id}`);
   return c;
 }

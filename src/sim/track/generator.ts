@@ -77,19 +77,25 @@ export function generateTrack(opts: TrackOptions): Track {
   let world = opts.world;
   let names = opts.chunkNames;
   let detailSeed = opts.seed;
+  let pieces: ModuleDef[] | null = null;
+  let pieceHeights: number[] | null = null;
   if (opts.courseId) {
     const course = courseById(opts.courseId);
     world = course.world;
     names = course.modules;
     detailSeed = course.seed;
+    if (course.pieces) {
+      pieces = course.pieces.map((p) => moduleByName(p.world, p.name));
+      pieceHeights = course.pieces.map((p) => p.dy);
+    }
   }
   const rng = new Rng(detailSeed ^ 0x51f0a3);
   const b = new TrackBuilder(world, rng);
   b.standard(0, START_WIDTH - 1);
   b.mark('start', 0, START_WIDTH);
-  const modules = names ? names.map((n) => moduleByName(world, n)) : pickSequence(rng, world, opts.lengthTiles ?? 380);
+  const modules = pieces ?? (names ? names.map((n) => moduleByName(world, n)) : pickSequence(rng, world, opts.lengthTiles ?? 380));
   const terrain = opts.terrain ?? (!opts.chunkNames || !!opts.courseId);
-  const heights = terrain ? terrainProfile(world, detailSeed, modules.length) : modules.map(() => 0);
+  const heights = pieceHeights ?? (terrain ? terrainProfile(world, detailSeed, modules.length) : modules.map(() => 0));
   let x = START_WIDTH;
   modules.forEach((m, i) => {
     if (heights[i] !== b.dy) x += b.shiftTerrain(x, heights[i]);

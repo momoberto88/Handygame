@@ -4,10 +4,12 @@ import { randomCourses } from '../meta/cup';
 import { loadSave } from '../meta/save';
 import { currentRoom } from '../net/room';
 import { WORLDS } from '../render/worlds';
+import { drawTrackThumb } from '../render/trackThumb';
 import { randomSeed } from '../sim/rng';
-import { COURSES, CUPS, type CourseDef } from '../sim/track/courses';
+import { COURSES, CUPS, courseById, type CourseDef } from '../sim/track/courses';
+import { isCustomId } from '../sim/track/customTrack';
+import { writeSave } from '../meta/save';
 import { generateTrack } from '../sim/track/generator';
-import { Tile } from '../sim/types';
 import { iconButton, textButton } from '../ui/widgets';
 import { goToMenu, startLocalRace, startSoloCup } from './flow';
 import { uiText } from './HudScene';
@@ -22,50 +24,11 @@ const CUP_ICONS: Record<string, string> = { pilz: '🍄', zahnrad: '⚙️', bli
 const THUMB_W = 280;
 const THUMB_H = 84;
 
-function hex(c: string): [number, number, number] {
-  const n = parseInt(c.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
 /** Small side view of a course, drawn once from its real tiles. */
 function courseThumb(scene: Phaser.Scene, course: CourseDef): string {
   const key = `thumb-${course.id}`;
   if (scene.textures.exists(key)) return key;
-  const track = generateTrack({ seed: course.seed, world: course.world, courseId: course.id });
-  const theme = WORLDS[course.world];
-  const tex = scene.textures.createCanvas(key, THUMB_W, THUMB_H)!;
-  const ctx = tex.getContext();
-  const img = ctx.createImageData(THUMB_W, THUMB_H);
-  const sky0 = hex(theme.skyTop);
-  const sky1 = hex(theme.skyBottom);
-  const ground = hex(theme.ground);
-  const top = hex(theme.groundTop);
-  const plank = hex(theme.platform);
-  const danger: [number, number, number] = [220, 40, 40];
-  for (let py = 0; py < THUMB_H; py++) {
-    const row = Math.floor((py / THUMB_H) * track.rows);
-    for (let px = 0; px < THUMB_W; px++) {
-      const col = Math.floor((px / THUMB_W) * track.cols);
-      const t = track.tiles[row * track.cols + col];
-      const above = row > 0 ? track.tiles[(row - 1) * track.cols + col] : Tile.Empty;
-      let c: [number, number, number];
-      if (t === Tile.Spikes) c = danger;
-      else if (t === Tile.Platform) c = plank;
-      else if (t !== Tile.Empty) c = above === Tile.Empty ? top : ground;
-      else {
-        const k = py / THUMB_H;
-        c = [sky0[0] + (sky1[0] - sky0[0]) * k, sky0[1] + (sky1[1] - sky0[1]) * k, sky0[2] + (sky1[2] - sky0[2]) * k];
-      }
-      const i = (py * THUMB_W + px) * 4;
-      img.data[i] = c[0];
-      img.data[i + 1] = c[1];
-      img.data[i + 2] = c[2];
-      img.data[i + 3] = 255;
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-  tex.refresh();
-  return key;
+  return drawTrackThumb(scene, key, generateTrack({ seed: course.seed, world: course.world, courseId: course.id }), THUMB_W, THUMB_H);
 }
 
 /**
@@ -76,6 +39,7 @@ export class CourseSelectScene extends Phaser.Scene {
   private mode: 'solo' | 'room' = 'solo';
   private building = false;
   private picked: string[] = [];
+  private tab: 'fixed' | 'own' = 'fixed';
   private ui!: Phaser.GameObjects.Container;
   private W = 960;
 
@@ -118,7 +82,16 @@ export class CourseSelectScene extends Phaser.Scene {
     const W = this.W;
     const save = loadSave();
     const room = this.mode === 'room';
-    this.ui.add(uiText(this, W / 2, 30, room ? 'Strecken für euren Raum' : 'Cups & Strecken', 32, '#ffd84a').setOrigin(0.5));
+    this.ui.add(uiText(this, W / 2 - 60, 30, room ? 'Strecken für euren Raum' : 'Cups & Strecken', 30, '#ffd84a').setOrigin(0.5));
+    const ownTracks = save.tracks.flatMap((id) => {
+      try {
+        return [courseById(id)];
+      } catch {
+        return []; // a code from a newer app version: skip it
+      }
+    });
+    this.ui.add(textButton(this, W - 250, 30, 130, 36, 'Feste (12)', this.tab === 'fixed' ? 0xffd84a : 0x3d3470, () => ((this.tab = 'fixed'), this.render()), 15).container);
+    this.ui.add(textButton(this, W - 100, 30, 150, 36, `Eigene (${ownTracks.length})`, this.tab === 'own' ? 0xffd84a : 0x3d3470, () => ((this.tab = 'own'), this.render()), 15).container);
     this.ui.add(iconButton(this, 34, 30, 22, '◀', 0x8a84a8, () => this.back()).container);
 
     // --- left column: cups ---------------------------------------------------------------
@@ -183,11 +156,24 @@ export class CourseSelectScene extends Phaser.Scene {
     const gap = 10;
     const cw = (areaW - gap * (cols - 1)) / cols;
     const ch = 132;
-    COURSES.forEach((course, i) => {
-      const cx = x0 + (i % cols) * (cw + gap) + cw / 2;
-      const cy = 64 + Math.floor(i / cols) * (ch + gap) + ch / 2;
+    const list = this.tab === 'fixed' ? COURSES : ownTracks;
+    const at = (i: number) => ({ cx: x0 + (i % cols) * (cw + gap) + cw / 2, cy: 64 + Math.floor(i / cols) * (ch + gap) + ch / 2 });
+    list.slice(0, this.tab === 'fixed' ? 12 : 11).forEach((course, i) => {
+      const { cx, cy } = at(i);
       this.courseCard(course, cx, cy, cw, ch);
     });
+    if (this.tab === 'own' && !room) {
+      // last slot: build a new track
+      const { cx, cy } = at(Math.min(ownTracks.length, 11));
+      const b = textButton(this, cx, cy, cw, ch, '＋ Neue\nStrecke bauen', 0x5fd35a, () => {
+        this.registry.remove('editorTrack');
+        this.scene.start('editor', {});
+      }, 17);
+      this.ui.add(b.container);
+    }
+    if (this.tab === 'own' && !ownTracks.length && room) {
+      this.ui.add(uiText(this, x0 + areaW / 2, 200, 'Noch keine eigenen Strecken.\nBaue welche unter „Cups & Strecken“ im Menü.', 17, '#c9c2e8').setOrigin(0.5).setAlign('center'));
+    }
     if (this.building) {
       this.ui.add(uiText(this, x0 + areaW / 2, VIEW_H - 18, 'Reihenfolge = Reihenfolge im Cup · nochmal tippen entfernt', 14, '#c9c2e8').setOrigin(0.5));
     }
@@ -213,6 +199,17 @@ export class CourseSelectScene extends Phaser.Scene {
     if (order >= 0) {
       c.add(this.add.circle(w / 2 - 14, -h / 2 + 14, 13, 0xffd84a).setStrokeStyle(3, 0x1d1a2f));
       c.add(uiText(this, w / 2 - 14, -h / 2 + 14, String(order + 1), 16, '#1d1a2f').setOrigin(0.5).setStroke('#ffd84a', 0));
+    }
+    if (isCustomId(course.id) && this.mode === 'solo' && !this.building) {
+      // own tracks: edit or delete
+      c.add(iconButton(this, -w / 2 + 16, -h / 2 + 16, 13, '✏️', 0x6b8cff, () => this.scene.start('editor', { id: course.id })).container);
+      c.add(
+        iconButton(this, w / 2 - 16, -h / 2 + 16, 13, '🗑', 0xe0604a, () => {
+          if (!window.confirm(`„${course.name}“ löschen?`)) return;
+          writeSave((s) => (s.tracks = s.tracks.filter((x) => x !== course.id)));
+          this.render();
+        }).container,
+      );
     }
     c.setSize(w, h);
     c.setInteractive({ useHandCursor: true });

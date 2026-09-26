@@ -135,7 +135,9 @@ export class ResultScene extends Phaser.Scene {
         if (!online) setActiveCup(null);
         const mgr = this.game.scene;
         for (const key of ['hud', 'race', 'result']) if (mgr.isActive(key)) mgr.stop(key);
-        mgr.start(online ? 'lobby' : 'menu');
+        const back = (this.registry.get('returnScene') as string | undefined) ?? 'menu';
+        this.registry.remove('returnScene');
+        mgr.start(online ? 'lobby' : back);
       },
       22,
     );

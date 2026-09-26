@@ -4,6 +4,7 @@ import { makeCharacterArt, makeEyes } from '../render/art/characterArt';
 import { makeEntityArt, preloadObjectArt } from '../render/art/entityArt';
 import { preloadPainted } from '../render/art/skins';
 import { preloadWorldArt } from '../render/art/worldArt';
+import { sharedTrackFromUrl } from './EditorScene';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -20,6 +21,11 @@ export class BootScene extends Phaser.Scene {
     makeEyes(this);
     for (const c of CHARACTERS) makeCharacterArt(this, c);
     makeEntityArt(this);
+    const shared = sharedTrackFromUrl();
+    if (shared) {
+      this.scene.start('editor', { id: shared, message: 'Strecke empfangen! Tippe „Probelauf“ oder speichere sie mit „Prüfen & Speichern“.' });
+      return;
+    }
     this.scene.start(new URLSearchParams(window.location.search).has('lineup') ? 'lineup' : 'menu');
   }
 }

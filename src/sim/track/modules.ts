@@ -591,6 +591,7 @@ def('shroom', 'pendulums', 2, 30, (b, x) => {
   b.box(x + 16, LOW);
 });
 
+/** Order matters: editor track codes refer to pieces by their index here, so only append. */
 export const MODULES: ModuleDef[] = M;
 
 export function modulesFor(world: WorldId): ModuleDef[] {

@@ -7,7 +7,7 @@ import { headIcon } from '../render/art/skins';
 import { panel, textButton } from '../ui/widgets';
 import { goToMenu, hostStartRace, myProfile, wireClientRoom } from './flow';
 import { uiText } from './HudScene';
-import { COURSES } from '../sim/track/courses';
+import { courseName } from '../sim/track/courses';
 
 type View = 'choose' | 'join' | 'busy' | 'room';
 
@@ -20,7 +20,7 @@ function playlistLabel(p: Playlist): string {
 
 function playlistCourses(p: Playlist): string {
   if (p.courses.length < 2) return '';
-  return p.courses.map((id) => COURSES.find((c) => c.id === id)?.name ?? id).join(' → ');
+  return p.courses.map((id) => courseName(id)).join(' → ');
 }
 
 export class LobbyScene extends Phaser.Scene {

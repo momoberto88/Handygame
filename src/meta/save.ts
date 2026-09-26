@@ -22,6 +22,8 @@ export interface SaveData {
   best: Record<string, number>;
   /** Best cup result per cup id (1 = won). */
   cups: Record<string, number>;
+  /** Own tracks from the editor (course ids "custom:<code>"), newest first. */
+  tracks: string[];
 }
 
 const DEFAULT: SaveData = {
@@ -36,6 +38,7 @@ const DEFAULT: SaveData = {
   stats: { races: 0, wins: 0 },
   best: {},
   cups: {},
+  tracks: [],
 };
 
 let cache: SaveData | null = null;
