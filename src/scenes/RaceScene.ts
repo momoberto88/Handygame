@@ -13,6 +13,8 @@ import { Effects } from '../render/Effects';
 import { RunnerView } from '../render/RunnerView';
 import { TrackView } from '../render/TrackView';
 import type { HudScene } from './HudScene';
+import { BotBrain } from '../sim/bot';
+import { debugParam } from './flow';
 
 const RACE_VIEW_H = 440;
 
@@ -36,6 +38,8 @@ export class RaceScene extends Phaser.Scene {
   private hud!: HudScene;
   private dustTimer = 0;
   lastEvents: SimEvent[] = [];
+  /** Debug/testing: lets a bot drive the local runner in online races (?autoplay). */
+  private autopilot: BotBrain | null = null;
 
   constructor() {
     super('race');
@@ -47,6 +51,7 @@ export class RaceScene extends Phaser.Scene {
     this.projectileViews.clear();
     this.trapViews.clear();
     this.endTimer = -1;
+    this.autopilot = debugParam('autoplay') !== null && this.session.online ? new BotBrain(99, { skill: 0.8 }) : null;
   }
 
   create() {
@@ -83,7 +88,12 @@ export class RaceScene extends Phaser.Scene {
   }
 
   readInput(): LocalInput {
-    return this.hud?.readInput?.() ?? { jump: false, slide: false, use: 0 };
+    const input = this.hud?.readInput?.() ?? { jump: false, slide: false, use: 0 };
+    if (this.autopilot) {
+      const bot = this.autopilot.think(this.session.race, this.session.localId);
+      return { jump: bot.jump, slide: bot.slide, use: bot.use };
+    }
+    return input;
   }
 
   update(_time: number, delta: number) {
@@ -96,8 +106,9 @@ export class RaceScene extends Phaser.Scene {
     const alpha = this.session.alpha;
     race.runners.forEach((r, i) => {
       const prev = this.session.prevPosition(i);
-      const x = prev.x + (r.x - prev.x) * alpha;
-      const y = prev.y + (r.y - prev.y) * alpha;
+      const off = this.session.renderOffset?.(i);
+      const x = prev.x + (r.x - prev.x) * alpha + (off?.x ?? 0);
+      const y = prev.y + (r.y - prev.y) * alpha + (off?.y ?? 0);
       this.views[i].update(r, x, y, dt, race.clock);
       if (r.boost > 0 && r.mode === 'run') this.fx.boostTrail(x, y);
     });
@@ -134,8 +145,9 @@ export class RaceScene extends Phaser.Scene {
     const r = race.runners[this.session.localId];
     const alpha = this.session.alpha;
     const prev = this.session.prevPosition(r.id);
-    const rx = prev.x + (r.x - prev.x) * alpha;
-    const ry = prev.y + (r.y - prev.y) * alpha;
+    const off = this.session.renderOffset?.(r.id);
+    const rx = prev.x + (r.x - prev.x) * alpha + (off?.x ?? 0);
+    const ry = prev.y + (r.y - prev.y) * alpha + (off?.y ?? 0);
     const vw = cam.width / cam.zoom;
     const vh = cam.height / cam.zoom;
     const targetX = rx + vw * 0.2;

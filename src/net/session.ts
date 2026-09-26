@@ -30,6 +30,8 @@ export interface RaceSession {
   readonly online: boolean;
   update(dtMs: number, input: LocalInput): SimEvent[];
   prevPosition(id: number): { x: number; y: number };
+  /** Visual correction applied on top of the simulated position (smooths network corrections). */
+  renderOffset?(id: number): { x: number; y: number };
   /** Status line shown in the HUD (e.g. connection problems). */
   status(): string | null;
   destroy(): void;

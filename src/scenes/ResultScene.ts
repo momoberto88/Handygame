@@ -7,15 +7,14 @@ import type { RaceSession } from '../net/session';
 import { ART_RES } from '../render/art/canvas';
 import { partKey } from '../render/art/characterArt';
 import { panel, textButton } from '../ui/widgets';
-import { startLocalRace } from './flow';
+import { currentRoom } from '../net/room';
+import { hostStartRace, startLocalRace } from './flow';
 import { uiText } from './HudScene';
 
 export const TROPHIES_FOR_PLACE = [10, 6, 3, 1];
 
 export interface ResultData {
   session: RaceSession;
-  onAgain?: () => void;
-  againLabel?: string;
 }
 
 export class ResultScene extends Phaser.Scene {
@@ -78,32 +77,36 @@ export class ResultScene extends Phaser.Scene {
       uiText(this, cx, cy + ph / 2 - 92, `+${coins} Münzen    +${trophies} Pokale`, 22, '#ffe68a').setOrigin(0.5),
     );
 
+    const room = currentRoom();
+    const online = session.online && room;
+    const isHost = online && room.role === 'host';
     const again = textButton(
       this,
       cx - 110,
       cy + ph / 2 - 40,
       190,
       54,
-      data.againLabel ?? 'Nochmal!',
+      online && !isHost ? 'Warte …' : 'Nochmal!',
       0x5fd35a,
       () => {
-        if (data.onAgain) data.onAgain();
+        if (isHost) hostStartRace(this, room);
         else startLocalRace(this);
       },
       22,
     );
+    if (online && !isHost) again.setEnabled(false);
     const menu = textButton(
       this,
       cx + 110,
       cy + ph / 2 - 40,
       190,
       54,
-      'Menü',
+      online ? 'Lobby' : 'Menü',
       0xffa94a,
       () => {
-        session.destroy();
-        for (const key of ['hud', 'race']) this.scene.stop(key);
-        this.scene.start('menu');
+        const mgr = this.game.scene;
+        for (const key of ['hud', 'race', 'result']) if (mgr.isActive(key)) mgr.stop(key);
+        mgr.start(online ? 'lobby' : 'menu');
       },
       22,
     );

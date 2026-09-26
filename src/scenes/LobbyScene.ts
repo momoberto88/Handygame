@@ -1,0 +1,258 @@
+import Phaser from 'phaser';
+import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
+import { characterById } from '../meta/characters';
+import { MAX_PLAYERS, type WorldChoice } from '../net/protocol';
+import { NetRoom, currentRoom, setCurrentRoom } from '../net/room';
+import { ART_RES } from '../render/art/canvas';
+import { partKey } from '../render/art/characterArt';
+import { WORLDS, WORLD_ORDER } from '../render/worlds';
+import { panel, textButton } from '../ui/widgets';
+import { goToMenu, hostStartRace, myProfile, wireClientRoom } from './flow';
+import { uiText } from './HudScene';
+
+type View = 'choose' | 'join' | 'busy' | 'room';
+
+const WORLD_CHOICES: WorldChoice[] = ['random', ...WORLD_ORDER];
+
+function worldLabel(w: WorldChoice): string {
+  return w === 'random' ? 'Zufall' : WORLDS[w].name;
+}
+
+export class LobbyScene extends Phaser.Scene {
+  private view: View = 'choose';
+  private ui!: Phaser.GameObjects.Container;
+  private error = '';
+  private code = '';
+  private busyText = '';
+  private W = 960;
+  private alive = false;
+
+  constructor() {
+    super('lobby');
+  }
+
+  create() {
+    setupUiCamera(this);
+    this.W = viewWidth(this);
+    this.add.rectangle(0, 0, this.W, VIEW_H, 0x241d3d).setOrigin(0, 0);
+    const bg = this.add.graphics();
+    for (let i = 0; i < 14; i++) {
+      bg.fillStyle(i % 2 ? 0x2d2550 : 0x2a2247, 1).fillCircle((i * 173) % this.W, (i * 97) % VIEW_H, 60 + (i % 4) * 30);
+    }
+    this.ui = this.add.container(0, 0);
+    this.alive = true;
+    this.events.once('shutdown', () => {
+      this.alive = false;
+      const r = currentRoom();
+      if (r) {
+        r.onLobby = null;
+      }
+    });
+    this.scale.on('resize', this.onResize, this);
+    this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
+    const room = currentRoom();
+    this.view = room ? 'room' : 'choose';
+    if (room) this.attach(room);
+    this.render();
+  }
+
+  private onResize() {
+    this.scene.restart();
+  }
+
+  private attach(room: NetRoom) {
+    room.onLobby = () => this.render();
+    room.onClosed = (reason) => {
+      setCurrentRoom(null);
+      this.error = reason;
+      this.view = 'choose';
+      this.render();
+    };
+    if (room.role === 'client') wireClientRoom(this.game, room);
+  }
+
+  private setView(v: View) {
+    this.view = v;
+    this.render();
+  }
+
+  private render() {
+    if (!this.alive) return;
+    this.ui.removeAll(true);
+    const W = this.W;
+    this.ui.add(uiText(this, W / 2, 34, 'Mit Freunden spielen', 34, '#ffd84a').setOrigin(0.5));
+    switch (this.view) {
+      case 'choose':
+        this.renderChoose();
+        break;
+      case 'join':
+        this.renderJoin();
+        break;
+      case 'busy':
+        this.ui.add(uiText(this, W / 2, VIEW_H / 2 - 20, this.busyText, 26).setOrigin(0.5));
+        this.ui.add(uiText(this, W / 2, VIEW_H / 2 + 20, 'Einen Moment …', 18, '#c9c2e8').setOrigin(0.5));
+        break;
+      case 'room':
+        this.renderRoom();
+        break;
+    }
+    if (this.error) {
+      this.ui.add(uiText(this, W / 2, VIEW_H - 24, this.error, 18, '#ff9a8a').setOrigin(0.5));
+    }
+  }
+
+  private renderChoose() {
+    const W = this.W;
+    this.ui.add(
+      uiText(
+        this,
+        W / 2,
+        92,
+        'Ein Handy erstellt einen Raum und zeigt einen Code.\nDie anderen tippen den Code ein. Freie Plätze fahren Bots.',
+        17,
+        '#e6e0ff',
+      )
+        .setOrigin(0.5, 0)
+        .setAlign('center'),
+    );
+    this.ui.add(textButton(this, W / 2, 230, 320, 66, 'Raum erstellen', 0x5fd35a, () => void this.createRoom(), 26).container);
+    this.ui.add(
+      textButton(this, W / 2, 316, 320, 66, 'Raum beitreten', 0x4aa3ff, () => {
+        this.code = '';
+        this.error = '';
+        this.setView('join');
+      }, 26).container,
+    );
+    this.ui.add(textButton(this, W / 2, 404, 200, 52, 'Zurück', 0x8a84a8, () => goToMenu(this), 20).container);
+  }
+
+  private renderJoin() {
+    const W = this.W;
+    const left = W * 0.3;
+    this.ui.add(uiText(this, left, 100, 'Raum-Code eingeben:', 22).setOrigin(0.5));
+    for (let i = 0; i < 4; i++) {
+      const x = left - 105 + i * 70;
+      const g = this.add.graphics();
+      g.fillStyle(0xffffff, 1).fillRoundedRect(x - 28, 140, 56, 72, 10);
+      g.lineStyle(4, 0x1d1a2f, 1).strokeRoundedRect(x - 28, 140, 56, 72, 10);
+      this.ui.add(g);
+      this.ui.add(uiText(this, x, 176, this.code[i] ?? '', 40, '#1d1a2f').setOrigin(0.5).setStroke('#ffffff', 0));
+    }
+    const join = textButton(this, left, 290, 250, 60, 'Beitreten', 0x5fd35a, () => void this.joinRoom(), 24);
+    join.setEnabled(this.code.length === 4);
+    this.ui.add(join.container);
+    this.ui.add(
+      textButton(this, left, 372, 180, 50, 'Zurück', 0x8a84a8, () => {
+        this.error = '';
+        this.setView('choose');
+      }, 20).container,
+    );
+
+    // keypad
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', 'OK'];
+    const kx = W * 0.72;
+    keys.forEach((k, i) => {
+      const x = kx + ((i % 3) - 1) * 84;
+      const y = 120 + Math.floor(i / 3) * 76;
+      const color = k === 'OK' ? 0x5fd35a : k === '⌫' ? 0xffa94a : 0xe8e2ff;
+      const b = textButton(this, x, y, 74, 62, k, color, () => this.keypad(k), 26);
+      if (k === 'OK') b.setEnabled(this.code.length === 4);
+      this.ui.add(b.container);
+    });
+  }
+
+  private keypad(k: string) {
+    if (k === '⌫') this.code = this.code.slice(0, -1);
+    else if (k === 'OK') {
+      if (this.code.length === 4) void this.joinRoom();
+      return;
+    } else if (this.code.length < 4) this.code += k;
+    this.render();
+  }
+
+  private renderRoom() {
+    const room = currentRoom();
+    if (!room) {
+      this.setView('choose');
+      return;
+    }
+    const W = this.W;
+    this.ui.add(panel(this, W / 2, 128, 340, 76));
+    this.ui.add(uiText(this, W / 2, 106, 'Raum-Code', 16, '#3a3228').setOrigin(0.5).setStroke('#a39c8c', 0));
+    this.ui.add(uiText(this, W / 2, 138, room.code.split('').join(' '), 40, '#ffffff').setOrigin(0.5));
+
+    const slotW = Math.min(170, (W - 80) / 4);
+    for (let seat = 0; seat < MAX_PLAYERS; seat++) {
+      const x = W / 2 + (seat - 1.5) * (slotW + 12);
+      const y = 262;
+      const p = room.players.find((pl) => pl.seat === seat);
+      const g = this.add.graphics();
+      g.fillStyle(p ? 0x3d3470 : 0x2a2449, 1).fillRoundedRect(x - slotW / 2, y - 62, slotW, 124, 14);
+      g.lineStyle(3, p && seat === room.mySeat ? 0xffd84a : 0x514880, 1).strokeRoundedRect(x - slotW / 2, y - 62, slotW, 124, 14);
+      this.ui.add(g);
+      if (p) {
+        const c = characterById(p.character);
+        this.ui.add(this.add.image(x, y - 14, partKey(c, 'head')).setScale(1.3 / ART_RES));
+        this.ui.add(uiText(this, x, y + 38, p.name, 18).setOrigin(0.5));
+        if (seat === 0) this.ui.add(uiText(this, x, y - 52, 'Gastgeber', 12, '#ffd84a').setOrigin(0.5));
+      } else {
+        this.ui.add(uiText(this, x, y - 8, 'frei', 20, '#8a84b8').setOrigin(0.5));
+        this.ui.add(uiText(this, x, y + 22, '(sonst Bot)', 14, '#8a84b8').setOrigin(0.5));
+      }
+    }
+
+    if (room.role === 'host') {
+      this.ui.add(
+        textButton(this, W / 2 - 150, 380, 250, 54, `Welt: ${worldLabel(room.world)}`, 0x9b7aff, () => {
+          const i = WORLD_CHOICES.indexOf(room.world);
+          room.world = WORLD_CHOICES[(i + 1) % WORLD_CHOICES.length];
+          room.broadcastLobby();
+          this.render();
+        }, 18).container,
+      );
+      const start = textButton(this, W / 2 + 150, 380, 250, 54, room.racing ? 'Rennen läuft …' : 'Rennen starten!', 0x5fd35a, () => hostStartRace(this, room), 22);
+      start.setEnabled(!room.racing);
+      this.ui.add(start.container);
+    } else {
+      const text = room.racing ? 'Ein Rennen läuft gerade – du bist beim nächsten dabei.' : `Welt: ${worldLabel(room.world)} · Warte auf den Gastgeber …`;
+      this.ui.add(uiText(this, W / 2, 380, text, 20, '#e6e0ff').setOrigin(0.5));
+    }
+    this.ui.add(
+      textButton(this, W / 2, 460, 220, 48, 'Raum verlassen', 0xe0604a, () => {
+        setCurrentRoom(null);
+        this.error = '';
+        this.setView('choose');
+      }, 18).container,
+    );
+  }
+
+  private async createRoom() {
+    this.error = '';
+    this.busyText = 'Raum wird erstellt …';
+    this.setView('busy');
+    try {
+      const room = await NetRoom.host(myProfile());
+      setCurrentRoom(room);
+      this.attach(room);
+      this.setView('room');
+    } catch (e) {
+      this.error = (e as Error).message;
+      this.setView('choose');
+    }
+  }
+
+  private async joinRoom() {
+    this.error = '';
+    this.busyText = `Verbinde mit Raum ${this.code} …`;
+    this.setView('busy');
+    try {
+      const room = await NetRoom.join(this.code, myProfile());
+      setCurrentRoom(room);
+      this.attach(room);
+      this.setView('room');
+    } catch (e) {
+      this.error = (e as Error).message;
+      this.setView('join');
+    }
+  }
+}

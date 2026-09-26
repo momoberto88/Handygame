@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.4",
+    "peer": "^1.0.2",
     "playwright": "^1.63.0",
     "sharp": "^0.35.4",
     "typescript": "^5.9.3",

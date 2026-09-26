@@ -9,6 +9,8 @@ import { ART_RES } from '../render/art/canvas';
 import { partKey } from '../render/art/characterArt';
 import { itemIconKey } from '../render/art/entityArt';
 import type { RaceScene } from './RaceScene';
+import { setCurrentRoom } from '../net/room';
+import { goToMenu } from './flow';
 
 const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
 
@@ -142,10 +144,8 @@ export class HudScene extends Phaser.Scene {
 
   private quitRace() {
     sfx.play('click');
-    this.scene.stop('result');
-    this.scene.stop('race');
-    this.scene.stop();
-    this.scene.start('menu');
+    if (this.raceScene.session.online) setCurrentRoom(null);
+    goToMenu(this);
   }
 
   private onResize() {
@@ -200,7 +200,7 @@ export class HudScene extends Phaser.Scene {
     this.itemIcon.setPosition(this.itemBtn.x, this.itemBtn.y);
     this.coinText.setPosition(W - 70, 16);
     this.coinIcon.setPosition(W - 56, 30);
-    this.quitBtn.setPosition(W - 16, 14).setVisible(!this.raceScene.session.online);
+    this.quitBtn.setPosition(W - 16, 14);
     this.bigText.setX(W / 2);
     this.toastText.setX(W / 2);
     this.statusText.setX(W / 2);

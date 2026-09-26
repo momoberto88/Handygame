@@ -1,7 +1,10 @@
 import type Phaser from 'phaser';
 import { CHARACTERS, characterById } from '../meta/characters';
 import { loadSave } from '../meta/save';
+import { ClientSession } from '../net/ClientSession';
+import { HostSession } from '../net/HostSession';
 import { LocalSession } from '../net/LocalSession';
+import type { NetRoom, Profile } from '../net/room';
 import type { RaceSession, RacerInfo } from '../net/session';
 import { Rng, randomSeed } from '../sim/rng';
 import type { WorldId } from '../sim/types';
@@ -53,8 +56,53 @@ export function startLocalRace(scene: Phaser.Scene, world?: WorldId) {
 }
 
 export function startRace(scene: Phaser.Scene, session: RaceSession) {
+  const mgr = scene.game.scene;
   for (const key of ['result', 'hud', 'race', 'menu', 'lobby', 'wardrobe']) {
-    if (scene.scene.isActive(key) || scene.scene.isPaused(key)) scene.scene.stop(key);
+    if (mgr.isActive(key) || mgr.isPaused(key)) mgr.stop(key);
   }
-  scene.scene.start('race', { session });
+  mgr.start('race', { session });
+}
+
+/** Leaves any race/result/lobby scenes and returns to the main menu. */
+export function goToMenu(scene: Phaser.Scene, message?: string) {
+  const mgr = scene.game.scene;
+  for (const key of ['result', 'hud', 'race', 'lobby', 'wardrobe']) {
+    if (mgr.isActive(key) || mgr.isPaused(key)) mgr.stop(key);
+  }
+  mgr.start('menu', { message });
+}
+
+export function myProfile(): Profile {
+  const s = loadSave();
+  return { name: playerName(), character: s.character, cosmetics: s.equipped };
+}
+
+/** Clients start a race whenever the host says so, whatever screen they are on. */
+export function wireClientRoom(game: Phaser.Game, room: NetRoom) {
+  room.onStart = (msg) => {
+    const active = game.scene.getScenes(true)[0];
+    if (active) startRace(active, new ClientSession(room, msg));
+  };
+}
+
+/** Host: start a race with everyone currently in the room (empty seats become bots). */
+export function hostStartRace(scene: Phaser.Scene, room: NetRoom) {
+  const seed = randomSeed();
+  const world = room.world === 'random' ? randomWorld(seed) : room.world;
+  const humans: RacerInfo[] = room.players.map((p, i) => ({
+    id: i,
+    name: p.name,
+    character: p.character,
+    isBot: false,
+    cosmetics: p.cosmetics,
+  }));
+  const racers = fillWithBots(humans, 4, seed);
+  const seatToRacer = new Map<number, number>();
+  room.players.forEach((p, i) => {
+    if (p.seat !== 0) seatToRacer.set(p.seat, i);
+  });
+  for (const [seat, id] of seatToRacer) room.sendTo(seat, { t: 'start', seed, world, racers, you: id });
+  room.racing = true;
+  room.broadcastLobby();
+  startRace(scene, new HostSession(room, { seed, world, racers, seatToRacer }));
 }
