@@ -94,6 +94,7 @@ export class RaceScene extends Phaser.Scene {
       this.views.push(view);
     }
     this.setupGhost();
+    sfx.playMusic(`music/${race.track.world}`, 0.32);
     // voices of the racers in this race and the announcer
     const who = new Set([...this.session.racers.map((r) => r.character), 'announcer']);
     sfx.preload((clipList as string[]).filter((c) => c.startsWith('voice/') && who.has(c.split('/')[1])));

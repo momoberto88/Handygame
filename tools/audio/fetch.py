@@ -142,6 +142,22 @@ def split_batch(src, files, texts):
             process(part.name, os.path.join(OUT, f), True)
 
 
+def split_music(src, worlds):
+    log = subprocess.run([FFMPEG, '-i', src], capture_output=True, text=True).stderr
+    h, mi, se = log.split('Duration: ')[1].split(',')[0].split(':')
+    total = int(h) * 3600 + int(mi) * 60 + float(se)
+    part = total / len(worlds)
+    os.makedirs(os.path.join(OUT, 'music'), exist_ok=True)
+    for i, w in enumerate(worlds):
+        start, length = i * part, part - 0.9  # skip the short break at the end of each section
+        subprocess.run(
+            [FFMPEG, '-y', '-loglevel', 'error', '-ss', str(start), '-t', str(length), '-i', src,
+             '-af', f'afade=t=in:d=0.25,afade=t=out:st={length - 0.6}:d=0.6,loudnorm=I=-16:TP=-1.5',
+             '-ac', '2', '-ar', '44100', '-b:a', '96k', os.path.join(OUT, 'music', w + '.mp3')],
+            check=True,
+        )
+
+
 def newest_transcript():
     files = glob.glob('/root/.claude/projects/-home-user-Handygame/*.jsonl')
     return max(files, key=os.path.getmtime)
@@ -207,6 +223,19 @@ def main():
                 urllib.request.urlretrieve(m['url'], tmp.name)
                 split_batch(tmp.name, b['files'], b.get('texts') or [''] * len(b['files']))
             print('batch split', name, len(b['files']))
+    # music: one composition with a section per world, cut into equal parts
+    music_path = os.path.join(ROOT, 'tools', 'audio', 'music.json')
+    if os.path.exists(music_path):
+        mj = json.load(open(music_path))
+        todo = [w for w in mj['worlds'] if not os.path.exists(os.path.join(OUT, 'music', w + '.mp3'))]
+        m = by_key.get((mj['prompt'], None))
+        if todo and m:
+            with tempfile.NamedTemporaryFile(suffix='.mp3') as tmp:
+                urllib.request.urlretrieve(m['url'], tmp.name)
+                split_music(tmp.name, mj['worlds'])
+            print('music split', len(mj['worlds']))
+        elif todo:
+            print('music not ready')
     # list of the clips that exist, for the game
     clips = sorted(
         os.path.relpath(os.path.join(d, f), OUT)[:-4]

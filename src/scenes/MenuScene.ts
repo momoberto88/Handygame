@@ -114,8 +114,12 @@ export class MenuScene extends Phaser.Scene {
       writeSave((s) => (s.settings.sound = !s.settings.sound));
       sfx.enabled = loadSave().settings.sound;
       snd.label.setText(loadSave().settings.sound ? '♪' : '✕');
+      sfx.refreshMusic();
     });
     sfx.enabled = save.settings.sound;
+    sfx.musicOn = save.settings.music;
+    // menu music: the tune of the world in the background, a bit quieter
+    sfx.playMusic(`music/${world}`, 0.22);
     this.ui.add(snd.container);
 
     // camera distance: how much of the level you see while racing

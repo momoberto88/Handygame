@@ -84,6 +84,10 @@ class Synth {
   enabled = true;
   volume = 0.6;
   private buffers = new Map<string, AudioBuffer | 'loading' | 'failed'>();
+  /** Looping background music and the track that should play (also while it is still loading). */
+  private music: { path: string; src: AudioBufferSourceNode; gain: GainNode } | null = null;
+  private musicWanted: { path: string; vol: number } | null = null;
+  musicOn = true;
   /** Clip currently speaking (voices don't talk over each other). */
   private voice: { src: AudioBufferSourceNode; priority: number; until: number } | null = null;
 
@@ -97,7 +101,10 @@ class Synth {
       fetch(`${import.meta.env.BASE_URL}assets/audio/${path}.mp3`)
         .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
         .then((data) => ctx.decodeAudioData(data))
-        .then((buf) => this.buffers.set(path, buf))
+        .then((buf) => {
+          this.buffers.set(path, buf);
+          if (this.musicWanted?.path === path) this.playMusic(path, this.musicWanted.vol);
+        })
         .catch(() => this.buffers.set(path, 'failed'));
     }
   }
@@ -105,6 +112,60 @@ class Synth {
   /** Loads every recorded sound effect. */
   preloadEffects() {
     this.preload([...CLIPS].filter((c) => c.startsWith('sfx/')));
+  }
+
+  /** Loops a music track (fades over from the current one); keeps playing if it is already on. */
+  playMusic(path: string, vol = 0.35) {
+    this.musicWanted = { path, vol };
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return;
+    const t = ctx.currentTime;
+    if (!this.enabled || !this.musicOn || !CLIPS.has(path)) {
+      this.stopMusic();
+      this.musicWanted = { path, vol };
+      return;
+    }
+    if (this.music?.path === path) {
+      this.music.gain.gain.setTargetAtTime(vol, t, 0.3);
+      return;
+    }
+    const buf = this.buffers.get(path);
+    if (!(buf instanceof AudioBuffer)) {
+      this.preload([path]);
+      return;
+    }
+    this.stopMusic();
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(vol, t + 1.2);
+    src.connect(gain).connect(this.master);
+    src.start();
+    this.music = { path, src, gain };
+  }
+
+  stopMusic(fade = 0.8) {
+    const m = this.music;
+    this.music = null;
+    this.musicWanted = null;
+    if (!m || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    m.gain.gain.cancelScheduledValues(t);
+    m.gain.gain.setValueAtTime(m.gain.gain.value, t);
+    m.gain.gain.linearRampToValueAtTime(0.0001, t + fade);
+    m.src.stop(t + fade + 0.05);
+  }
+
+  /** Call after switching sound or music on/off. */
+  refreshMusic() {
+    const want = this.musicWanted ?? (this.music ? { path: this.music.path, vol: 0.35 } : null);
+    if (!want) return;
+    if (!this.enabled || !this.musicOn) {
+      this.stopMusic();
+      this.musicWanted = want;
+    } else this.playMusic(want.path, want.vol);
   }
 
   hasClip(path: string): boolean {
@@ -182,7 +243,7 @@ class Synth {
       for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
       this.preloadEffects();
     }
-    if (this.ctx.state === 'suspended') void this.ctx.resume();
+    if (this.ctx.state === 'suspended') void this.ctx.resume().then(() => this.refreshMusic());
   }
 
   get context(): AudioContext | null {
