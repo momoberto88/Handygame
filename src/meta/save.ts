@@ -1,3 +1,4 @@
+import { EMPTY_DAILY, type DailyState } from './daily';
 const KEY = 'chaos-sprint-save-v1';
 
 /** How much of the level the race camera shows. */
@@ -26,6 +27,8 @@ export interface SaveData {
   tracks: string[];
   /** Offline races and cups as 2 vs 2 (you and a bot against two bots). */
   teamMode: boolean;
+  /** Daily chest and tasks. */
+  daily: DailyState;
 }
 
 const DEFAULT: SaveData = {
@@ -42,6 +45,7 @@ const DEFAULT: SaveData = {
   cups: {},
   tracks: [],
   teamMode: false,
+  daily: { ...EMPTY_DAILY },
 };
 
 let cache: SaveData | null = null;
@@ -61,6 +65,7 @@ export function loadSave(): SaveData {
         stats: { ...data.stats, ...parsed.stats },
         best: { ...parsed.best },
         cups: { ...parsed.cups },
+        daily: { ...EMPTY_DAILY, ...parsed.daily },
       };
     }
   } catch {

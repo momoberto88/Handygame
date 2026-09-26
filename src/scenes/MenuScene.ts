@@ -3,13 +3,14 @@ import { sfx } from '../audio/sfx';
 import { viewWidth, viewZoom, VIEW_H } from '../layout';
 import { ABILITIES, CHARACTERS, characterById } from '../meta/characters';
 import { CAMERA_DISTANCES, loadSave, writeSave } from '../meta/save';
+import { CHEST_COINS, chestReady, chestReward, claimTask, openChest, refreshDaily, taskDef } from '../meta/daily';
 import { createRunner } from '../sim/race';
 import { ART_RES } from '../render/art/canvas';
 import { makeTileset } from '../render/art/worldArt';
 import { BackgroundView } from '../render/BackgroundView';
 import { RunnerView } from '../render/RunnerView';
 import { WORLD_ORDER } from '../render/worlds';
-import { iconButton, textButton } from '../ui/widgets';
+import { iconButton, panel, textButton } from '../ui/widgets';
 import { startLocalRace } from './flow';
 import { uiText } from './HudScene';
 
@@ -106,7 +107,8 @@ export class MenuScene extends Phaser.Scene {
 
     // wallet
     this.ui.add(this.add.image(W - 150, 28, 'coin').setScale(1.2 / ART_RES));
-    this.ui.add(uiText(this, W - 134, 14, String(save.coins), 22, '#ffe68a'));
+    this.coinLabel = uiText(this, W - 134, 14, String(save.coins), 22, '#ffe68a');
+    this.ui.add(this.coinLabel);
     this.ui.add(uiText(this, W - 74, 14, `🏆 ${save.trophies}`, 22, '#ffffff'));
 
     // sound toggle
@@ -140,6 +142,125 @@ export class MenuScene extends Phaser.Scene {
       rudeBtn.label.setText(rudeLabel());
     }, 18);
     this.ui.add(rudeBtn.container);
+
+    // daily chest and tasks
+    const gift = iconButton(this, 400, 30, 22, '🎁', 0xffa94a, () => this.openDaily());
+    this.ui.add(gift.container);
+    this.giftBadge = this.add.circle(418, 12, 8, 0xff3a3a).setStrokeStyle(2, 0xffffff);
+    this.ui.add(this.giftBadge);
+    this.refreshBadge();
+    // the menu camera scrolls: pin every button (also for tapping), not only the drawing
+    this.ui.setScrollFactor(0, 0, true);
+  }
+
+  private coinLabel?: Phaser.GameObjects.Text;
+  private giftBadge?: Phaser.GameObjects.Arc;
+  private dailyUi?: Phaser.GameObjects.Container;
+
+  private refreshBadge() {
+    writeSave((s) => (s.daily = refreshDaily(s.daily)));
+    const d = loadSave().daily;
+    const claimable = chestReady(d) || d.tasks.some((t) => !t.claimed && t.progress >= taskDef(t.id).goal);
+    this.giftBadge?.setVisible(claimable);
+    this.coinLabel?.setText(String(loadSave().coins));
+  }
+
+  /** Overlay with the daily chest (streak) and the three daily tasks. */
+  private openDaily() {
+    this.dailyUi?.destroy();
+    const W = viewWidth(this);
+    const H = VIEW_H;
+    const d = loadSave().daily;
+    const ui = this.add.container(0, 0).setScrollFactor(0).setDepth(100);
+    this.dailyUi = ui;
+    const shade = this.add.rectangle(0, 0, W, H, 0x0d0a1a, 0.7).setOrigin(0, 0).setInteractive();
+    ui.add(shade);
+    const cx = W / 2;
+    const pw = Math.min(640, W - 40);
+    ui.add(panel(this, cx, H / 2, pw, 460));
+    ui.add(uiText(this, cx, 58, '🎁 Tagesbonus', 30, '#ffd84a').setOrigin(0.5));
+    ui.add(iconButton(this, cx + pw / 2 - 28, 50, 18, '✕', 0xe0604a, () => {
+      ui.destroy();
+      this.dailyUi = undefined;
+      this.refreshBadge();
+    }).container);
+
+    // chest: seven days of a streak
+    const ready = chestReady(d);
+    const next = chestReward(d);
+    const today = ready ? next.streak : d.streak;
+    const bw = Math.min(70, (pw - 60) / 7);
+    CHEST_COINS.forEach((coins, i) => {
+      const x = cx - ((CHEST_COINS.length - 1) / 2) * (bw + 6) + i * (bw + 6);
+      const day = i + 1;
+      const past = day < today || (!ready && day === today);
+      const now = ready && day === Math.min(today, 7);
+      const g = this.add.graphics();
+      g.fillStyle(now ? 0xffd84a : past ? 0x5fd35a : 0x3d3470, 1).fillRoundedRect(x - bw / 2, 92, bw, 66, 10);
+      g.lineStyle(3, 0x1d1a2f, 1).strokeRoundedRect(x - bw / 2, 92, bw, 66, 10);
+      ui.add(g);
+      ui.add(uiText(this, x, 100, `Tag ${day}`, 12, now ? '#1d1a2f' : '#ffffff').setOrigin(0.5, 0).setStroke('#1d1a2f', now ? 0 : 3));
+      ui.add(uiText(this, x, 122, past ? '✔' : `${coins}`, 18, now ? '#1d1a2f' : '#ffe68a').setOrigin(0.5, 0).setStroke('#1d1a2f', now ? 0 : 3));
+    });
+    const chestBtn = textButton(this, cx, 190, 300, 48, ready ? `Kiste öffnen: +${next.coins} 🪙` : `Morgen wieder! Serie: ${d.streak} ${d.streak === 1 ? 'Tag' : 'Tage'}`, ready ? 0x5fd35a : 0x8a84a8, () => {
+      let got = 0;
+      writeSave((s) => {
+        got = openChest(s.daily);
+        s.coins += got;
+      });
+      if (got) this.coinBurst(cx, 190, got);
+      this.openDaily();
+    }, 18);
+    chestBtn.setEnabled(ready);
+    ui.add(chestBtn.container);
+
+    // tasks
+    ui.add(uiText(this, cx - pw / 2 + 30, 232, 'Tagesaufgaben', 18, '#1d1a2f').setStroke('#fff8e6', 4));
+    d.tasks.forEach((t, i) => {
+      const def = taskDef(t.id);
+      const y = 280 + i * 62;
+      const done = t.progress >= def.goal;
+      const g = this.add.graphics();
+      g.fillStyle(0x2a241c, 0.35).fillRoundedRect(cx - pw / 2 + 24, y - 26, pw - 48, 52, 12);
+      g.fillStyle(0x1d1a2f, 0.6).fillRoundedRect(cx - pw / 2 + 36, y + 10, pw * 0.5, 8, 4);
+      g.fillStyle(done ? 0x5fd35a : 0xffd84a, 1).fillRoundedRect(cx - pw / 2 + 36, y + 10, Math.max(8, pw * 0.5 * Math.min(1, t.progress / def.goal)), 8, 4);
+      ui.add(g);
+      ui.add(uiText(this, cx - pw / 2 + 36, y - 20, `${def.text}  (${Math.min(t.progress, def.goal)}/${def.goal})`, 16));
+      const label = t.claimed ? '✔ abgeholt' : done ? `Abholen +${def.reward}` : `+${def.reward} 🪙`;
+      const b = textButton(this, cx + pw / 2 - 110, y, 170, 42, label, done && !t.claimed ? 0x5fd35a : 0x8a84a8, () => {
+        let got = 0;
+        writeSave((s) => {
+          got = claimTask(s.daily, t.id);
+          s.coins += got;
+        });
+        if (got) this.coinBurst(cx + pw / 2 - 110, y, got);
+        this.openDaily();
+      }, 16);
+      b.setEnabled(done && !t.claimed);
+      ui.add(b.container);
+    });
+    ui.setScrollFactor(0, 0, true);
+    this.refreshBadge();
+  }
+
+  /** Coins flying up from a button, with the sound. */
+  private coinBurst(x: number, y: number, amount: number) {
+    sfx.unlock();
+    sfx.play('coin');
+    sfx.play('item');
+    for (let i = 0; i < Math.min(24, 6 + amount / 10); i++) {
+      const c = this.add.image(x, y, 'coin').setScale(0.9 / ART_RES).setScrollFactor(0).setDepth(120);
+      this.tweens.add({
+        targets: c,
+        x: x + (Math.random() - 0.5) * 260,
+        y: y - 60 - Math.random() * 120,
+        alpha: 0,
+        angle: Math.random() * 360,
+        duration: 700 + Math.random() * 400,
+        ease: 'Cubic.Out',
+        onComplete: () => c.destroy(),
+      });
+    }
   }
 
   private makePreview(x: number, y: number, id: string) {

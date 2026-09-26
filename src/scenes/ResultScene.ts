@@ -11,6 +11,7 @@ import { hostStartRace, startCupRace, startLocalRace } from './flow';
 import { activeCup, addRaceResult, cupRanking, isLastRace, lastOut, racerKey, setActiveCup } from '../meta/cup';
 import { uiText } from './HudScene';
 import { announce, resultComment, resultTitle } from '../meta/lines';
+import { countRace, refreshDaily, taskDef } from '../meta/daily';
 import { TEAMS, cupTeamScores, scoreLine, teamScores } from '../meta/teams';
 
 export const TROPHIES_FOR_PLACE = [10, 6, 3, 1];
@@ -43,6 +44,15 @@ export class ResultScene extends Phaser.Scene {
     const bonus = ([30, 15, 5, 0][place - 1] ?? 0) + (teamWin ? 20 : 0);
     const coins = watching ? 0 : me.coins + bonus;
     const courseId = race.courseId;
+    // daily tasks
+    const raceScene = this.scene.get('race') as unknown as { stats?: { hits: number; abilities: number } };
+    let doneTasks: string[] = [];
+    if (!watching) {
+      writeSave((s) => {
+        s.daily = refreshDaily(s.daily);
+        doneTasks = countRace(s.daily, { place, coins: me.coins, deaths: me.deaths, hits: raceScene.stats?.hits ?? 0, abilities: raceScene.stats?.abilities ?? 0 });
+      });
+    }
     if (!watching) writeSave((s) => {
       s.coins += coins;
       s.trophies += trophies;
@@ -120,6 +130,9 @@ export class ResultScene extends Phaser.Scene {
       content.add(uiText(this, cx, cy + ph / 2 - 118, `❌ ${out.name} scheidet aus${next}`, 17, '#ffb0b0').setOrigin(0.5));
     } else if (cup && leader && !cupDone && cup.mode !== 'ko') {
       content.add(uiText(this, cx, cy + ph / 2 - 118, `Cup-Führung: ${leader.name} mit ${leader.points} Punkten`, 17, '#fff2b0').setOrigin(0.5));
+    }
+    if (doneTasks.length) {
+      content.add(uiText(this, cx, cy + ph / 2 - 142, `✔ Tagesaufgabe geschafft: ${doneTasks.map((id) => taskDef(id).text).join(', ')} – im Menü abholen!`, 15, '#9fff9a').setOrigin(0.5));
     }
     const nextLabel = cupDone ? 'Siegerehrung 🏆' : cup ? `Weiter (${cup.index + 2}/${cup.courses.length})` : 'Nochmal!';
     const waitForHost = online && !isHost && !cupDone;

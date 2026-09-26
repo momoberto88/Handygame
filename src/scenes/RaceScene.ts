@@ -77,6 +77,7 @@ export class RaceScene extends Phaser.Scene {
     this.leader = -1;
     this.lastLeadCall = 0;
     this.startTalked = false;
+    this.stats = { hits: 0, abilities: 0 };
     this.wasSliding = false;
     this.autopilot = debugParam('autoplay') !== null && this.session.online ? new BotBrain(99, { skill: 0.8 }) : null;
   }
@@ -310,6 +311,8 @@ export class RaceScene extends Phaser.Scene {
   }
 
   private trailTimers: number[] = [];
+  /** Your hits and abilities in this race (for the daily tasks). */
+  stats = { hits: 0, abilities: 0 };
 
   /** Trails from the wardrobe (fart cloud, fire, rainbow, money …) behind running runners. */
   private updateTrails(dt: number) {
@@ -452,6 +455,7 @@ export class RaceScene extends Phaser.Scene {
           const snd = { squash: 'squash', boom: 'boom', zap: 'zap', trap: 'trap', slice: 'slice', fall: 'fall', spike: 'death' } as const;
           sfx.play(snd[e.kind] ?? 'death');
         }
+        if (e.by === this.session.localId && e.by !== e.r) this.stats.hits++;
         // whoever threw the item gloats
         if (e.by !== undefined && e.by !== e.r && race.isRival(e.by, e.r) && Math.random() < (this.isLocal(e.by) ? 0.8 : 0.5)) {
           this.say(e.by, 'hit', this.isLocal(e.by));
@@ -546,6 +550,7 @@ export class RaceScene extends Phaser.Scene {
         break;
       case 'ability': {
         this.fx.ability(e.kind, e.x, e.y);
+        if (this.isLocal(e.r)) this.stats.abilities++;
         this.say(e.r, 'ability', true);
         if (this.nearCamera(e.x)) sfx.play(`ab-${e.kind}`);
         if (this.isLocal(e.r)) {
