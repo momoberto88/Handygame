@@ -441,7 +441,7 @@
  "voice/otter/ability-0.mp3": {
   "type": "tts",
   "voice": "8tJgFGd1nr7H5KLTvjjt",
-  "prompt": "[excited] Probier mal. Schmeckt nach Tod."
+  "prompt": "[excited] Probier mal. Schmeckt nach Tod!"
  },
  "voice/otter/ability-1.mp3": {
   "type": "tts",
@@ -526,7 +526,7 @@
  "voice/kraehe/ability-0.mp3": {
   "type": "tts",
   "voice": "BOXom31b0dZ8zv6QJFfQ",
-  "prompt": "[mischievously] Deine Mutter lutscht Schwänze in der Hölle!"
+  "prompt": "[mischievously] Deine Mutter lutscht Schwänze in der Hölle! [cackles]"
  },
  "voice/kraehe/ability-1.mp3": {
   "type": "tts",
@@ -711,7 +711,7 @@
  "voice/maulwurf/death-0.mp3": {
   "type": "tts",
   "voice": "DUAKkudcC2PI6KEqJ60K",
-  "prompt": "[shouting] Amen, Arschloch."
+  "prompt": "[shouting] Amen, Arschloch!"
  },
  "voice/maulwurf/death-1.mp3": {
   "type": "tts",

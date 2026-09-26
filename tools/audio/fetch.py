@@ -55,6 +55,10 @@ def transcript_media(path):
                 walk(json.loads(line))
             except ValueError:
                 pass
+    # big tool results are stored next to the transcript as separate files
+    results = os.path.join(os.path.dirname(path), os.path.basename(path)[:-6], 'tool-results')
+    for name in sorted(glob.glob(os.path.join(results, '*ElevenLabs*'))):
+        walk(open(name).read())
     return found
 
 
