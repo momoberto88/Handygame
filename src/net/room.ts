@@ -8,6 +8,7 @@ import {
   type HostMsg,
   type LobbyPlayer,
   type Playlist,
+  type VoteState,
 } from './protocol';
 import type { RacerInfo } from './session';
 
@@ -91,6 +92,8 @@ export class NetRoom {
   private seats = new Map<number, RemoteSeat>();
   players: LobbyPlayer[] = [];
   playlist: Playlist = { name: 'Zufall', courses: [] };
+  /** Running course vote (both sides); `endsAt` is this phone's clock. */
+  vote: (VoteState & { endsAt: number }) | null = null;
   racing = false;
 
   // client side
@@ -104,6 +107,8 @@ export class NetRoom {
   onHostMessage: ((msg: HostMsg) => void) | null = null;
   onStart: ((msg: Extract<HostMsg, { t: 'start' }>) => void) | null = null;
   onClosed: ((reason: string) => void) | null = null;
+  /** Client: the host opened a course vote. */
+  onVoteStart: (() => void) | null = null;
 
   private constructor(role: 'host' | 'client', code: string, peer: Peer) {
     this.role = role;
@@ -207,6 +212,10 @@ export class NetRoom {
         this.broadcastLobby();
         return;
       }
+      if (msg.t === 'vote') {
+        this.castVote(seat, msg.i);
+        return;
+      }
       if (msg.t === 'profile') {
         const p = this.players.find((x) => x.seat === seat);
         if (p) Object.assign(p, { name: msg.name, character: msg.character, cosmetics: msg.cosmetics });
@@ -251,8 +260,21 @@ export class NetRoom {
   }
 
   broadcastLobby() {
-    this.broadcast({ t: 'lobby', players: this.players, playlist: this.playlist, racing: this.racing });
+    const vote = this.vote ? { options: this.vote.options, votes: this.vote.votes, left: Math.max(0, (this.vote.endsAt - Date.now()) / 1000) } : undefined;
+    this.broadcast({ t: 'lobby', players: this.players, playlist: this.playlist, racing: this.racing, vote });
     this.onLobby?.();
+  }
+
+  /** Host: record a vote (one per seat, the latest counts). */
+  castVote(seat: number, option: number) {
+    if (!this.vote || option < 0 || option >= this.vote.options.length) return;
+    this.vote.votes = [...this.vote.votes.filter(([s]) => s !== seat), [seat, option]];
+    this.broadcastLobby();
+  }
+
+  /** Client: vote, the host counts it. */
+  sendVote(option: number) {
+    this.send({ t: 'vote', i: option });
   }
 
   remoteSeats(): number[] {
@@ -277,6 +299,11 @@ export class NetRoom {
         this.players = msg.players;
         this.playlist = msg.playlist;
         this.racing = msg.racing;
+        {
+          const started = !this.vote && !!msg.vote;
+          this.vote = msg.vote ? { ...msg.vote, endsAt: Date.now() + msg.vote.left * 1000 } : null;
+          if (started) this.onVoteStart?.();
+        }
         this.onLobby?.();
         break;
       case 'start':

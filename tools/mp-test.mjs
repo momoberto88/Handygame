@@ -69,7 +69,25 @@ if (process.env.CUP) {
   await host.waitForTimeout(500);
   await client.screenshot({ path: `${shots}/client-lobby-cup.png` });
 }
+if (process.env.VOTE) {
+  await tap(host, W / 2 - 150, 450); // Abstimmung: an
+  await host.waitForTimeout(400);
+}
 await tap(host, W / 2 + 150, 380); // Rennen starten
+if (process.env.VOTE) {
+  // both phones vote for the third course
+  await host.waitForTimeout(1200);
+  const options = await client.evaluate(() => window.chaosRoom?.vote?.options);
+  console.log('vote options', JSON.stringify(options));
+  const cw = Math.min(290, (W - 80) / 3);
+  await client.screenshot({ path: `${shots}/client-vote.png` });
+  await tap(client, W / 2 + (cw + 20), 250);
+  await tap(host, W / 2 + (cw + 20), 250);
+  await host.waitForTimeout(700);
+  await client.screenshot({ path: `${shots}/client-voted.png` });
+  console.log('votes', JSON.stringify(await host.evaluate(() => window.chaosRoom.vote?.votes)));
+  console.log('expected course', options?.[2]);
+}
 
 const state = (page) =>
   page.evaluate(() => {

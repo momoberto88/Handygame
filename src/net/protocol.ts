@@ -33,13 +33,25 @@ export interface LobbyPlayer {
 export interface Playlist {
   name: string;
   courses: string[];
+  /** Before every race the phones vote on three random courses. */
+  vote?: boolean;
 }
+
+/** A running course vote: the options, who voted for what ([seat, option]) and seconds left. */
+export interface VoteState {
+  options: string[];
+  votes: [number, number][];
+  left: number;
+}
+
+export const VOTE_SECONDS = 8;
 
 export type ClientMsg =
   | { t: 'hello'; v: number; name: string; character: string; cosmetics?: RacerInfo['cosmetics'] }
   | { t: 'in'; s: number; j: 0 | 1; d: 0 | 1 }
   | { t: 'use'; dir: -1 | 1 }
   | { t: 'ab' }
+  | { t: 'vote'; i: number }
   | { t: 'profile'; name: string; character: string; cosmetics?: RacerInfo['cosmetics'] };
 
 export interface SnapshotMsg {
@@ -66,7 +78,7 @@ export interface SnapshotMsg {
 export type HostMsg =
   | { t: 'welcome'; seat: number }
   | { t: 'reject'; reason: string }
-  | { t: 'lobby'; players: LobbyPlayer[]; playlist: Playlist; racing: boolean }
+  | { t: 'lobby'; players: LobbyPlayer[]; playlist: Playlist; racing: boolean; vote?: VoteState }
   | { t: 'start'; seed: number; world: WorldId; courseId?: string; racers: RacerInfo[]; you: number; cup?: CupState }
   | SnapshotMsg;
 

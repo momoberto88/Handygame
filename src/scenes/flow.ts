@@ -10,7 +10,8 @@ import { Rng, randomSeed } from '../sim/rng';
 import type { WorldId } from '../sim/types';
 import { WORLD_ORDER } from '../render/worlds';
 import { COURSES, courseById } from '../sim/track/courses';
-import { activeCup, isLastRace, newCup, setActiveCup, type CupState } from '../meta/cup';
+import { activeCup, isLastRace, newCup, randomCourses, setActiveCup, type CupState } from '../meta/cup';
+import { VOTE_SECONDS } from '../net/protocol';
 
 export function playerName(): string {
   const s = loadSave();
@@ -104,6 +105,11 @@ export function myProfile(): Profile {
 
 /** Clients start a race whenever the host says so, whatever screen they are on. */
 export function wireClientRoom(game: Phaser.Game, room: NetRoom) {
+  // the host opened a course vote: show the lobby, wherever we are
+  room.onVoteStart = () => {
+    const active = game.scene.getScenes(true)[0];
+    if (active && active.scene.key !== 'lobby') showLobby(active);
+  };
   room.onStart = (msg) => {
     setActiveCup(msg.cup ?? null);
     const active = game.scene.getScenes(true)[0];
@@ -111,13 +117,46 @@ export function wireClientRoom(game: Phaser.Game, room: NetRoom) {
   };
 }
 
+/** Leaves race / result screens and opens the lobby. */
+export function showLobby(scene: Phaser.Scene) {
+  const mgr = scene.game.scene;
+  for (const key of ['result', 'hud', 'race', 'menu', 'wardrobe', 'courses', 'podium', 'editor']) {
+    if (mgr.isActive(key) || mgr.isPaused(key)) mgr.stop(key);
+  }
+  if (!mgr.isActive('lobby')) mgr.start('lobby');
+}
+
+/** Host: three random courses, VOTE_SECONDS to vote, then the race starts on the winner. */
+export function hostStartVote(scene: Phaser.Scene, room: NetRoom) {
+  if (room.vote) return;
+  const game = scene.game;
+  room.vote = { options: randomCourses(3, randomSeed()), votes: [], left: VOTE_SECONDS, endsAt: Date.now() + VOTE_SECONDS * 1000 };
+  showLobby(scene);
+  room.broadcastLobby();
+  window.setTimeout(() => {
+    const vote = room.vote;
+    if (!vote || room.isClosed) return;
+    const counts = vote.options.map((_, i) => vote.votes.filter(([, o]) => o === i).length);
+    const best = Math.max(...counts);
+    const top = vote.options.filter((_, i) => counts[i] === best);
+    const winner = top[Math.floor(Math.random() * top.length)];
+    room.vote = null;
+    room.broadcastLobby();
+    const active = game.scene.getScenes(true)[0];
+    if (active) hostStartRace(active, room, winner);
+  }, VOTE_SECONDS * 1000);
+}
+
 /** Host: start a race with everyone currently in the room (empty seats become bots). */
-export function hostStartRace(scene: Phaser.Scene, room: NetRoom) {
+export function hostStartRace(scene: Phaser.Scene, room: NetRoom, forcedCourse?: string) {
+  if (room.playlist.vote && !forcedCourse) return hostStartVote(scene, room);
   const seed = randomSeed();
   const list = room.playlist.courses;
   let cup: CupState | null = null;
   let courseId: string;
-  if (list.length > 1) {
+  if (forcedCourse) {
+    courseId = forcedCourse;
+  } else if (list.length > 1) {
     // a cup: continue the running one or start it fresh
     cup = activeCup();
     const finished = cup && cup.counted >= cup.index && isLastRace(cup);

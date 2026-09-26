@@ -25,7 +25,7 @@ const THUMB_W = 280;
 const THUMB_H = 84;
 
 /** Small side view of a course, drawn once from its real tiles. */
-function courseThumb(scene: Phaser.Scene, course: CourseDef): string {
+export function courseThumb(scene: Phaser.Scene, course: CourseDef): string {
   const key = `thumb-${course.id}`;
   if (scene.textures.exists(key)) return key;
   return drawTrackThumb(scene, key, generateTrack({ seed: course.seed, world: course.world, courseId: course.id }), THUMB_W, THUMB_H);

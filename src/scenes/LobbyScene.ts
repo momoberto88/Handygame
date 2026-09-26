@@ -7,12 +7,14 @@ import { headIcon } from '../render/art/skins';
 import { panel, textButton } from '../ui/widgets';
 import { goToMenu, hostStartRace, myProfile, wireClientRoom } from './flow';
 import { uiText } from './HudScene';
-import { courseName } from '../sim/track/courses';
+import { courseById, courseName } from '../sim/track/courses';
+import { courseThumb } from './CourseSelectScene';
 
 type View = 'choose' | 'join' | 'busy' | 'room';
 
 /** Short description of the host's course choice, e.g. "Pilz-Cup (4 Rennen)". */
 function playlistLabel(p: Playlist): string {
+  if (p.vote) return '🗳 Abstimmung';
   if (!p.courses.length) return 'Zufall';
   if (p.courses.length === 1) return p.name;
   return `${p.name} (${p.courses.length} Rennen)`;
@@ -31,6 +33,7 @@ export class LobbyScene extends Phaser.Scene {
   private busyText = '';
   private W = 960;
   private alive = false;
+  private voteSecs = -1;
 
   constructor() {
     super('lobby');
@@ -175,6 +178,55 @@ export class LobbyScene extends Phaser.Scene {
     this.render();
   }
 
+  update() {
+    const room = currentRoom();
+    if (this.view !== 'room' || !room?.vote) return;
+    const secs = Math.max(0, Math.ceil((room.vote.endsAt - Date.now()) / 1000));
+    if (secs !== this.voteSecs) this.render();
+  }
+
+  /** Course vote: three cards, tap to vote, voters' heads under each card. */
+  private renderVote(room: NetRoom) {
+    const vote = room.vote!;
+    const W = this.W;
+    const secs = Math.max(0, Math.ceil((vote.endsAt - Date.now()) / 1000));
+    this.voteSecs = secs;
+    this.ui.add(uiText(this, W / 2, 84, `🗳 Welche Strecke fahren wir?  noch ${secs} s`, 24, '#ffffff').setOrigin(0.5));
+    const cw = Math.min(290, (W - 80) / 3);
+    const ch = 250;
+    const mySeat = room.role === 'host' ? 0 : room.mySeat;
+    const mine = vote.votes.find(([s]) => s === mySeat)?.[1] ?? -1;
+    vote.options.forEach((id, i) => {
+      const course = courseById(id);
+      const cx = W / 2 + (i - 1) * (cw + 20);
+      const cy = 250;
+      const c = this.add.container(cx, cy);
+      const g = this.add.graphics();
+      g.fillStyle(i === mine ? 0x5a4a20 : 0x3d3470, 1).fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 16);
+      g.lineStyle(4, i === mine ? 0xffd84a : 0x514880, 1).strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 16);
+      c.add(g);
+      const thumb = this.add.image(0, -ch / 2 + 12, courseThumb(this, course)).setOrigin(0.5, 0);
+      thumb.setScale((cw - 20) / thumb.width, 80 / thumb.height);
+      c.add(thumb);
+      c.add(uiText(this, 0, -ch / 2 + 110, course.name, 20).setOrigin(0.5).setWordWrapWidth((cw - 16) * 2).setAlign('center'));
+      c.add(uiText(this, 0, -ch / 2 + 142, '★'.repeat(course.difficulty), 18, '#ffd84a').setOrigin(0.5));
+      const voters = vote.votes.filter(([, o]) => o === i).map(([s]) => room.players.find((p) => p.seat === s)).filter((p) => !!p);
+      voters.forEach((p, k) => {
+        const icon = headIcon(this, characterById(p!.character), 34);
+        c.add(this.add.image((k - (voters.length - 1) / 2) * 40, ch / 2 - 40, icon.key).setScale(icon.scale));
+      });
+      if (!voters.length) c.add(uiText(this, 0, ch / 2 - 40, 'noch keine Stimme', 14, '#8a84b8').setOrigin(0.5));
+      c.setSize(cw, ch);
+      c.setInteractive({ useHandCursor: true });
+      c.on('pointerup', () => {
+        if (room.role === 'host') room.castVote(0, i);
+        else room.sendVote(i);
+      });
+      this.ui.add(c);
+    });
+    this.ui.add(uiText(this, W / 2, 410, 'Tippe auf deine Lieblingsstrecke – bei Gleichstand entscheidet der Zufall.', 16, '#c9c2e8').setOrigin(0.5));
+  }
+
   private renderRoom() {
     const room = currentRoom();
     if (!room) {
@@ -182,6 +234,10 @@ export class LobbyScene extends Phaser.Scene {
       return;
     }
     const W = this.W;
+    if (room.vote) {
+      this.renderVote(room);
+      return;
+    }
     this.ui.add(panel(this, W / 2, 128, 340, 76));
     this.ui.add(uiText(this, W / 2, 106, 'Raum-Code', 16, '#3a3228').setOrigin(0.5).setStroke('#a39c8c', 0));
     this.ui.add(uiText(this, W / 2, 138, room.code.split('').join(' '), 40, '#ffffff').setOrigin(0.5));
@@ -222,8 +278,17 @@ export class LobbyScene extends Phaser.Scene {
     }
     const courses = playlistCourses(room.playlist);
     if (courses) this.ui.add(uiText(this, W / 2, 338, courses, 14, '#c9c2e8').setOrigin(0.5).setWordWrapWidth((W - 60) * 2).setAlign('center'));
+    if (room.role === 'host') {
+      this.ui.add(
+        textButton(this, W / 2 - 150, 450, 250, 44, room.playlist.vote ? '🗳 Abstimmung: an' : '🗳 Abstimmung: aus', room.playlist.vote ? 0xffd84a : 0x8a84a8, () => {
+          room.playlist = room.playlist.vote ? { name: 'Zufall', courses: [] } : { name: 'Abstimmung', courses: [], vote: true };
+          room.broadcastLobby();
+          this.render();
+        }, 16).container,
+      );
+    }
     this.ui.add(
-      textButton(this, W / 2, 460, 220, 48, 'Raum verlassen', 0xe0604a, () => {
+      textButton(this, room.role === 'host' ? W / 2 + 150 : W / 2, room.role === 'host' ? 450 : 460, 220, 44, 'Raum verlassen', 0xe0604a, () => {
         setCurrentRoom(null);
         this.error = '';
         this.setView('choose');
