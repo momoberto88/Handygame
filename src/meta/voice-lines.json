@@ -1,0 +1,429 @@
+{
+ "voices": {
+  "hase": {
+   "voice": "yPe6Dv97ilaDXuBmdaa6",
+   "tag": "[laughs]"
+  },
+  "katze": {
+   "voice": "JRIj9I6iNUE54uwAYd1w",
+   "tag": "[yelling]"
+  },
+  "ratte": {
+   "voice": "YypU2axAT21dZtyJyNGA",
+   "tag": "[manic, giggling]"
+  },
+  "otter": {
+   "voice": "8tJgFGd1nr7H5KLTvjjt",
+   "tag": "[excited]"
+  },
+  "kraehe": {
+   "voice": "BOXom31b0dZ8zv6QJFfQ",
+   "tag": "[mischievously]"
+  },
+  "dachs": {
+   "voice": "BDqe1qZiwPi7xspRxTgh",
+   "tag": "[yelling]"
+  },
+  "maulwurf": {
+   "voice": "DUAKkudcC2PI6KEqJ60K",
+   "tag": "[shouting]"
+  },
+  "chinchilla": {
+   "voice": "Zi7dUK1wmV84QNPgB6Hc",
+   "tag": "[sassy]"
+  },
+  "schildkroete": {
+   "voice": "09BJBPASOGbr1evokbCu",
+   "tag": "[yelling]"
+  },
+  "announcer": {
+   "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+   "tag": "[shouting]"
+  }
+ },
+ "talk": {
+  "hase": {
+   "ability": [
+    "Hoch wie ich, Baby!",
+    "Chill mal, Digga.",
+    "Das Kraut gibt Flügel."
+   ],
+   "death": [
+    "Sorry, war high.",
+    "Scheiße, wo bin ich?",
+    "Mein Königreich für ’nen Snack."
+   ],
+   "win": [
+    "Ganz entspannt. Hab ich doch gesagt.",
+    "Der König hat gesprochen. Oder gelallt."
+   ],
+   "hit": [
+    "Ups. War keine Absicht. Doch.",
+    "Nimm das, du Spießer!"
+   ],
+   "pass": [
+    "Tschüssi, du Lahmarsch!",
+    "Überholt. Im Halbschlaf."
+   ],
+   "passed": [
+    "Hey, ich war zuerst da, Mann!",
+    "Voll unchillig, Alter."
+   ],
+   "swallowed": [
+    "Boah, was war das für ein Trip?"
+   ],
+   "stunned": [
+    "Alles dreht sich … geil."
+   ],
+   "start": [
+    "Gleich bin ich vorne. Nach ’nem Nickerchen."
+   ]
+  },
+  "katze": {
+   "ability": [
+    "NEUN ESPRESSO, FICK DICH!",
+    "Koffein ist stärker als Talent!",
+    "Zu langsam, Schlafmütze!"
+   ],
+   "death": [
+    "Verdammt, mein Becher!",
+    "Ich brauch mehr Kaffee. Und ’ne Waffe.",
+    "Fuck. Einfach nur fuck."
+   ],
+   "win": [
+    "Morgens halb zehn, und du bist Letzter.",
+    "Wach sein ist ein Vorteil, du Penner."
+   ],
+   "hit": [
+    "Guten Morgen, du Opfer!",
+    "Das war der Wachmacher!"
+   ],
+   "pass": [
+    "Aus dem Weg, ich hab Herzrasen!",
+    "Bye-bye, Schnarchnase!"
+   ],
+   "passed": [
+    "Was?! Ich bin doch auf Koffein!",
+    "Du Arsch, das war MEIN Platz!"
+   ],
+   "swallowed": [
+    "Scheiße, wer hat mich entkoffeiniert?"
+   ],
+   "stunned": [
+    "Mein Herz … klopft komisch."
+   ],
+   "start": [
+    "Drei Tage nicht geschlafen. LOS!"
+   ]
+  },
+  "ratte": {
+   "ability": [
+    "BOOM, Bitch!",
+    "Geht hoch, meine Kleinen!",
+    "Hoppla, Lunte!"
+   ],
+   "death": [
+    "Scheiße, falsches Kabel!",
+    "Upsi. Das war ein Körperteil.",
+    "Hab mich selbst gezündet. Klassiker."
+   ],
+   "win": [
+    "Alles in die Luft, nur ich nicht!",
+    "Wer zuletzt explodiert, gewinnt."
+   ],
+   "hit": [
+    "Kawumm! Hihihi!",
+    "Zerlegt, du Wurst!"
+   ],
+   "pass": [
+    "Platz da, ich bin geladen!",
+    "Hihi, zu langsam, Fleischklops!"
+   ],
+   "passed": [
+    "Hey! Ich spreng dich gleich!",
+    "Na warte, du Pisser!"
+   ],
+   "swallowed": [
+    "Das Chaos hat mich gefressen. Hihi!"
+   ],
+   "stunned": [
+    "Ohren klingeln … geil!"
+   ],
+   "start": [
+    "Lunte brennt. Hihihi!"
+   ]
+  },
+  "otter": {
+   "ability": [
+    "Probier mal. Schmeckt nach Tod.",
+    "Frisch aus dem Labor, Baby.",
+    "Nicht legal, aber geil."
+   ],
+   "death": [
+    "Shit, die Dosis war zu hoch.",
+    "Nebenwirkung: sterben.",
+    "Das war nicht das Gegengift."
+   ],
+   "win": [
+    "Chemie, du Opfer!",
+    "Doping? Nennen wir es Wissenschaft."
+   ],
+   "hit": [
+    "Experiment geglückt!",
+    "Versuchskaninchen erledigt."
+   ],
+   "pass": [
+    "Die Formel wirkt!",
+    "Überholt, dank Chemie."
+   ],
+   "passed": [
+    "Unmöglich! Meine Berechnungen!",
+    "Du bist gedopt, du Sau!"
+   ],
+   "swallowed": [
+    "Faszinierend. Und ekelhaft."
+   ],
+   "stunned": [
+    "Hab ich was genommen?"
+   ],
+   "start": [
+    "Alle Substanzen eingenommen. Los!"
+   ]
+  },
+  "kraehe": {
+   "ability": [
+    "Deine Mutter lutscht Schwänze in der Hölle!",
+    "Verflucht! Gegen Aufpreis doppelt.",
+    "Dein Pech ist mein Geschäftsmodell."
+   ],
+   "death": [
+    "Wer hat mich verflucht?! Ich will Provision!",
+    "Verdammter Mist, Rabattaktion vorbei.",
+    "Das war nicht im Angebot!"
+   ],
+   "win": [
+    "Glück kann man kaufen. Bei mir.",
+    "Eure Seelen gehören mir. AGB lesen!"
+   ],
+   "hit": [
+    "Fluch zugestellt. Unterschrift bitte!",
+    "Das kostet extra, Schätzchen."
+   ],
+   "pass": [
+    "Ciao, du Sonderangebot!",
+    "Hinter mir, wo du hingehörst."
+   ],
+   "passed": [
+    "Dich verfluch ich bis ins siebte Glied!",
+    "Du Mistvieh, das kostet dich!"
+   ],
+   "swallowed": [
+    "Das Chaos schuldet mir Geld!"
+   ],
+   "stunned": [
+    "Wer dreht an meiner Voodoo-Puppe?"
+   ],
+   "start": [
+    "Flüche zum halben Preis! Nur heute!"
+   ]
+  },
+  "dachs": {
+   "ability": [
+    "Fass, ihr kleinen Scheißer!",
+    "Sitz. Platz. Verrecke.",
+    "Meine Ratten haben Tollwut. Viel Spaß."
+   ],
+   "death": [
+    "Böse Ratten! Kein Käse heute!",
+    "Verdammte Viecher, ihr solltet DIE beißen!",
+    "Au! Das war mein Knie, du Ratte!"
+   ],
+   "win": [
+    "Applaus für die Ratten. Und für mich.",
+    "Dressur ist alles, ihr Amateure."
+   ],
+   "hit": [
+    "Braver Treffer!",
+    "Platz! Und liegen bleiben!"
+   ],
+   "pass": [
+    "Bei Fuß, du Köter!",
+    "Aus dem Weg, Futter!"
+   ],
+   "passed": [
+    "Zurück in den Käfig mit dir!",
+    "Na warte, du Floh!"
+   ],
+   "swallowed": [
+    "Das Chaos stinkt schlimmer als meine Ratten."
+   ],
+   "stunned": [
+    "Wer hat meine Peitsche geklaut?"
+   ],
+   "start": [
+    "Manege frei, ihr Ratten!"
+   ]
+  },
+  "maulwurf": {
+   "ability": [
+    "Der Herr vergibt. Ich nicht.",
+    "Steine heilen. Dich nicht.",
+    "Unverwundbar durch Quarz, Bitch!"
+   ],
+   "death": [
+    "Amen, Arschloch.",
+    "Der Stein war wohl gefälscht.",
+    "Scheiße, falsches Chakra."
+   ],
+   "win": [
+    "Gesegnet sei mein Vorsprung.",
+    "Gott ist mit mir. Ihr seid mit euch."
+   ],
+   "hit": [
+    "Ruhe in Frieden, du Sünder.",
+    "Tu Buße, du Wurm!"
+   ],
+   "pass": [
+    "Die Letzten werden die Letzten sein.",
+    "Geh mit Gott. Aber hinter mir."
+   ],
+   "passed": [
+    "Du wirst in der Hölle schmoren!",
+    "Herrgott, du Bastard!"
+   ],
+   "swallowed": [
+    "Das Fegefeuer ist echt kacke."
+   ],
+   "stunned": [
+    "Ich sehe … ein Licht?"
+   ],
+   "start": [
+    "Lasset uns beten. Und rennen."
+   ]
+  },
+  "chinchilla": {
+   "ability": [
+    "Das Orakel sagt: Fuck you.",
+    "Du wirst weich fallen. Oder auch nicht.",
+    "Die Sterne lügen nie, du Lappen."
+   ],
+   "death": [
+    "Das hab ich nicht kommen sehen. Peinlich.",
+    "Meine Kristallkugel ist kaputt, verdammt!",
+    "Mon dieu, meine Frisur!"
+   ],
+   "win": [
+    "Ich sah es voraus, Schätzchen.",
+    "Die Karten sagen: Ihr seid Opfer."
+   ],
+   "hit": [
+    "Vorhergesehen, mon chéri.",
+    "Das Schicksal hat dich gefickt."
+   ],
+   "pass": [
+    "Au revoir, du Landei!",
+    "Adieu, Versager!"
+   ],
+   "passed": [
+    "Das stand nicht in den Karten!",
+    "Merde! Du kleiner Wicht!"
+   ],
+   "swallowed": [
+    "Quelle horreur! Wie ordinär!"
+   ],
+   "stunned": [
+    "Ich sehe … Sternchen."
+   ],
+   "start": [
+    "Ich sehe deine Niederlage, Schätzchen."
+   ]
+  },
+  "schildkroete": {
+   "ability": [
+    "DAS WIRD FARBENFROH!",
+    "Feuerwerk ist Kunst, du Banause!",
+    "Ohren zu, Arsch auf!"
+   ],
+   "death": [
+    "Oh shit, zu früh gezündet.",
+    "Panzer hilft auch nicht gegen alles.",
+    "Meine Augenbrauen! Schon wieder!"
+   ],
+   "win": [
+    "Langsam? Ich? Fick dich, Hase!",
+    "Das große Finale, Baby!"
+   ],
+   "hit": [
+    "Volltreffer! Silvester!",
+    "Hat’s gekracht? Hat’s gekracht!"
+   ],
+   "pass": [
+    "Die Schildkröte überholt! Heul doch!",
+    "Langsam, aber gewaltig!"
+   ],
+   "passed": [
+    "Du Drecksack, ich zünd dich an!",
+    "Na warte, du Rakete!"
+   ],
+   "swallowed": [
+    "Zurück ins Chaos? Scheißdreck!"
+   ],
+   "stunned": [
+    "Silvester in meinem Kopf …"
+   ],
+   "start": [
+    "Zündschnur an, Panzer zu!"
+   ]
+  }
+ },
+ "announcer": {
+  "count3": [
+   "Drei!"
+  ],
+  "count2": [
+   "Zwei!"
+  ],
+  "count1": [
+   "Eins!"
+  ],
+  "go": [
+   "LOS, IHR PFEIFEN!",
+   "RENNT, IHR SÄCKE!",
+   "LOS, VERDAMMT!",
+   "ABFAHRT!"
+  ],
+  "place1": [
+   "SIEG, BITCHES!",
+   "ERSTER! FUCK YEAH!"
+  ],
+  "place2": [
+   "Zweiter. Erster Verlierer."
+  ],
+  "place3": [
+   "Dritter. Naja."
+  ],
+  "place4": [
+   "Letzter. Peinlich, Digga.",
+   "Letzter. Die Bots lachen dich aus."
+  ],
+  "lead": [
+   "Neue Führung!",
+   "Führungswechsel, ihr Luschen!"
+  ],
+  "lightning": [
+   "Blitz! Alle gegrillt!"
+  ],
+  "out": [
+   "Raus mit dir!"
+  ],
+  "cupWin": [
+   "Cup gewonnen! Der Rest kann nach Hause!"
+  ],
+  "teamWin": [
+   "TEAMSIEG!"
+  ],
+  "teamLose": [
+   "Team verloren. Schämt euch."
+  ]
+ }
+}

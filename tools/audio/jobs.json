@@ -1,0 +1,1051 @@
+{
+ "sfx/jump-1.mp3": {
+  "type": "sfx",
+  "prompt": "Short cartoon effort grunt hup of a small creature jumping, comedic, no music"
+ },
+ "sfx/jump-2.mp3": {
+  "type": "sfx",
+  "prompt": "Tiny cartoon hop grunt hoi with a springy whoosh, comedic, no music"
+ },
+ "sfx/doublejump.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon double jump: quick whoosh with a squeaky hoo grunt, comedic"
+ },
+ "sfx/walljump.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon hand slap on a wall followed by a springy boing, short"
+ },
+ "sfx/land.mp3": {
+  "type": "sfx",
+  "prompt": "Soft cartoon butt thud landing on dirt, short"
+ },
+ "sfx/slide-1.mp3": {
+  "type": "sfx",
+  "prompt": "Loud wet cartoon fart, comedic, short and punchy, 0.7 seconds, no music"
+ },
+ "sfx/slide-2.mp3": {
+  "type": "sfx",
+  "prompt": "Long squeaky cartoon fart while sliding, comedic, no music"
+ },
+ "sfx/slam.mp3": {
+  "type": "sfx",
+  "prompt": "Huge cartoon butt slam impact on the ground with a fart and a heavy thud, comedic"
+ },
+ "sfx/coin.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon coin pickup: bright cash register cha-ching, very short"
+ },
+ "sfx/box-1.mp3": {
+  "type": "sfx",
+  "prompt": "Big disgusting cartoon burp, comedic, 1 second, no music"
+ },
+ "sfx/box-2.mp3": {
+  "type": "sfx",
+  "prompt": "Short wet cartoon hiccup burp, comedic, no music"
+ },
+ "sfx/roll.mp3": {
+  "type": "sfx",
+  "prompt": "Fast slot machine reel rattling, cartoon, 1 second"
+ },
+ "sfx/item.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon kazoo ta-da fanfare, very short, comedic"
+ },
+ "sfx/death.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon character gets impaled: stab squelch and a high pitched owww yelp, comedic"
+ },
+ "sfx/squash.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon character gets squashed flat: gross wet splat with a squeaky toy squeak, comedic, 0.8 seconds, no music"
+ },
+ "sfx/slice.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon buzz saw slicing through a character with a wet squelch, comedic, short"
+ },
+ "sfx/zap.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon electrocution: buzzing zap with sizzling bacon crackle, comedic, short"
+ },
+ "sfx/trap.mp3": {
+  "type": "sfx",
+  "prompt": "Bear trap snapping shut on a cartoon foot with a squeaky scream, comedic"
+ },
+ "sfx/boom.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon explosion ka-boom with falling debris clatter, short"
+ },
+ "sfx/fall.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon falling whistle descending, ending with a distant splat"
+ },
+ "sfx/respawn.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon pop with a magical sparkle, very short"
+ },
+ "sfx/swallow.mp3": {
+  "type": "sfx",
+  "prompt": "Giant monster gulping something down, then a loud satisfied belch, comedic"
+ },
+ "sfx/go.mp3": {
+  "type": "sfx",
+  "prompt": "Air horn blast, short"
+ },
+ "sfx/throw.mp3": {
+  "type": "sfx",
+  "prompt": "Quick cartoon throwing whoosh, short"
+ },
+ "sfx/shield.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon bubble shield forming: wobbly boing with a shimmer"
+ },
+ "sfx/shieldblock.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon ricochet ping off a metal shield, short"
+ },
+ "sfx/turbo.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon rocket-powered fart turbo boost, long sputtering fart whoosh, comedic"
+ },
+ "sfx/pad.mp3": {
+  "type": "sfx",
+  "prompt": "Big cartoon boing of a bouncy mushroom, springy"
+ },
+ "sfx/finish.mp3": {
+  "type": "sfx",
+  "prompt": "Small crowd cheering with an air horn, short, comedic"
+ },
+ "sfx/lose.mp3": {
+  "type": "sfx",
+  "prompt": "Sad trombone wah wah wah, comedic"
+ },
+ "sfx/click.mp3": {
+  "type": "sfx",
+  "prompt": "Soft cartoon pop button click, very short"
+ },
+ "sfx/ink.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon squid ink squirt with a wet splat on glass, comedic"
+ },
+ "sfx/rocket.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon rocket launch whistle with fizzing sparks"
+ },
+ "sfx/stunned.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon dizzy tweeting birds circling a head, short"
+ },
+ "sfx/lightning.mp3": {
+  "type": "sfx",
+  "prompt": "Loud thunder crack with electric sizzle, cartoon"
+ },
+ "sfx/magnet.mp3": {
+  "type": "sfx",
+  "prompt": "Cartoon magnet hum with a metallic zing"
+ },
+ "sfx/crumble.mp3": {
+  "type": "sfx",
+  "prompt": "Stone platform crumbling and falling apart, short"
+ },
+ "sfx/ab-megajump.mp3": {
+  "type": "sfx",
+  "prompt": "Bong water bubbling then a huge cartoon whoosh upward, comedic"
+ },
+ "sfx/ab-sprint.mp3": {
+  "type": "sfx",
+  "prompt": "Loud coffee slurp followed by a cartoon zoom whoosh"
+ },
+ "sfx/ab-spores.mp3": {
+  "type": "sfx",
+  "prompt": "Fuse hissing then a firecracker bang, cartoon"
+ },
+ "sfx/ab-tongue.mp3": {
+  "type": "sfx",
+  "prompt": "Fishing reel spinning fast and a splash, cartoon"
+ },
+ "sfx/ab-steal.mp3": {
+  "type": "sfx",
+  "prompt": "Evil cartoon cackle with a cash register ka-ching"
+ },
+ "sfx/ab-quake.mp3": {
+  "type": "sfx",
+  "prompt": "Stampede of squeaking rats scurrying, cartoon, short"
+ },
+ "sfx/ab-mask.mp3": {
+  "type": "sfx",
+  "prompt": "Mystical crystal chime shimmer, magical"
+ },
+ "sfx/ab-bash.mp3": {
+  "type": "sfx",
+  "prompt": "Fluffy cloud poof with a soft whoosh, cartoon"
+ },
+ "sfx/ab-fireworks.mp3": {
+  "type": "sfx",
+  "prompt": "Firework rocket launch whistle and crackling burst"
+ },
+ "voice/hase/ability-0.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Hoch wie ich, Baby!"
+ },
+ "voice/hase/ability-1.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Chill mal, Digga."
+ },
+ "voice/hase/ability-2.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Das Kraut gibt Flügel."
+ },
+ "voice/hase/death-0.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Sorry, war high."
+ },
+ "voice/hase/death-1.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Scheiße, wo bin ich?"
+ },
+ "voice/hase/death-2.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Mein Königreich für ’nen Snack."
+ },
+ "voice/hase/win-0.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Ganz entspannt. Hab ich doch gesagt."
+ },
+ "voice/hase/win-1.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Der König hat gesprochen. Oder gelallt."
+ },
+ "voice/hase/hit-0.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Ups. War keine Absicht. Doch."
+ },
+ "voice/hase/hit-1.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Nimm das, du Spießer!"
+ },
+ "voice/hase/pass-0.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Tschüssi, du Lahmarsch!"
+ },
+ "voice/hase/pass-1.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Überholt. Im Halbschlaf."
+ },
+ "voice/hase/passed-0.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Hey, ich war zuerst da, Mann!"
+ },
+ "voice/hase/passed-1.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Voll unchillig, Alter."
+ },
+ "voice/hase/swallowed-0.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Boah, was war das für ein Trip?"
+ },
+ "voice/hase/stunned-0.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Alles dreht sich … geil."
+ },
+ "voice/hase/start-0.mp3": {
+  "type": "tts",
+  "voice": "yPe6Dv97ilaDXuBmdaa6",
+  "prompt": "[laughs] Gleich bin ich vorne. Nach ’nem Nickerchen."
+ },
+ "voice/katze/ability-0.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] NEUN ESPRESSO, FICK DICH!"
+ },
+ "voice/katze/ability-1.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Koffein ist stärker als Talent!"
+ },
+ "voice/katze/ability-2.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Zu langsam, Schlafmütze!"
+ },
+ "voice/katze/death-0.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Verdammt, mein Becher!"
+ },
+ "voice/katze/death-1.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Ich brauch mehr Kaffee. Und ’ne Waffe."
+ },
+ "voice/katze/death-2.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Fuck. Einfach nur fuck."
+ },
+ "voice/katze/win-0.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Morgens halb zehn, und du bist Letzter."
+ },
+ "voice/katze/win-1.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Wach sein ist ein Vorteil, du Penner."
+ },
+ "voice/katze/hit-0.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Guten Morgen, du Opfer!"
+ },
+ "voice/katze/hit-1.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Das war der Wachmacher!"
+ },
+ "voice/katze/pass-0.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Aus dem Weg, ich hab Herzrasen!"
+ },
+ "voice/katze/pass-1.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Bye-bye, Schnarchnase!"
+ },
+ "voice/katze/passed-0.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Was?! Ich bin doch auf Koffein!"
+ },
+ "voice/katze/passed-1.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Du Arsch, das war MEIN Platz!"
+ },
+ "voice/katze/swallowed-0.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Scheiße, wer hat mich entkoffeiniert?"
+ },
+ "voice/katze/stunned-0.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Mein Herz … klopft komisch."
+ },
+ "voice/katze/start-0.mp3": {
+  "type": "tts",
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Drei Tage nicht geschlafen. LOS!"
+ },
+ "voice/ratte/ability-0.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] BOOM, Bitch!"
+ },
+ "voice/ratte/ability-1.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Geht hoch, meine Kleinen!"
+ },
+ "voice/ratte/ability-2.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Hoppla, Lunte!"
+ },
+ "voice/ratte/death-0.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Scheiße, falsches Kabel!"
+ },
+ "voice/ratte/death-1.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Upsi. Das war ein Körperteil."
+ },
+ "voice/ratte/death-2.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Hab mich selbst gezündet. Klassiker."
+ },
+ "voice/ratte/win-0.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Alles in die Luft, nur ich nicht!"
+ },
+ "voice/ratte/win-1.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Wer zuletzt explodiert, gewinnt."
+ },
+ "voice/ratte/hit-0.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Kawumm! Hihihi!"
+ },
+ "voice/ratte/hit-1.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Zerlegt, du Wurst!"
+ },
+ "voice/ratte/pass-0.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Platz da, ich bin geladen!"
+ },
+ "voice/ratte/pass-1.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Hihi, zu langsam, Fleischklops!"
+ },
+ "voice/ratte/passed-0.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Hey! Ich spreng dich gleich!"
+ },
+ "voice/ratte/passed-1.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Na warte, du Pisser!"
+ },
+ "voice/ratte/swallowed-0.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Das Chaos hat mich gefressen. Hihi!"
+ },
+ "voice/ratte/stunned-0.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Ohren klingeln … geil!"
+ },
+ "voice/ratte/start-0.mp3": {
+  "type": "tts",
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Lunte brennt. Hihihi!"
+ },
+ "voice/otter/ability-0.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Probier mal. Schmeckt nach Tod."
+ },
+ "voice/otter/ability-1.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Frisch aus dem Labor, Baby."
+ },
+ "voice/otter/ability-2.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Nicht legal, aber geil."
+ },
+ "voice/otter/death-0.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Shit, die Dosis war zu hoch."
+ },
+ "voice/otter/death-1.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Nebenwirkung: sterben."
+ },
+ "voice/otter/death-2.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Das war nicht das Gegengift."
+ },
+ "voice/otter/win-0.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Chemie, du Opfer!"
+ },
+ "voice/otter/win-1.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Doping? Nennen wir es Wissenschaft."
+ },
+ "voice/otter/hit-0.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Experiment geglückt!"
+ },
+ "voice/otter/hit-1.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Versuchskaninchen erledigt."
+ },
+ "voice/otter/pass-0.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Die Formel wirkt!"
+ },
+ "voice/otter/pass-1.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Überholt, dank Chemie."
+ },
+ "voice/otter/passed-0.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Unmöglich! Meine Berechnungen!"
+ },
+ "voice/otter/passed-1.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Du bist gedopt, du Sau!"
+ },
+ "voice/otter/swallowed-0.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Faszinierend. Und ekelhaft."
+ },
+ "voice/otter/stunned-0.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Hab ich was genommen?"
+ },
+ "voice/otter/start-0.mp3": {
+  "type": "tts",
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Alle Substanzen eingenommen. Los!"
+ },
+ "voice/kraehe/ability-0.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Deine Mutter lutscht Schwänze in der Hölle!"
+ },
+ "voice/kraehe/ability-1.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Verflucht! Gegen Aufpreis doppelt."
+ },
+ "voice/kraehe/ability-2.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Dein Pech ist mein Geschäftsmodell."
+ },
+ "voice/kraehe/death-0.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Wer hat mich verflucht?! Ich will Provision!"
+ },
+ "voice/kraehe/death-1.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Verdammter Mist, Rabattaktion vorbei."
+ },
+ "voice/kraehe/death-2.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Das war nicht im Angebot!"
+ },
+ "voice/kraehe/win-0.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Glück kann man kaufen. Bei mir."
+ },
+ "voice/kraehe/win-1.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Eure Seelen gehören mir. AGB lesen!"
+ },
+ "voice/kraehe/hit-0.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Fluch zugestellt. Unterschrift bitte!"
+ },
+ "voice/kraehe/hit-1.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Das kostet extra, Schätzchen."
+ },
+ "voice/kraehe/pass-0.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Ciao, du Sonderangebot!"
+ },
+ "voice/kraehe/pass-1.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Hinter mir, wo du hingehörst."
+ },
+ "voice/kraehe/passed-0.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Dich verfluch ich bis ins siebte Glied!"
+ },
+ "voice/kraehe/passed-1.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Du Mistvieh, das kostet dich!"
+ },
+ "voice/kraehe/swallowed-0.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Das Chaos schuldet mir Geld!"
+ },
+ "voice/kraehe/stunned-0.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Wer dreht an meiner Voodoo-Puppe?"
+ },
+ "voice/kraehe/start-0.mp3": {
+  "type": "tts",
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Flüche zum halben Preis! Nur heute!"
+ },
+ "voice/dachs/ability-0.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Fass, ihr kleinen Scheißer!"
+ },
+ "voice/dachs/ability-1.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Sitz. Platz. Verrecke."
+ },
+ "voice/dachs/ability-2.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Meine Ratten haben Tollwut. Viel Spaß."
+ },
+ "voice/dachs/death-0.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Böse Ratten! Kein Käse heute!"
+ },
+ "voice/dachs/death-1.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Verdammte Viecher, ihr solltet DIE beißen!"
+ },
+ "voice/dachs/death-2.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Au! Das war mein Knie, du Ratte!"
+ },
+ "voice/dachs/win-0.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Applaus für die Ratten. Und für mich."
+ },
+ "voice/dachs/win-1.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Dressur ist alles, ihr Amateure."
+ },
+ "voice/dachs/hit-0.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Braver Treffer!"
+ },
+ "voice/dachs/hit-1.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Platz! Und liegen bleiben!"
+ },
+ "voice/dachs/pass-0.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Bei Fuß, du Köter!"
+ },
+ "voice/dachs/pass-1.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Aus dem Weg, Futter!"
+ },
+ "voice/dachs/passed-0.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Zurück in den Käfig mit dir!"
+ },
+ "voice/dachs/passed-1.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Na warte, du Floh!"
+ },
+ "voice/dachs/swallowed-0.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Das Chaos stinkt schlimmer als meine Ratten."
+ },
+ "voice/dachs/stunned-0.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Wer hat meine Peitsche geklaut?"
+ },
+ "voice/dachs/start-0.mp3": {
+  "type": "tts",
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Manege frei, ihr Ratten!"
+ },
+ "voice/maulwurf/ability-0.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Der Herr vergibt. Ich nicht."
+ },
+ "voice/maulwurf/ability-1.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Steine heilen. Dich nicht."
+ },
+ "voice/maulwurf/ability-2.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Unverwundbar durch Quarz, Bitch!"
+ },
+ "voice/maulwurf/death-0.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Amen, Arschloch."
+ },
+ "voice/maulwurf/death-1.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Der Stein war wohl gefälscht."
+ },
+ "voice/maulwurf/death-2.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Scheiße, falsches Chakra."
+ },
+ "voice/maulwurf/win-0.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Gesegnet sei mein Vorsprung."
+ },
+ "voice/maulwurf/win-1.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Gott ist mit mir. Ihr seid mit euch."
+ },
+ "voice/maulwurf/hit-0.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Ruhe in Frieden, du Sünder."
+ },
+ "voice/maulwurf/hit-1.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Tu Buße, du Wurm!"
+ },
+ "voice/maulwurf/pass-0.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Die Letzten werden die Letzten sein."
+ },
+ "voice/maulwurf/pass-1.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Geh mit Gott. Aber hinter mir."
+ },
+ "voice/maulwurf/passed-0.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Du wirst in der Hölle schmoren!"
+ },
+ "voice/maulwurf/passed-1.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Herrgott, du Bastard!"
+ },
+ "voice/maulwurf/swallowed-0.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Das Fegefeuer ist echt kacke."
+ },
+ "voice/maulwurf/stunned-0.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Ich sehe … ein Licht?"
+ },
+ "voice/maulwurf/start-0.mp3": {
+  "type": "tts",
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Lasset uns beten. Und rennen."
+ },
+ "voice/chinchilla/ability-0.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Das Orakel sagt: Fuck you."
+ },
+ "voice/chinchilla/ability-1.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Du wirst weich fallen. Oder auch nicht."
+ },
+ "voice/chinchilla/ability-2.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Die Sterne lügen nie, du Lappen."
+ },
+ "voice/chinchilla/death-0.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Das hab ich nicht kommen sehen. Peinlich."
+ },
+ "voice/chinchilla/death-1.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Meine Kristallkugel ist kaputt, verdammt!"
+ },
+ "voice/chinchilla/death-2.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Mon dieu, meine Frisur!"
+ },
+ "voice/chinchilla/win-0.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Ich sah es voraus, Schätzchen."
+ },
+ "voice/chinchilla/win-1.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Die Karten sagen: Ihr seid Opfer."
+ },
+ "voice/chinchilla/hit-0.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Vorhergesehen, mon chéri."
+ },
+ "voice/chinchilla/hit-1.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Das Schicksal hat dich gefickt."
+ },
+ "voice/chinchilla/pass-0.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Au revoir, du Landei!"
+ },
+ "voice/chinchilla/pass-1.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Adieu, Versager!"
+ },
+ "voice/chinchilla/passed-0.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Das stand nicht in den Karten!"
+ },
+ "voice/chinchilla/passed-1.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Merde! Du kleiner Wicht!"
+ },
+ "voice/chinchilla/swallowed-0.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Quelle horreur! Wie ordinär!"
+ },
+ "voice/chinchilla/stunned-0.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Ich sehe … Sternchen."
+ },
+ "voice/chinchilla/start-0.mp3": {
+  "type": "tts",
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Ich sehe deine Niederlage, Schätzchen."
+ },
+ "voice/schildkroete/ability-0.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] DAS WIRD FARBENFROH!"
+ },
+ "voice/schildkroete/ability-1.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Feuerwerk ist Kunst, du Banause!"
+ },
+ "voice/schildkroete/ability-2.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Ohren zu, Arsch auf!"
+ },
+ "voice/schildkroete/death-0.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Oh shit, zu früh gezündet."
+ },
+ "voice/schildkroete/death-1.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Panzer hilft auch nicht gegen alles."
+ },
+ "voice/schildkroete/death-2.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Meine Augenbrauen! Schon wieder!"
+ },
+ "voice/schildkroete/win-0.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Langsam? Ich? Fick dich, Hase!"
+ },
+ "voice/schildkroete/win-1.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Das große Finale, Baby!"
+ },
+ "voice/schildkroete/hit-0.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Volltreffer! Silvester!"
+ },
+ "voice/schildkroete/hit-1.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Hat’s gekracht? Hat’s gekracht!"
+ },
+ "voice/schildkroete/pass-0.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Die Schildkröte überholt! Heul doch!"
+ },
+ "voice/schildkroete/pass-1.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Langsam, aber gewaltig!"
+ },
+ "voice/schildkroete/passed-0.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Du Drecksack, ich zünd dich an!"
+ },
+ "voice/schildkroete/passed-1.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Na warte, du Rakete!"
+ },
+ "voice/schildkroete/swallowed-0.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Zurück ins Chaos? Scheißdreck!"
+ },
+ "voice/schildkroete/stunned-0.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Silvester in meinem Kopf …"
+ },
+ "voice/schildkroete/start-0.mp3": {
+  "type": "tts",
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Zündschnur an, Panzer zu!"
+ },
+ "voice/announcer/count3-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] Drei!"
+ },
+ "voice/announcer/count2-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] Zwei!"
+ },
+ "voice/announcer/count1-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] Eins!"
+ },
+ "voice/announcer/go-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] LOS, IHR PFEIFEN!"
+ },
+ "voice/announcer/go-1.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] RENNT, IHR SÄCKE!"
+ },
+ "voice/announcer/go-2.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] LOS, VERDAMMT!"
+ },
+ "voice/announcer/go-3.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] ABFAHRT!"
+ },
+ "voice/announcer/place1-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] SIEG, BITCHES!"
+ },
+ "voice/announcer/place1-1.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] ERSTER! FUCK YEAH!"
+ },
+ "voice/announcer/place2-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] Zweiter. Erster Verlierer."
+ },
+ "voice/announcer/place3-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] Dritter. Naja."
+ },
+ "voice/announcer/place4-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] Letzter. Peinlich, Digga."
+ },
+ "voice/announcer/place4-1.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] Letzter. Die Bots lachen dich aus."
+ },
+ "voice/announcer/lead-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] Neue Führung!"
+ },
+ "voice/announcer/lead-1.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] Führungswechsel, ihr Luschen!"
+ },
+ "voice/announcer/lightning-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] Blitz! Alle gegrillt!"
+ },
+ "voice/announcer/out-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] Raus mit dir!"
+ },
+ "voice/announcer/cupWin-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] Cup gewonnen! Der Rest kann nach Hause!"
+ },
+ "voice/announcer/teamWin-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] TEAMSIEG!"
+ },
+ "voice/announcer/teamLose-0.mp3": {
+  "type": "tts",
+  "voice": "Z2yQ1EdlDmcIgh9Pn4Lw",
+  "prompt": "[shouting] Team verloren. Schämt euch."
+ }
+}
