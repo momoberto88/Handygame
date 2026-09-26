@@ -4,10 +4,10 @@ import { viewZoom, VIEW_H } from '../layout';
 import { characterById } from '../meta/characters';
 import { loadSave } from '../meta/save';
 import type { LocalInput, RaceSession } from '../net/session';
-import { LEVEL_BOTTOM } from '../sim/constants';
 import type { SimEvent } from '../sim/types';
 import { ART_RES } from '../render/art/canvas';
 import { BackgroundView } from '../render/BackgroundView';
+import { CameraDirector } from '../render/CameraDirector';
 import { ChaosWallView } from '../render/ChaosWallView';
 import { Effects } from '../render/Effects';
 import { RunnerView } from '../render/RunnerView';
@@ -31,9 +31,7 @@ export class RaceScene extends Phaser.Scene {
   fx!: Effects;
   private projectileViews = new Map<number, Phaser.GameObjects.Image>();
   private trapViews = new Map<number, Phaser.GameObjects.Image>();
-  private camX = 0;
-  private camY = 0;
-  private shake = 0;
+  camera!: CameraDirector;
   private endTimer = -1;
   private hud!: HudScene;
   private dustTimer = 0;
@@ -68,23 +66,12 @@ export class RaceScene extends Phaser.Scene {
       this.views.push(view);
     }
 
-    const local = race.runners[this.session.localId];
-    this.camX = local.x;
-    this.camY = local.y;
-    this.applyZoom();
-    this.scale.on('resize', this.applyZoom, this);
-    this.events.once('shutdown', () => {
-      this.scale.off('resize', this.applyZoom, this);
-      this.session.destroy();
-    });
+    // The race camera is a bit closer than the menus so the runners read well on small phones.
+    this.camera = new CameraDirector(this.cameras.main, () => viewZoom(this) * (VIEW_H / RACE_VIEW_H));
+    this.events.once('shutdown', () => this.session.destroy());
 
     this.scene.launch('hud', { race: this });
     this.hud = this.scene.get('hud') as HudScene;
-  }
-
-  private applyZoom() {
-    // The race camera is a bit closer than the menus so the runners read well on small phones.
-    this.cameras.main.setZoom(viewZoom(this) * (VIEW_H / RACE_VIEW_H));
   }
 
   readInput(): LocalInput {
@@ -103,12 +90,8 @@ export class RaceScene extends Phaser.Scene {
     const { race } = this.session;
     for (const e of events) this.handleEvent(e);
 
-    const alpha = this.session.alpha;
     race.runners.forEach((r, i) => {
-      const prev = this.session.prevPosition(i);
-      const off = this.session.renderOffset?.(i);
-      const x = prev.x + (r.x - prev.x) * alpha + (off?.x ?? 0);
-      const y = prev.y + (r.y - prev.y) * alpha + (off?.y ?? 0);
+      const { x, y } = this.renderPos(i);
       this.views[i].update(r, x, y, dt, race.clock);
       if (r.boost > 0 && r.mode === 'run') this.fx.boostTrail(x, y);
     });
@@ -139,28 +122,20 @@ export class RaceScene extends Phaser.Scene {
     }
   }
 
+  /** Interpolated on-screen position of a runner (between sim ticks, plus network smoothing). */
+  renderPos(id: number): { x: number; y: number } {
+    const r = this.session.race.runners[id];
+    const alpha = this.session.alpha;
+    const prev = this.session.prevPosition(id);
+    const off = this.session.renderOffset?.(id);
+    return { x: prev.x + (r.x - prev.x) * alpha + (off?.x ?? 0), y: prev.y + (r.y - prev.y) * alpha + (off?.y ?? 0) };
+  }
+
   private updateCamera(dt: number) {
-    const cam = this.cameras.main;
     const { race } = this.session;
     const r = race.runners[this.session.localId];
-    const alpha = this.session.alpha;
-    const prev = this.session.prevPosition(r.id);
-    const off = this.session.renderOffset?.(r.id);
-    const rx = prev.x + (r.x - prev.x) * alpha + (off?.x ?? 0);
-    const ry = prev.y + (r.y - prev.y) * alpha + (off?.y ?? 0);
-    const vw = cam.width / cam.zoom;
-    const vh = cam.height / cam.zoom;
-    const targetX = rx + vw * 0.2;
-    const targetY = Phaser.Math.Clamp(ry - 60, vh / 2 - 40, LEVEL_BOTTOM - vh / 2);
-    const kx = r.mode === 'dead' ? 1 - Math.exp(-dt * 3) : 1 - Math.exp(-dt * 10);
-    this.camX += (targetX - this.camX) * kx;
-    // Big jumps (teleports) snap instead of sliding across the whole track.
-    if (Math.abs(targetX - this.camX) > vw) this.camX = targetX;
-    this.camY += (targetY - this.camY) * (1 - Math.exp(-dt * 5));
-    this.shake = Math.max(0, this.shake - dt * 3);
-    const sx = this.shake > 0 ? (Math.random() - 0.5) * 12 * this.shake : 0;
-    const sy = this.shake > 0 ? (Math.random() - 0.5) * 12 * this.shake : 0;
-    cam.centerOn(this.camX + sx, this.camY + sy);
+    const p = this.renderPos(r.id);
+    this.camera.update(r, p.x, p.y, dt, race.time, race.over);
   }
 
   private updateProjectiles() {
@@ -224,7 +199,10 @@ export class RaceScene extends Phaser.Scene {
       case 'land':
         this.views[e.r].onLand(e.v);
         this.fx.footDust(race.runners[e.r].x, race.runners[e.r].y, 5);
-        if (this.isLocal(e.r)) sfx.play('land');
+        if (this.isLocal(e.r)) {
+          sfx.play('land');
+          if (e.v > 900) this.camera.shake(0.35);
+        }
         break;
       case 'pad':
         if (e.kind === 'jump') this.trackView.bouncePadNear(race.runners[e.r].x);
@@ -236,7 +214,7 @@ export class RaceScene extends Phaser.Scene {
           sfx.play(e.kind === 'squash' ? 'squash' : e.kind === 'boom' ? 'boom' : e.kind === 'zap' ? 'zap' : e.kind === 'trap' ? 'trap' : 'death');
         }
         if (this.isLocal(e.r)) {
-          this.shake = 1;
+          this.camera.shake(1);
           if (vib) navigator.vibrate?.(120);
         }
         break;
@@ -252,6 +230,7 @@ export class RaceScene extends Phaser.Scene {
         this.fx.respawnPuff(r.x, r.y);
         if (this.isLocal(e.r)) {
           sfx.play('swallow');
+          this.camera.shake(0.5);
           this.hud?.toast('Vom Chaos verschluckt!', '#c77dff');
         }
         break;
@@ -276,7 +255,10 @@ export class RaceScene extends Phaser.Scene {
       case 'use': {
         const r = race.runners[e.r];
         if (e.item === 'shield' && this.nearCamera(r.x)) sfx.play('shield');
-        else if (e.item === 'turbo' && this.isLocal(e.r)) sfx.play('turbo');
+        else if (e.item === 'turbo' && this.isLocal(e.r)) {
+          sfx.play('turbo');
+          this.camera.kick(-40);
+        }
         else if (e.item === 'ink') {
           sfx.play('ink');
           if (race.runners[this.session.localId].ink > 0) this.hud?.inkSplat();
@@ -286,6 +268,7 @@ export class RaceScene extends Phaser.Scene {
       case 'lightning': {
         sfx.play('zap');
         this.cameras.main.flash(180, 255, 250, 200);
+        this.camera.shake(0.7);
         for (const r of race.runners) {
           if (r.id !== e.r && this.nearCamera(r.x)) this.fx.lightning(r.x, this.cameras.main.worldView.y, r.y - 20);
         }
@@ -300,7 +283,10 @@ export class RaceScene extends Phaser.Scene {
       }
       case 'explode':
         this.fx.explosion(e.x, e.y);
-        if (this.nearCamera(e.x)) sfx.play('boom');
+        if (this.nearCamera(e.x)) {
+          sfx.play('boom');
+          this.camera.shake(0.6);
+        }
         break;
       case 'sawBreak':
         this.fx.sawBreak(e.x, e.y);

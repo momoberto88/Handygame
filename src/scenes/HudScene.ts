@@ -54,6 +54,7 @@ export class HudScene extends Phaser.Scene {
   private warnText!: Phaser.GameObjects.Text;
   private progressBar!: Phaser.GameObjects.Graphics;
   private progressHeads: Phaser.GameObjects.Image[] = [];
+  private edgeMarkers: { root: Phaser.GameObjects.Container; arrow: Phaser.GameObjects.Triangle; dist: Phaser.GameObjects.Text }[] = [];
   private wallMarker!: Phaser.GameObjects.Arc;
   private danger!: Phaser.GameObjects.Image;
   private inkLayer!: Phaser.GameObjects.Container;
@@ -75,6 +76,7 @@ export class HudScene extends Phaser.Scene {
     this.itemPointers.clear();
     this.pendingUse = 0;
     this.progressHeads = [];
+    this.edgeMarkers = [];
   }
 
   create() {
@@ -105,6 +107,16 @@ export class HudScene extends Phaser.Scene {
       const c = characterById(info.character);
       const head = this.add.image(0, 0, partKey(c, 'head')).setScale((info.id === session.localId ? 0.75 : 0.55) / ART_RES);
       this.progressHeads.push(head);
+    }
+    for (const info of session.racers) {
+      const c = characterById(info.character);
+      const root = this.add.container(0, 0).setVisible(false);
+      const bg = this.add.circle(0, 0, 19, 0x1d1a2f, 0.75).setStrokeStyle(3, c.marker);
+      const head = this.add.image(0, 0, partKey(c, 'head')).setScale(0.62 / ART_RES);
+      const arrow = this.add.triangle(0, 0, 0, -7, 12, 0, 0, 7, c.marker);
+      const dist = uiText(this, 0, 24, '', 12).setOrigin(0.5, 0);
+      root.add([bg, head, arrow, dist]);
+      this.edgeMarkers.push({ root, arrow, dist });
     }
     const local = this.progressHeads[session.localId];
     this.children.bringToTop(local);
@@ -242,6 +254,43 @@ export class HudScene extends Phaser.Scene {
     return { jump, slide, use };
   }
 
+  /** Rivals that are off screen show up as heads at the screen edge (with distance in metres). */
+  private updateEdgeMarkers() {
+    const session = this.raceScene.session;
+    const view = this.raceScene.cameras.main.worldView;
+    const W = this.W;
+    const me = session.race.runners[session.localId];
+    session.race.runners.forEach((r, i) => {
+      const m = this.edgeMarkers[i];
+      if (!m || i === session.localId || r.mode === 'finished') {
+        m?.root.setVisible(false);
+        return;
+      }
+      const pos = this.raceScene.renderPos(i);
+      const inside = pos.x > view.x - 10 && pos.x < view.right + 10 && pos.y > view.y && pos.y - 40 < view.bottom;
+      if (inside) {
+        m.root.setVisible(false);
+        return;
+      }
+      const ahead = pos.x >= view.right;
+      const behind = pos.x <= view.x;
+      const sy = Phaser.Math.Clamp(((pos.y - 30 - view.y) / view.height) * VIEW_H, 90, VIEW_H - 170);
+      const x = ahead ? W - 34 : behind ? 34 : Phaser.Math.Clamp(((pos.x - view.x) / view.width) * W, 34, W - 34);
+      m.root.setVisible(true).setPosition(x, sy);
+      m.arrow.setPosition(ahead ? 24 : behind ? -24 : 0, 0).setRotation(ahead ? 0 : behind ? Math.PI : pos.y < view.y ? -Math.PI / 2 : Math.PI / 2);
+      const metres = Math.round(Math.abs(r.x - me.x) / 40);
+      m.dist.setText(metres > 0 ? `${metres} m` : '');
+      m.root.setAlpha(r.mode === 'dead' ? 0.45 : 1);
+    });
+    // Keep markers on the same edge from overlapping.
+    for (const side of [34, W - 34]) {
+      const list = this.edgeMarkers.filter((m) => m.root.visible && m.root.x === side).sort((a, b) => a.root.y - b.root.y);
+      for (let i = 1; i < list.length; i++) {
+        if (list[i].root.y - list[i - 1].root.y < 50) list[i].root.y = list[i - 1].root.y + 50;
+      }
+    }
+  }
+
   countdown(text: string) {
     this.bigText.setText(text).setAlpha(1).setScale(1.1);
     this.tweens.killTweensOf(this.bigText);
@@ -317,6 +366,8 @@ export class HudScene extends Phaser.Scene {
       this.itemIcon.setVisible(false);
     }
     this.itemBtn.bg.setFillStyle(0x7aff6a, me.item ? 0.45 : 0.15);
+
+    this.updateEdgeMarkers();
 
     const rocketIncoming = race.projectiles.some((p) => p.kind === 'rocket' && p.target === me.id);
     this.warnText.setVisible(rocketIncoming && Math.floor(race.clock * 6) % 2 === 0);
