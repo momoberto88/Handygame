@@ -1,4 +1,5 @@
 import { TEAMS } from '../meta/teams';
+import { deathLine, finishLine, goLine, robbedLine, shieldLine, stoleLine, stunnedLine, swallowedLine, talk, type TalkMoment } from '../meta/lines';
 import Phaser from 'phaser';
 import { sfx } from '../audio/sfx';
 import { viewZoom, VIEW_H } from '../layout';
@@ -45,6 +46,10 @@ export class RaceScene extends Phaser.Scene {
   lastEvents: SimEvent[] = [];
   /** Debug/testing: lets a bot drive the local runner in online races (?autoplay). */
   private autopilot: BotBrain | null = null;
+  /** Trash-talk speech bubbles over the runners. */
+  private bubbles: { id: number; bubble: Phaser.GameObjects.Container; h: number; until: number }[] = [];
+  private lastBubble = 0;
+  private bubbleCooldown = new Map<number, number>();
 
   constructor() {
     super('race');
@@ -56,6 +61,9 @@ export class RaceScene extends Phaser.Scene {
     this.projectileViews.clear();
     this.trapViews.clear();
     this.endTimer = -1;
+    this.bubbles = [];
+    this.lastBubble = 0;
+    this.bubbleCooldown.clear();
     this.autopilot = debugParam('autoplay') !== null && this.session.online ? new BotBrain(99, { skill: 0.8 }) : null;
   }
 
@@ -148,6 +156,7 @@ export class RaceScene extends Phaser.Scene {
       if (r.boost > 0 && r.mode === 'run') this.fx.boostTrail(x, y);
     });
     this.updateGhost(dt);
+    this.updateBubbles();
 
     this.dustTimer -= dt;
     if (this.dustTimer <= 0) {
@@ -231,6 +240,49 @@ export class RaceScene extends Phaser.Scene {
     }
   }
 
+  /** A character says something (speech bubble), if it is on screen and hasn't talked lately. */
+  private say(id: number, moment: TalkMoment, force = false) {
+    const line = talk(this.session.racers[id].character, moment);
+    const r = this.session.race.runners[id];
+    const now = this.time.now;
+    const v = this.cameras.main.worldView;
+    // only runners you can actually see talk
+    if (!line || r.x < v.x + 40 || r.x > v.right - 40 || r.y < v.y + 40 || r.y > v.bottom) return;
+    if (!force && (now - this.lastBubble < 1500 || (this.bubbleCooldown.get(id) ?? 0) > now)) return;
+    this.lastBubble = now;
+    this.bubbleCooldown.set(id, now + 5000);
+    for (const b of this.bubbles.filter((b) => b.id === id)) b.until = 0;
+    // comic speech bubble: rounded box with a border and a little tail
+    const text = this.add
+      .text(0, 0, line, { fontFamily: 'system-ui, sans-serif', fontSize: '26px', fontStyle: 'bold', color: '#1d1a2f', align: 'center', wordWrap: { width: 360 } })
+      .setOrigin(0.5, 1);
+    const w = text.width + 28;
+    const h = text.height + 16;
+    const g = this.add.graphics();
+    g.fillStyle(0xfff8e6, 1).lineStyle(4, 0x1d1a2f, 1);
+    g.fillRoundedRect(-w / 2, -h - 14, w, h, 14).strokeRoundedRect(-w / 2, -h - 14, w, h, 14);
+    g.fillTriangle(-12, -16, 12, -16, -4, 0).lineBetween(-12, -14, -4, 0).lineBetween(12, -14, -4, 0);
+    text.setPosition(0, -22);
+    const bubble = this.add.container(0, 0, [g, text]).setScale(0.66).setDepth(60);
+    this.bubbles.push({ id, bubble, h: (h + 14) * 0.66, until: now + 2600 });
+  }
+
+  private updateBubbles() {
+    const now = this.time.now;
+    const view = this.cameras.main.worldView;
+    this.bubbles = this.bubbles.filter((b) => {
+      if (now > b.until) {
+        b.bubble.destroy();
+        return false;
+      }
+      const p = this.renderPos(b.id);
+      // stay inside the picture, even when the runner is at the top edge
+      b.bubble.setPosition(p.x + 10, Math.max(view.y + b.h + 8, p.y - 104));
+      b.bubble.setAlpha(Math.min(1, (b.until - now) / 300));
+      return true;
+    });
+  }
+
   private isLocal(id: number) {
     return id === this.session.localId;
   }
@@ -287,7 +339,9 @@ export class RaceScene extends Phaser.Scene {
         if (this.isLocal(e.r)) {
           this.camera.shake(1);
           if (vib) navigator.vibrate?.(120);
-        }
+          const line = deathLine(e.kind);
+          if (line) this.hud?.toast(line, '#ff9a8a');
+        } else if (Math.random() < 0.5) this.say(e.r, 'death');
         break;
       }
       case 'respawn': {
@@ -302,7 +356,7 @@ export class RaceScene extends Phaser.Scene {
         if (this.isLocal(e.r)) {
           sfx.play('swallow');
           this.camera.shake(0.5);
-          this.hud?.toast('Vom Chaos verschluckt!', '#c77dff');
+          this.hud?.toast(swallowedLine(), '#c77dff');
         }
         break;
       }
@@ -349,7 +403,7 @@ export class RaceScene extends Phaser.Scene {
         const r = race.runners[e.r];
         this.fx.box(r.x, r.y - 24);
         if (this.nearCamera(r.x)) sfx.play('shield');
-        if (this.isLocal(e.r)) this.hud?.toast('Schild hält!', '#7fd0ff');
+        if (this.isLocal(e.r)) this.hud?.toast(shieldLine(), '#7fd0ff');
         break;
       }
       case 'explode':
@@ -367,13 +421,14 @@ export class RaceScene extends Phaser.Scene {
         break;
       case 'ability': {
         this.fx.ability(e.kind, e.x, e.y);
+        this.say(e.r, 'ability', true);
         if (this.nearCamera(e.x)) sfx.play(e.kind === 'quake' ? 'squash' : e.kind === 'megajump' ? 'pad' : e.kind === 'spores' ? 'ink' : 'turbo');
         if (this.isLocal(e.r)) {
           this.camera.shake(e.kind === 'quake' ? 0.6 : 0.25);
           if (e.kind === 'sprint' || e.kind === 'bash') this.camera.kick(-40);
-          if (e.kind === 'steal' && e.target !== undefined) this.hud?.toast(`Geklaut von ${this.session.racers[e.target].name}!`, '#ffd84a');
+          if (e.kind === 'steal' && e.target !== undefined) this.hud?.toast(stoleLine(this.session.racers[e.target].name), '#ffd84a');
         } else if (e.target === this.session.localId) {
-          this.hud?.toast(`${this.session.racers[e.r].name} hat dein Power-Up geklaut!`, '#ff9a8a');
+          this.hud?.toast(robbedLine(this.session.racers[e.r].name), '#ff9a8a');
         }
         break;
       }
@@ -381,7 +436,7 @@ export class RaceScene extends Phaser.Scene {
         const r = race.runners[e.r];
         this.fx.dizzy(r.x, r.y);
         if (this.isLocal(e.r)) {
-          this.hud?.toast('Benommen!', '#b07cff');
+          this.hud?.toast(stunnedLine(), '#b07cff');
           if (vib) navigator.vibrate?.(60);
         }
         break;
@@ -391,8 +446,9 @@ export class RaceScene extends Phaser.Scene {
         if (this.isLocal(e.r)) {
           this.fx.celebrate(r.x + 60, r.y - 120);
           sfx.play(e.place === 1 ? 'finish' : 'go');
-          this.hud?.toast(e.place === 1 ? 'SIEG!' : `${e.place}. Platz!`, '#ffd84a', true);
+          this.hud?.toast(finishLine(e.place), '#ffd84a', true);
         }
+        if (e.place === 1) this.say(e.r, 'win', true);
         break;
       }
       case 'countdown':
@@ -401,7 +457,7 @@ export class RaceScene extends Phaser.Scene {
         break;
       case 'go':
         sfx.play('go');
-        this.hud?.countdown('LOS!');
+        this.hud?.countdown(goLine());
         break;
       case 'end':
         break;

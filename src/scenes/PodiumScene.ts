@@ -9,6 +9,7 @@ import { createRunner } from '../sim/race';
 import { panel, textButton } from '../ui/widgets';
 import { goToMenu } from './flow';
 import { uiText } from './HudScene';
+import { podiumLine } from '../meta/lines';
 import { TEAMS, cupTeamScores, scoreLine } from '../meta/teams';
 
 export interface PodiumData {
@@ -73,7 +74,7 @@ export class PodiumScene extends Phaser.Scene {
       const win = TEAMS[teams[0].team];
       uiText(this, W / 2, 72, `${win.icon} ${win.name} holt den Cup!   ${scoreLine(teams)}`, 22, win.css).setOrigin(0.5);
     } else {
-      uiText(this, W / 2, 72, myPlace === 1 ? 'Du hast den Cup gewonnen!' : myPlace > 0 ? `Du bist ${myPlace}. im Cup` : 'Siegerehrung', 22, '#ffffff').setOrigin(0.5);
+      uiText(this, W / 2, 72, podiumLine(myPlace), 22, '#ffffff').setOrigin(0.5);
     }
 
     // podium blocks: 2nd left, 1st middle, 3rd right

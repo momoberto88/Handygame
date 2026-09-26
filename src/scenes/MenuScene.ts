@@ -128,6 +128,14 @@ export class MenuScene extends Phaser.Scene {
       cam.label.setText(camLabel());
     }, 18);
     this.ui.add(cam.container);
+
+    // rude trash talk on/off (off = family friendly texts)
+    const rudeLabel = () => (loadSave().settings.rude !== false ? '🤬 Derb: an' : '😇 Derb: aus');
+    const rudeBtn = textButton(this, 290, 30, 150, 40, rudeLabel(), 0xe0604a, () => {
+      writeSave((s) => (s.settings.rude = s.settings.rude === false));
+      rudeBtn.label.setText(rudeLabel());
+    }, 18);
+    this.ui.add(rudeBtn.container);
   }
 
   private makePreview(x: number, y: number, id: string) {

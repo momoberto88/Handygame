@@ -16,7 +16,7 @@ export interface SaveData {
   unlocked: string[];
   owned: string[];
   equipped: { hat: string | null; glasses: string | null; outfit: string | null };
-  settings: { sound: boolean; music: boolean; leftHanded: boolean; vibration: boolean; camera: CameraDistance };
+  settings: { sound: boolean; music: boolean; leftHanded: boolean; vibration: boolean; camera: CameraDistance; rude: boolean };
   stats: { races: number; wins: number };
   /** Best finishing time per course id (seconds). */
   best: Record<string, number>;
@@ -36,7 +36,7 @@ const DEFAULT: SaveData = {
   unlocked: ['hase', 'katze', 'ratte'],
   owned: [],
   equipped: { hat: null, glasses: null, outfit: null },
-  settings: { sound: true, music: true, leftHanded: false, vibration: true, camera: 'mid' },
+  settings: { sound: true, music: true, leftHanded: false, vibration: true, camera: 'mid', rude: true },
   stats: { races: 0, wins: 0 },
   best: {},
   cups: {},

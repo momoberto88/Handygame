@@ -10,6 +10,7 @@ import { currentRoom } from '../net/room';
 import { hostStartRace, startCupRace, startLocalRace } from './flow';
 import { activeCup, addRaceResult, cupRanking, isLastRace, lastOut, racerKey, setActiveCup } from '../meta/cup';
 import { uiText } from './HudScene';
+import { resultComment, resultTitle } from '../meta/lines';
 import { TEAMS, cupTeamScores, scoreLine, teamScores } from '../meta/teams';
 
 export const TROPHIES_FOR_PLACE = [10, 6, 3, 1];
@@ -66,10 +67,11 @@ export class ResultScene extends Phaser.Scene {
     const content = this.add.container(0, 0).setAlpha(0);
     this.tweens.add({ targets: content, alpha: 1, delay: 200, duration: 250 });
     const winner = teams ? TEAMS[teams[0].team] : null;
-    const title = winner ? (teamWin ? `TEAMSIEG! ${winner.icon}` : `${winner.icon} ${winner.name} gewinnt`) : place === 1 ? 'SIEG!' : 'SIEGERTAFEL';
+    const title = winner ? (teamWin ? `TEAMSIEG! ${winner.icon}` : `${winner.icon} ${winner.name} gewinnt`) : watching ? 'SIEGERTAFEL' : resultTitle(place);
     content.add(uiText(this, cx, cy - ph / 2 + 36, title, winner && !teamWin ? 32 : 38, winner ? winner.css : '#ffd84a').setOrigin(0.5));
     const sub = [cup ? `${cup.name} · Rennen ${cup.index + 1} von ${cup.courses.length}` : '', teams ? scoreLine(teams) : ''].filter((x) => x).join('   ·   ');
-    if (sub) content.add(uiText(this, cx, cy - ph / 2 + 68, sub, 17, '#fff2b0').setOrigin(0.5));
+    const comment = watching ? '' : resultComment(place, me.deaths);
+    if (sub || comment) content.add(uiText(this, cx, cy - ph / 2 + 68, sub || comment, 17, '#fff2b0').setOrigin(0.5));
 
     const medal = [0xffd84a, 0xc9ced8, 0xd08a4a, 0x7a7a8a];
     standings.forEach((r, i) => {

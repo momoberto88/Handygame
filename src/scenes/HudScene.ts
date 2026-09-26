@@ -343,7 +343,7 @@ export class HudScene extends Phaser.Scene {
     this.bigText.setText(text).setAlpha(1).setScale(1.1);
     this.tweens.killTweensOf(this.bigText);
     this.tweens.add({ targets: this.bigText, scale: 0.5, duration: 250, ease: 'Back.Out' });
-    this.tweens.add({ targets: this.bigText, alpha: 0, delay: text === 'LOS!' ? 500 : 650, duration: 250 });
+    this.tweens.add({ targets: this.bigText, alpha: 0, delay: text.startsWith('LOS') ? 500 : 650, duration: 250 });
   }
 
   toast(text: string, color = '#ffffff', big = false) {
