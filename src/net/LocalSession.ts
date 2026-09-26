@@ -4,6 +4,7 @@ import { Race } from '../sim/race';
 import type { RunnerInput, SimEvent, WorldId } from '../sim/types';
 import type { LocalInput, RaceSession, RacerInfo } from './session';
 import { abilitiesOf } from '../meta/characters';
+import { teamsOf } from '../meta/teams';
 
 const TICK_MS = DT * 1000;
 
@@ -48,7 +49,7 @@ export class LocalSession implements RaceSession {
   private pendingAbility = false;
 
   constructor(setup: LocalSetup) {
-    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers) });
+    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers), teams: teamsOf(setup.racers) });
     this.racers = setup.racers;
     this.localId = setup.localId;
     this.spectator = setup.spectator ?? false;

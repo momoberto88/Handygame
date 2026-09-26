@@ -204,6 +204,13 @@ export class RunnerView {
     this.applyPose();
   }
 
+  /** 2 vs 2: a ring in the team colour at the feet and a tinted name tag. */
+  setTeam(color: number, css: string) {
+    const ring = this.root.scene.add.ellipse(0, 1, 50, 12, color, 0.35).setStrokeStyle(3, color, 0.95);
+    this.root.addAt(ring, 0);
+    this.nameTag?.setColor(css);
+  }
+
   setDepth(d: number) {
     this.root.setDepth(d);
   }

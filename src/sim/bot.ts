@@ -153,7 +153,7 @@ export class BotBrain {
   private decideAbility(race: Race, r: RunnerState): boolean {
     const kind = race.abilities[r.id];
     if (!kind || r.charge < 1 || this.rng.next() > 0.04 + 0.04 * this.profile.skill) return false;
-    const others = race.runners.filter((o) => o !== r && o.mode === 'run');
+    const others = race.runners.filter((o) => race.isRival(r.id, o.id) && o.mode === 'run');
     switch (kind) {
       case 'spores':
         return others.some((o) => o.x < r.x && r.x - o.x < 300 && Math.abs(o.y - r.y) < 150);
@@ -206,7 +206,7 @@ export class BotBrain {
       this.sinceCheck = 99; // re-plan right away at the new speed
       return 1;
     }
-    const others = race.runners.filter((o) => o.id !== r.id && o.mode === 'run');
+    const others = race.runners.filter((o) => race.isRival(r.id, o.id) && o.mode === 'run');
     const ahead = others.filter((o) => o.x > r.x && o.x - r.x < 650 && Math.abs(o.y - r.y) < 90);
     const behind = others.filter((o) => o.x < r.x && r.x - o.x < 450);
     switch (r.item) {

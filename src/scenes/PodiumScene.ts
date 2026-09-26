@@ -9,6 +9,7 @@ import { createRunner } from '../sim/race';
 import { panel, textButton } from '../ui/widgets';
 import { goToMenu } from './flow';
 import { uiText } from './HudScene';
+import { TEAMS, cupTeamScores, scoreLine } from '../meta/teams';
 
 export interface PodiumData {
   cup: CupState;
@@ -66,7 +67,14 @@ export class PodiumScene extends Phaser.Scene {
     }
 
     uiText(this, W / 2, 34, `🏆 ${data.cup.name} 🏆`, 40, '#ffd84a').setOrigin(0.5);
-    uiText(this, W / 2, 72, myPlace === 1 ? 'Du hast den Cup gewonnen!' : myPlace > 0 ? `Du bist ${myPlace}. im Cup` : 'Siegerehrung', 22, '#ffffff').setOrigin(0.5);
+    const teams = cupTeamScores(data.cup);
+    if (teams.length) {
+      // 2 vs 2: the team with more points takes the cup
+      const win = TEAMS[teams[0].team];
+      uiText(this, W / 2, 72, `${win.icon} ${win.name} holt den Cup!   ${scoreLine(teams)}`, 22, win.css).setOrigin(0.5);
+    } else {
+      uiText(this, W / 2, 72, myPlace === 1 ? 'Du hast den Cup gewonnen!' : myPlace > 0 ? `Du bist ${myPlace}. im Cup` : 'Siegerehrung', 22, '#ffffff').setOrigin(0.5);
+    }
 
     // podium blocks: 2nd left, 1st middle, 3rd right
     const baseY = H - 118;
@@ -96,7 +104,8 @@ export class PodiumScene extends Phaser.Scene {
         if (b.place === 1) this.confetti(W);
       });
       const isMe = e.key === data.me;
-      uiText(this, x, baseY + 16, `${e.name}${e.isBot ? ' 🤖' : ''}`, 20, isMe ? '#fff2b0' : '#ffffff').setOrigin(0.5, 0);
+      const nameColor = isMe ? '#fff2b0' : e.team !== undefined && data.cup.teams ? TEAMS[e.team].css : '#ffffff';
+      uiText(this, x, baseY + 16, `${e.name}${e.isBot ? ' 🤖' : ''}`, 20, nameColor).setOrigin(0.5, 0);
       uiText(this, x, baseY + 42, result(e, b.place), 17, '#ffd84a').setOrigin(0.5, 0);
     }
     // 4th place and my reward on a small panel

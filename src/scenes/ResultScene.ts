@@ -10,6 +10,7 @@ import { currentRoom } from '../net/room';
 import { hostStartRace, startCupRace, startLocalRace } from './flow';
 import { activeCup, addRaceResult, cupRanking, isLastRace, lastOut, racerKey, setActiveCup } from '../meta/cup';
 import { uiText } from './HudScene';
+import { TEAMS, cupTeamScores, scoreLine, teamScores } from '../meta/teams';
 
 export const TROPHIES_FOR_PLACE = [10, 6, 3, 1];
 
@@ -34,7 +35,11 @@ export class ResultScene extends Phaser.Scene {
     const watching = !!session.spectator;
     const place = me.place;
     const trophies = watching ? 0 : (TROPHIES_FOR_PLACE[place - 1] ?? 0);
-    const bonus = [30, 15, 5, 0][place - 1] ?? 0;
+    // 2 vs 2: team points of this race; the winning team gets a bonus
+    const myTeam = session.racers[session.localId]?.team;
+    const teams = myTeam !== undefined ? teamScores(race.standings().map((r) => session.racers[r.id])) : null;
+    const teamWin = !!teams && teams[0].team === myTeam;
+    const bonus = ([30, 15, 5, 0][place - 1] ?? 0) + (teamWin ? 20 : 0);
     const coins = watching ? 0 : me.coins + bonus;
     const courseId = race.courseId;
     if (!watching) writeSave((s) => {
@@ -60,12 +65,11 @@ export class ResultScene extends Phaser.Scene {
 
     const content = this.add.container(0, 0).setAlpha(0);
     this.tweens.add({ targets: content, alpha: 1, delay: 200, duration: 250 });
-    content.add(uiText(this, cx, cy - ph / 2 + 36, place === 1 ? 'SIEG!' : 'SIEGERTAFEL', 38, '#ffd84a').setOrigin(0.5));
-    if (cup) {
-      content.add(
-        uiText(this, cx, cy - ph / 2 + 68, `${cup.name} · Rennen ${cup.index + 1} von ${cup.courses.length}`, 17, '#fff2b0').setOrigin(0.5),
-      );
-    }
+    const winner = teams ? TEAMS[teams[0].team] : null;
+    const title = winner ? (teamWin ? `TEAMSIEG! ${winner.icon}` : `${winner.icon} ${winner.name} gewinnt`) : place === 1 ? 'SIEG!' : 'SIEGERTAFEL';
+    content.add(uiText(this, cx, cy - ph / 2 + 36, title, winner && !teamWin ? 32 : 38, winner ? winner.css : '#ffd84a').setOrigin(0.5));
+    const sub = [cup ? `${cup.name} · Rennen ${cup.index + 1} von ${cup.courses.length}` : '', teams ? scoreLine(teams) : ''].filter((x) => x).join('   ·   ');
+    if (sub) content.add(uiText(this, cx, cy - ph / 2 + 68, sub, 17, '#fff2b0').setOrigin(0.5));
 
     const medal = [0xffd84a, 0xc9ced8, 0xd08a4a, 0x7a7a8a];
     standings.forEach((r, i) => {
@@ -75,7 +79,7 @@ export class ResultScene extends Phaser.Scene {
       const row = this.add.graphics();
       row.fillStyle(isMe ? 0xfff2b0 : 0x2a241c, isMe ? 0.9 : 0.35).fillRoundedRect(cx - pw / 2 + 30, y - 24, pw - 60, 48, 12);
       content.add(row);
-      content.add(this.add.circle(cx - pw / 2 + 62, y, 17, medal[i]).setStrokeStyle(3, 0x2a241c));
+      content.add(this.add.circle(cx - pw / 2 + 62, y, 17, medal[i]).setStrokeStyle(3, info.team !== undefined ? TEAMS[info.team].color : 0x2a241c));
       content.add(uiText(this, cx - pw / 2 + 62, y, String(i + 1), 20, '#2a241c').setOrigin(0.5).setStroke('#ffffff', 0));
       const icon = headIcon(this, characterById(info.character), 34);
       content.add(this.add.image(cx - pw / 2 + 110, y, icon.key).setScale(icon.scale));
@@ -93,7 +97,7 @@ export class ResultScene extends Phaser.Scene {
     });
 
     content.add(
-      uiText(this, cx, cy + ph / 2 - 92, watching ? '👀 Du hast zugeschaut' : `+${coins} Münzen    +${trophies} Pokale`, 22, '#ffe68a').setOrigin(0.5),
+      uiText(this, cx, cy + ph / 2 - 92, watching ? '👀 Du hast zugeschaut' : `+${coins} Münzen${teamWin ? ' (inkl. Teambonus)' : ''}    +${trophies} Pokale`, 22, '#ffe68a').setOrigin(0.5),
     );
 
     const room = currentRoom();
@@ -102,7 +106,10 @@ export class ResultScene extends Phaser.Scene {
     const cupDone = cup && isLastRace(cup);
     const leader = cup ? cupRanking(cup)[0] : null;
     const out = cup ? lastOut(cup) : null;
-    if (cup && out) {
+    const cupTeams = cup ? cupTeamScores(cup) : [];
+    if (cup && cupTeams.length && !cupDone) {
+      content.add(uiText(this, cx, cy + ph / 2 - 118, `Cup-Stand: ${scoreLine(cupTeams)}`, 17, '#fff2b0').setOrigin(0.5));
+    } else if (cup && out) {
       const next = cup.index + 1 >= cup.courses.length - 1 ? ' – jetzt kommt das Finale!' : '';
       content.add(uiText(this, cx, cy + ph / 2 - 118, `❌ ${out.name} scheidet aus${next}`, 17, '#ffb0b0').setOrigin(0.5));
     } else if (cup && leader && !cupDone && cup.mode !== 'ko') {

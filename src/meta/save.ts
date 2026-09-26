@@ -24,6 +24,8 @@ export interface SaveData {
   cups: Record<string, number>;
   /** Own tracks from the editor (course ids "custom:<code>"), newest first. */
   tracks: string[];
+  /** Offline races and cups as 2 vs 2 (you and a bot against two bots). */
+  teamMode: boolean;
 }
 
 const DEFAULT: SaveData = {
@@ -39,6 +41,7 @@ const DEFAULT: SaveData = {
   best: {},
   cups: {},
   tracks: [],
+  teamMode: false,
 };
 
 let cache: SaveData | null = null;

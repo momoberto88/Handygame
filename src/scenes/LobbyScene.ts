@@ -9,16 +9,17 @@ import { goToMenu, hostStartRace, myProfile, wireClientRoom } from './flow';
 import { uiText } from './HudScene';
 import { courseById, courseName } from '../sim/track/courses';
 import { courseThumb } from './CourseSelectScene';
+import { PAIRINGS, TEAMS, pairingLabel } from '../meta/teams';
 
 type View = 'choose' | 'join' | 'busy' | 'room';
 
 /** Short description of the host's course choice, e.g. "Pilz-Cup (4 Rennen)". */
 function playlistLabel(p: Playlist): string {
-  if (p.vote) return '🗳 Abstimmung';
+  if (p.vote) return p.teams !== undefined ? '👥 🗳 Abstimmung' : '🗳 Abstimmung';
   if (p.ko) return `🥊 K.-o.-Cup (${p.courses.length} Rennen)`;
-  if (!p.courses.length) return 'Zufall';
-  if (p.courses.length === 1) return p.name;
-  return `${p.name} (${p.courses.length} Rennen)`;
+  if (!p.courses.length) return p.teams !== undefined ? '👥 Zufall' : 'Zufall';
+  const base = p.courses.length === 1 ? p.name : `${p.name} (${p.courses.length} Rennen)`;
+  return p.teams !== undefined ? `👥 ${base}` : base;
 }
 
 function playlistCourses(p: Playlist): string {
@@ -244,14 +245,17 @@ export class LobbyScene extends Phaser.Scene {
     this.ui.add(uiText(this, W / 2, 138, room.code.split('').join(' '), 40, '#ffffff').setOrigin(0.5));
 
     const slotW = Math.min(170, (W - 80) / 4);
+    const teams = room.playlist.teams !== undefined && !room.playlist.ko;
     for (let seat = 0; seat < MAX_PLAYERS; seat++) {
       const x = W / 2 + (seat - 1.5) * (slotW + 12);
       const y = 262;
       const p = room.players.find((pl) => pl.seat === seat);
+      const team = teams ? TEAMS[PAIRINGS[room.playlist.teams!][seat]] : null;
       const g = this.add.graphics();
       g.fillStyle(p ? 0x3d3470 : 0x2a2449, 1).fillRoundedRect(x - slotW / 2, y - 62, slotW, 124, 14);
-      g.lineStyle(3, p && seat === room.mySeat ? 0xffd84a : 0x514880, 1).strokeRoundedRect(x - slotW / 2, y - 62, slotW, 124, 14);
+      g.lineStyle(team ? 5 : 3, p && seat === room.mySeat ? 0xffd84a : team ? team.color : 0x514880, 1).strokeRoundedRect(x - slotW / 2, y - 62, slotW, 124, 14);
       this.ui.add(g);
+      if (team) this.ui.add(uiText(this, x + slotW / 2 - 16, y - 50, team.icon, 16).setOrigin(0.5));
       if (p) {
         const c = characterById(p.character);
         const icon = headIcon(this, c, 56);
@@ -281,15 +285,30 @@ export class LobbyScene extends Phaser.Scene {
     if (courses) this.ui.add(uiText(this, W / 2, 338, courses, 14, '#c9c2e8').setOrigin(0.5).setWordWrapWidth((W - 60) * 2).setAlign('center'));
     if (room.role === 'host') {
       this.ui.add(
-        textButton(this, W / 2 - 150, 450, 250, 44, room.playlist.vote ? '🗳 Abstimmung: an' : '🗳 Abstimmung: aus', room.playlist.vote ? 0xffd84a : 0x8a84a8, () => {
-          room.playlist = room.playlist.vote ? { name: 'Zufall', courses: [] } : { name: 'Abstimmung', courses: [], vote: true };
+        textButton(this, W / 2 - 230, 450, 210, 44, room.playlist.vote ? '🗳 Abstimmung: an' : '🗳 Abstimmung: aus', room.playlist.vote ? 0xffd84a : 0x8a84a8, () => {
+          const t = room.playlist.teams;
+          room.playlist = room.playlist.vote ? { name: 'Zufall', courses: [], teams: t } : { name: 'Abstimmung', courses: [], vote: true, teams: t };
           room.broadcastLobby();
           this.render();
-        }, 16).container,
+        }, 15).container,
       );
+      // 2 vs 2: off → 1+2 vs 3+4 → 1+3 vs 2+4 → 1+4 vs 2+3 → off
+      const pairing = room.playlist.teams;
+      const label = room.playlist.ko ? '👥 2 gegen 2: nicht im K.-o.' : pairing === undefined ? '👥 2 gegen 2: aus' : `👥 ${pairingLabel(pairing)}`;
+      const teamBtn = textButton(this, W / 2, 450, 220, 44, label, pairing !== undefined && !room.playlist.ko ? 0x4aa3ff : 0x8a84a8, () => {
+        const next = pairing === undefined ? 0 : pairing + 1 < PAIRINGS.length ? pairing + 1 : undefined;
+        room.playlist = { ...room.playlist, teams: next };
+        if (next === undefined) delete room.playlist.teams;
+        room.broadcastLobby();
+        this.render();
+      }, 15);
+      teamBtn.setEnabled(!room.playlist.ko);
+      this.ui.add(teamBtn.container);
+    } else if (teams) {
+      this.ui.add(uiText(this, W / 2, 420, `👥 2 gegen 2: ${pairingLabel(room.playlist.teams!)}`, 16, '#7cc0ff').setOrigin(0.5));
     }
     this.ui.add(
-      textButton(this, room.role === 'host' ? W / 2 + 150 : W / 2, room.role === 'host' ? 450 : 460, 220, 44, 'Raum verlassen', 0xe0604a, () => {
+      textButton(this, room.role === 'host' ? W / 2 + 230 : W / 2, room.role === 'host' ? 450 : 460, room.role === 'host' ? 200 : 220, 44, 'Raum verlassen', 0xe0604a, () => {
         setCurrentRoom(null);
         this.error = '';
         this.setView('choose');

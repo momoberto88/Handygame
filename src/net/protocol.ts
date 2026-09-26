@@ -37,6 +37,8 @@ export interface Playlist {
   vote?: boolean;
   /** K.-o. cup: the last one of every race is out. */
   ko?: boolean;
+  /** 2 vs 2 with this seat pairing (see PAIRINGS); off when missing. */
+  teams?: number;
 }
 
 /** A running course vote: the options, who voted for what ([seat, option]) and seconds left. */

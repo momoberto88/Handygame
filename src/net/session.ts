@@ -8,6 +8,8 @@ export interface RacerInfo {
   isBot: boolean;
   /** Room seat of a human player (stable between races, unlike the racer id). */
   seat?: number;
+  /** 2 vs 2: team 0 (blue) or 1 (red). */
+  team?: number;
   /** Accessories (hat, glasses, outfit ids). */
   cosmetics?: { hat: string | null; glasses: string | null; outfit: string | null };
 }

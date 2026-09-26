@@ -95,7 +95,7 @@ export class MenuScene extends Phaser.Scene {
     // main buttons
     const bx = W * 0.7;
     const bw = Math.min(330, W * 0.36);
-    this.ui.add(textButton(this, bx, 172, bw, 60, 'Schnelles Rennen', 0x5fd35a, () => startLocalRace(this), 25).container);
+    this.ui.add(textButton(this, bx, 172, bw, 60, loadSave().teamMode ? 'Schnelles Rennen 👥' : 'Schnelles Rennen', 0x5fd35a, () => startLocalRace(this), 25).container);
     this.ui.add(textButton(this, bx, 246, bw, 60, '🏆 Cups & Strecken', 0xffd84a, () => this.scene.start('courses', { mode: 'solo' }), 25).container);
     const friends = textButton(this, bx, 320, bw, 60, 'Mit Freunden', 0x4aa3ff, () => this.scene.start('lobby'), 25);
     friends.setEnabled(this.scene.manager.keys['lobby'] !== undefined);

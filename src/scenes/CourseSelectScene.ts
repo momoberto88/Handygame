@@ -71,7 +71,8 @@ export class CourseSelectScene extends Phaser.Scene {
   private useForRoom(name: string, courses: string[], ko = false) {
     const room = currentRoom();
     if (room) {
-      room.playlist = ko ? { name, courses, ko } : { name, courses };
+      // the 2 vs 2 setting stays (a K.-o. cup ignores it)
+      room.playlist = ko ? { name, courses, ko, teams: room.playlist.teams } : { name, courses, teams: room.playlist.teams };
       room.broadcastLobby();
     }
     this.scene.start('lobby');
@@ -153,7 +154,13 @@ export class CourseSelectScene extends Phaser.Scene {
       go.setEnabled(n >= 2);
       this.ui.add(go.container);
     } else if (!room) {
-      this.ui.add(uiText(this, lx, 470, 'oder rechts eine Strecke\nfür ein Einzelrennen antippen', 15, '#c9c2e8').setOrigin(0.5).setAlign('center'));
+      // 2 vs 2 against bots: you and a bot partner (also for the quick race in the menu)
+      const team = textButton(this, lx, 462, lw, 44, save.teamMode ? '👥 2 gegen 2: an' : '👥 2 gegen 2: aus', save.teamMode ? 0x4aa3ff : 0x8a84a8, () => {
+        writeSave((s) => (s.teamMode = !s.teamMode));
+        this.render();
+      }, 17);
+      this.ui.add(team.container);
+      this.ui.add(uiText(this, lx, 500, 'Strecke rechts antippen = Einzelrennen', 13, '#c9c2e8').setOrigin(0.5));
     }
 
     // --- right: the 12 courses ----------------------------------------------------------

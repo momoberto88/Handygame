@@ -72,6 +72,8 @@ export interface RaceSetup {
   noWall?: boolean;
   /** Special ability of each runner (by character); none if left out. */
   abilities?: (AbilityKind | null)[];
+  /** 2 vs 2: team (0/1) of each runner; items and abilities spare teammates. */
+  teams?: number[];
 }
 
 export const SAW_PROJECTILE_RADIUS = 18;
@@ -163,6 +165,20 @@ export class Race {
     this.wallX = this.track.startX - WALL_START_OFFSET;
     this.noWall = setup.noWall ?? false;
     this.abilities = this.runners.map((_, i) => setup.abilities?.[i] ?? null);
+    this.teams = this.runners.map((_, i) => setup.teams?.[i] ?? -1);
+  }
+
+  /** Team of each runner (-1 = every runner for themselves). */
+  readonly teams: number[];
+
+  /** True if `b` is on the same team as `a` (but not `a` itself). */
+  isTeammate(a: number, b: number): boolean {
+    return a !== b && this.teams[a] >= 0 && this.teams[a] === this.teams[b];
+  }
+
+  /** True if `b` is an opponent of `a` (not the same runner, not a teammate). */
+  isRival(a: number, b: number): boolean {
+    return a !== b && (this.teams[a] < 0 || this.teams[a] !== this.teams[b]);
   }
 
   private readonly noWall: boolean;
@@ -437,7 +453,7 @@ export class Race {
   private runnerAhead(r: RunnerState, dir: number): RunnerState | null {
     let best: RunnerState | null = null;
     for (const o of this.runners) {
-      if (o === r || o.mode === 'finished') continue;
+      if (!this.isRival(r.id, o.id) || o.mode === 'finished') continue;
       if (dir > 0 ? o.x > r.x : o.x < r.x) {
         if (!best || Math.abs(o.x - r.x) < Math.abs(best.x - r.x)) best = o;
       }
@@ -448,7 +464,7 @@ export class Race {
   /** Knocks runners near (x, y) off balance for a moment (items and shields protect as usual). */
   private stunNear(r: RunnerState, test: (o: RunnerState) => boolean, events: SimEvent[]) {
     for (const o of this.runners) {
-      if (o === r || o.mode !== 'run' || o.ghost > 0 || !test(o)) continue;
+      if (!this.isRival(r.id, o.id) || o.mode !== 'run' || o.ghost > 0 || !test(o)) continue;
       if (o.shield > 0) {
         o.shield = 0;
         events.push({ t: 'shieldBlock', r: o.id });
@@ -486,7 +502,7 @@ export class Race {
       case 'steal': { // Rocco: steals the item of the nearest runner ahead that has one
         let best: RunnerState | null = null;
         for (const o of this.runners) {
-          if (o === r || o.mode !== 'run' || !o.item || o.x < r.x || o.x - r.x > STEAL_RANGE) continue;
+          if (!this.isRival(r.id, o.id) || o.mode !== 'run' || !o.item || o.x < r.x || o.x - r.x > STEAL_RANGE) continue;
           if (!best || o.x < best.x) best = o;
         }
         if (best && !r.item && r.rolling <= 0) {
@@ -563,7 +579,7 @@ export class Race {
         break;
       case 'lightning':
         events.push({ t: 'lightning', r: r.id });
-        for (const o of this.runners) if (o !== r) this.kill(o, 'zap', true, events);
+        for (const o of this.runners) if (this.isRival(r.id, o.id)) this.kill(o, 'zap', true, events);
         break;
       case 'shield':
         r.shield = SHIELD_TIME;
@@ -588,7 +604,7 @@ export class Race {
         break;
       }
       case 'ink':
-        for (const o of this.runners) if (o !== r && o.x > r.x && o.mode !== 'finished') o.ink = INK_TIME;
+        for (const o of this.runners) if (this.isRival(r.id, o.id) && o.x > r.x && o.mode !== 'finished') o.ink = INK_TIME;
         break;
       case 'magnet':
         r.magnet = MAGNET_TIME;
@@ -656,7 +672,7 @@ export class Race {
       if (alive && p.kind !== 'trapThrow') {
         const radius = p.kind === 'saw' ? SAW_PROJECTILE_RADIUS : ROCKET_RADIUS;
         for (const o of this.runners) {
-          if (o.mode !== 'run' || (o.id === p.owner && p.ownerSafe > 0)) continue;
+          if (o.mode !== 'run' || (o.id === p.owner && p.ownerSafe > 0) || this.isTeammate(p.owner, o.id)) continue;
           if (!circleHitsBox(p.x, p.y, radius, runnerBox(o))) continue;
           const res = this.kill(o, p.kind === 'saw' ? 'slice' : 'boom', true, events);
           if (res === 'immune') continue;
@@ -676,7 +692,7 @@ export class Race {
       trap.ownerSafe -= DT;
       if (trap.life <= 0) return false;
       for (const o of this.runners) {
-        if (o.mode !== 'run' || !o.grounded || (o.id === trap.owner && trap.ownerSafe > 0)) continue;
+        if (o.mode !== 'run' || !o.grounded || (o.id === trap.owner && trap.ownerSafe > 0) || this.isTeammate(trap.owner, o.id)) continue;
         if (Math.abs(o.x - trap.x) > 18 || Math.abs(o.y - trap.y) > 10) continue;
         if (this.kill(o, 'trap', true, events) !== 'immune') return false;
       }

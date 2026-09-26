@@ -7,6 +7,7 @@ import { SNAPSHOT_EVERY, packProjectile, packRunner, packTrap, type ClientMsg, t
 import type { NetRoom } from './room';
 import type { LocalInput, RaceSession, RacerInfo } from './session';
 import { abilitiesOf } from '../meta/characters';
+import { teamsOf } from '../meta/teams';
 
 const TICK_MS = DT * 1000;
 
@@ -54,7 +55,7 @@ export class HostSession implements RaceSession {
     private room: NetRoom,
     setup: HostSetup,
   ) {
-    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers) });
+    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers), teams: teamsOf(setup.racers) });
     this.racers = setup.racers.map((r) => ({ ...r }));
     this.spectator = setup.spectator ?? false;
     this.watchers = setup.watchers ?? [];

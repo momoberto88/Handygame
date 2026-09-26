@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { TEAMS, scoreLine, teamScores } from '../meta/teams';
 import { sfx } from '../audio/sfx';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
 import { ABILITIES, characterById } from '../meta/characters';
@@ -59,6 +60,9 @@ export class HudScene extends Phaser.Scene {
   private warnText!: Phaser.GameObjects.Text;
   private progressBar!: Phaser.GameObjects.Graphics;
   private progressHeads: Phaser.GameObjects.Image[] = [];
+  /** 2 vs 2: team colour dot behind each progress bar head, and the live team score. */
+  private teamDots: Phaser.GameObjects.Arc[] = [];
+  private teamText: Phaser.GameObjects.Text | null = null;
   private edgeMarkers: { root: Phaser.GameObjects.Container; arrow: Phaser.GameObjects.Triangle; dist: Phaser.GameObjects.Text }[] = [];
   private wallMarker!: Phaser.GameObjects.Arc;
   private danger!: Phaser.GameObjects.Image;
@@ -83,6 +87,8 @@ export class HudScene extends Phaser.Scene {
     this.pendingAbility = false;
     this.wasCharged = false;
     this.progressHeads = [];
+    this.teamDots = [];
+    this.teamText = null;
     this.edgeMarkers = [];
   }
 
@@ -115,6 +121,12 @@ export class HudScene extends Phaser.Scene {
     this.wallMarker = this.add.circle(0, 0, 7, 0x6a2a8a).setStrokeStyle(2, 0xc77dff);
     const session = this.raceScene.session;
     for (const info of session.racers) {
+      if (info.team !== undefined) {
+        this.teamDots.push(this.add.circle(0, 0, info.id === session.localId ? 17 : 13, TEAMS[info.team].color, 0.9));
+      }
+    }
+    if (this.teamDots.length) this.teamText = uiText(this, 22, 62, '', 18, '#ffffff');
+    for (const info of session.racers) {
       const c = characterById(info.character);
       const icon = headIcon(this, c, info.id === session.localId ? 28 : 21);
       const head = this.add.image(0, 0, icon.key).setScale(icon.scale);
@@ -123,7 +135,7 @@ export class HudScene extends Phaser.Scene {
     for (const info of session.racers) {
       const c = characterById(info.character);
       const root = this.add.container(0, 0).setVisible(false);
-      const bg = this.add.circle(0, 0, 19, 0x1d1a2f, 0.75).setStrokeStyle(3, c.marker);
+      const bg = this.add.circle(0, 0, 19, 0x1d1a2f, 0.75).setStrokeStyle(3, info.team !== undefined ? TEAMS[info.team].color : c.marker);
       const icon = headIcon(this, c, 24);
       const head = this.add.image(0, 0, icon.key).setScale(icon.scale);
       const arrow = this.add.triangle(0, 0, 0, -7, 12, 0, 0, 7, c.marker);
@@ -387,7 +399,9 @@ export class HudScene extends Phaser.Scene {
     race.runners.forEach((r, i) => {
       const head = this.progressHeads[i];
       head.setPosition(toBar(r.x), y + (i === session.localId ? 0 : -2)).setAlpha(r.mode === 'dead' ? 0.4 : 1);
+      this.teamDots[i]?.setPosition(head.x, head.y).setAlpha(head.alpha * 0.9);
     });
+    if (this.teamText) this.teamText.setText(scoreLine(teamScores(race.standings().map((r) => session.racers[r.id]))));
     this.wallMarker.setPosition(toBar(race.wallX), y).setVisible(race.wallX > t.startX);
 
     // item slot (spectators have no controls)

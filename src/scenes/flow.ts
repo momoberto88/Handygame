@@ -12,6 +12,7 @@ import { WORLD_ORDER } from '../render/worlds';
 import { COURSES, courseById } from '../sim/track/courses';
 import { activeCup, isLastRace, newCup, randomCourses, setActiveCup, stillIn, type CupState } from '../meta/cup';
 import { VOTE_SECONDS } from '../net/protocol';
+import { assignTeams } from '../meta/teams';
 
 export function playerName(): string {
   const s = loadSave();
@@ -54,7 +55,9 @@ export function startLocalRace(
   if (courseId) world = courseById(courseId).world;
   const autoplay = debugParam('autoplay') !== null;
   const me: RacerInfo = { id: 0, seat: 0, name: playerName(), character: save.character, isBot: autoplay, cosmetics: save.equipped };
-  const racers = opts.racers ?? fillWithBots([me], 4, seed);
+  let racers = opts.racers ?? fillWithBots([me], 4, seed);
+  // 2 vs 2 offline: you and one bot against two bots
+  if (!opts.racers && save.teamMode) racers = assignTeams(racers);
   const session = new LocalSession({
     seed,
     world: world ?? randomWorld(seed),
@@ -73,6 +76,10 @@ export function startSoloCup(scene: Phaser.Scene, id: string, name: string, cour
   const cup = newCup(id, name, courses, randomSeed(), mode);
   const me: RacerInfo = { id: 0, seat: 0, name: playerName(), character: save.character, isBot: debugParam('autoplay') !== null, cosmetics: save.equipped };
   cup.racers = fillWithBots([me], 4, cup.seed);
+  if (save.teamMode && mode === 'points') {
+    cup.teams = true;
+    cup.racers = assignTeams(cup.racers);
+  }
   setActiveCup(cup);
   startCupRace(scene);
 }
@@ -159,6 +166,8 @@ export function hostStartRace(scene: Phaser.Scene, room: NetRoom, forcedCourse?:
   if (room.playlist.vote && !forcedCourse) return hostStartVote(scene, room);
   const seed = randomSeed();
   const list = room.playlist.courses;
+  // 2 vs 2 (not in a K.-o. cup, where racers drop out one by one)
+  const teamPairing = room.playlist.ko ? undefined : room.playlist.teams;
   let cup: CupState | null = null;
   let courseId: string;
   if (forcedCourse) {
@@ -168,8 +177,12 @@ export function hostStartRace(scene: Phaser.Scene, room: NetRoom, forcedCourse?:
     cup = activeCup();
     const finished = cup && cup.counted >= cup.index && isLastRace(cup);
     const mode = room.playlist.ko ? 'ko' : 'points';
-    const same = cup && cup.courses.join() === list.join() && (cup.mode ?? 'points') === mode && !finished;
-    if (!cup || !same) cup = newCup('room', room.playlist.name, list, seed, mode);
+    const teams = teamPairing !== undefined;
+    const same = cup && cup.courses.join() === list.join() && (cup.mode ?? 'points') === mode && !!cup.teams === teams && !finished;
+    if (!cup || !same) {
+      cup = newCup('room', room.playlist.name, list, seed, mode);
+      cup.teams = teams;
+    }
     else if (cup.counted >= cup.index) cup.index++; // previous race is done: on to the next course
     courseId = cup.courses[cup.index];
   } else {
@@ -187,7 +200,8 @@ export function hostStartRace(scene: Phaser.Scene, room: NetRoom, forcedCourse?:
   }));
   // in a cup the same bots come back every race (same seed, same free characters);
   // in a K.-o. cup only the ones still in take part, the others watch
-  const lineup = fillWithBots(humans, 4, cup ? cup.seed : seed);
+  let lineup = fillWithBots(humans, 4, cup ? cup.seed : seed);
+  if (teamPairing !== undefined) lineup = assignTeams(lineup, teamPairing);
   const racers = (cup ? stillIn(cup, lineup) : lineup).map((r, i) => ({ ...r, id: i }));
   const seatToRacer = new Map<number, number>();
   for (const r of racers) if (!r.isBot && r.seat !== undefined && r.seat !== 0) seatToRacer.set(r.seat, r.id);
