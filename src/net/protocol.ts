@@ -13,7 +13,7 @@ import {
 import type { RacerInfo } from './session';
 
 /** Bump when the messages change so old and new app versions don't try to play together. */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 export const MAX_PLAYERS = 4;
 /** Host sends a world snapshot every this many ticks (60 / 3 = 20 per second). */
 export const SNAPSHOT_EVERY = 3;
