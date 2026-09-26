@@ -191,14 +191,16 @@ export function hostStartRace(scene: Phaser.Scene, room: NetRoom, forcedCourse?:
   const racers = (cup ? stillIn(cup, lineup) : lineup).map((r, i) => ({ ...r, id: i }));
   const seatToRacer = new Map<number, number>();
   for (const r of racers) if (!r.isBot && r.seat !== undefined && r.seat !== 0) seatToRacer.set(r.seat, r.id);
+  const watchers: number[] = [];
   for (const p of room.players) {
     if (p.seat === 0) continue;
     const id = seatToRacer.get(p.seat);
     const spectator = id === undefined;
+    if (spectator) watchers.push(p.seat);
     room.sendTo(p.seat, { t: 'start', seed, world, courseId, racers, you: spectator ? 0 : id, cup: cup ?? undefined, spectator });
   }
   room.racing = true;
   room.broadcastLobby();
   const hostIn = racers.some((r) => !r.isBot && r.seat === 0);
-  startRace(scene, new HostSession(room, { seed, world, courseId, racers, seatToRacer, spectator: !hostIn, watch: 0 }));
+  startRace(scene, new HostSession(room, { seed, world, courseId, racers, seatToRacer, spectator: !hostIn, watch: 0, watchers }));
 }

@@ -29,6 +29,8 @@ export interface HostSetup {
   /** The host is knocked out and watches racer `watch`. */
   spectator?: boolean;
   watch?: number;
+  /** Seats of knocked-out players who only watch (they get snapshots, send no inputs). */
+  watchers?: number[];
 }
 
 /** The hosting phone: runs the authoritative race and streams snapshots to the others. */
@@ -40,6 +42,7 @@ export class HostSession implements RaceSession {
   readonly online = true;
   private brains: (BotBrain | null)[];
   private remotes = new Map<number, RemotePlayer>();
+  private watchers: number[];
   private clock = new TickClock();
   private pendingUse: -1 | 0 | 1 = 0;
   private pendingAbility = false;
@@ -54,6 +57,7 @@ export class HostSession implements RaceSession {
     this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers) });
     this.racers = setup.racers.map((r) => ({ ...r }));
     this.spectator = setup.spectator ?? false;
+    this.watchers = setup.watchers ?? [];
     this.localId = this.spectator ? (setup.watch ?? 0) : 0;
     this.brains = this.racers.map((r, i) => (r.isBot ? new BotBrain(setup.seed + i * 7919, botProfile('normal', i)) : null));
     for (const [seat, id] of setup.seatToRacer) {
@@ -164,6 +168,7 @@ export class HostSession implements RaceSession {
     };
     this.outEvents = [];
     for (const rp of this.remotes.values()) this.room.sendTo(rp.seat, { ...base, a: rp.ack });
+    for (const seat of this.watchers) this.room.sendTo(seat, { ...base, a: 0 });
   }
 
   prevPosition(id: number) {
