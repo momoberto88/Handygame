@@ -34,6 +34,9 @@ export class LineupScene extends Phaser.Scene {
         const state = createRunner(i, 0, 0);
         row.set(state);
         const view = new RunnerView(this, c, true);
+        // ?lineup&wear=crown,shades shows the characters with accessories (for tuning)
+        const wear = new URLSearchParams(location.search).get('wear');
+        if (wear) view.setCosmetics({ hat: wear.split(',')[0] || null, glasses: wear.split(',')[1] || null });
         view.root.setScale(1.8);
         const x = 60 + step * (i + 0.5);
         this.views.push({ view, state, x, y: row.y });

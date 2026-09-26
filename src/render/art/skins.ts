@@ -15,6 +15,8 @@ interface PaintedDef {
   parts: Partial<Record<SkinPart | 'head', number>>;
   ears?: { fx: number; fy: number; bx: number; by: number; rot: number };
   tail?: { x: number; y: number; originX: number };
+  /** Where hats and glasses sit, relative to the default spot (dx, dy in head pixels, scale factor). */
+  wear?: { hat?: [number, number, number]; glasses?: [number, number, number] };
 }
 
 export const PAINTED: Record<string, PaintedDef> = {

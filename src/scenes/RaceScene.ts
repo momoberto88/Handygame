@@ -1,4 +1,5 @@
 import { TEAMS } from '../meta/teams';
+import { TRAILS } from '../meta/cosmetics';
 import { announce, deathLine, finishLine, goLine, robbedLine, shieldLine, stoleLine, stunnedLine, swallowedLine, talk, type Line, type TalkMoment } from '../meta/lines';
 import clipList from '../audio/clips.json';
 import Phaser from 'phaser';
@@ -91,6 +92,7 @@ export class RaceScene extends Phaser.Scene {
       const view = new RunnerView(this, characterById(info.character), isLocal, isLocal ? undefined : info.name);
       view.setDepth(isLocal ? 36 : 32 + info.id * 0.1);
       if (info.team !== undefined) view.setTeam(TEAMS[info.team].color, TEAMS[info.team].css);
+      view.setCosmetics(info.cosmetics);
       this.views.push(view);
     }
     this.setupGhost();
@@ -174,6 +176,7 @@ export class RaceScene extends Phaser.Scene {
     this.updateGhost(dt);
     this.updateBubbles();
     this.updateTalk();
+    this.updateTrails(dt);
 
     this.dustTimer -= dt;
     if (this.dustTimer <= 0) {
@@ -298,6 +301,39 @@ export class RaceScene extends Phaser.Scene {
     text.setPosition(0, -22);
     const bubble = this.add.container(0, 0, [g, text]).setScale(0.66).setDepth(60);
     this.bubbles.push({ id, bubble, h: (h + 14) * 0.66, until: now + 2600 });
+  }
+
+  private trailTimers: number[] = [];
+
+  /** Trails from the wardrobe (fart cloud, fire, rainbow, money …) behind running runners. */
+  private updateTrails(dt: number) {
+    const { race } = this.session;
+    race.runners.forEach((r, i) => {
+      const trail = TRAILS[this.session.racers[i].cosmetics?.outfit ?? ''];
+      if (!trail || r.mode !== 'run' || Math.abs(r.vx) < 120 || !this.nearCamera(r.x)) return;
+      this.trailTimers[i] = (this.trailTimers[i] ?? 0) - dt;
+      if (this.trailTimers[i] > 0) return;
+      this.trailTimers[i] = trail.rate;
+      const p = this.renderPos(i);
+      const color = trail.colors[Math.floor(Math.random() * trail.colors.length)];
+      const x = p.x - 14 + (Math.random() - 0.5) * 6;
+      const y = p.y - 14 - Math.random() * 16;
+      const dot =
+        trail === TRAILS.money
+          ? this.add.rectangle(x, y, trail.size * 1.6, trail.size, color).setStrokeStyle(1, 0x1d1a2f)
+          : this.add.circle(x, y, trail.size * (0.7 + Math.random() * 0.5), color, 0.85);
+      dot.setDepth(31);
+      this.tweens.add({
+        targets: dot,
+        x: x - 20 - Math.random() * 20,
+        y: y + (trail === TRAILS.money ? 30 : -14 - Math.random() * 14),
+        alpha: 0,
+        scale: trail === TRAILS.fart ? 1.8 : 0.4,
+        angle: trail === TRAILS.money ? 180 : 0,
+        duration: 600 + Math.random() * 300,
+        onComplete: () => dot.destroy(),
+      });
+    });
   }
 
   /** Talk that doesn't come from a single event: start, overtaking, new leader, sliding. */

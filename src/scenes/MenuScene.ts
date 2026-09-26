@@ -100,7 +100,7 @@ export class MenuScene extends Phaser.Scene {
     const friends = textButton(this, bx, 320, bw, 60, 'Mit Freunden', 0x4aa3ff, () => this.scene.start('lobby'), 25);
     friends.setEnabled(this.scene.manager.keys['lobby'] !== undefined);
     this.ui.add(friends.container);
-    const wardrobe = textButton(this, bx, 394, bw, 60, 'Garderobe', 0xffa94a, () => this.scene.start('wardrobe'), 25);
+    const wardrobe = textButton(this, bx, 394, bw, 60, '👕 Garderobe & Shop', 0xffa94a, () => this.scene.start('wardrobe'), 25);
     wardrobe.setEnabled(this.scene.manager.keys['wardrobe'] !== undefined);
     this.ui.add(wardrobe.container);
 
@@ -148,6 +148,7 @@ export class MenuScene extends Phaser.Scene {
     this.preview.root.setScrollFactor(0);
     this.preview.root.setScale(2.2);
     this.preview.setDepth(20);
+    this.preview.setCosmetics(loadSave().equipped);
     this.preview.root.setPosition(x, y);
     this.registry.set('previewPos', { x, y });
   }
