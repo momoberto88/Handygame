@@ -30,7 +30,8 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       - run: npm run build
         env:
-          BASE_PATH: /${{ github.event.repository.name }}/
+          # "<name>.github.io" repositories are served from the root, all others from /<repo>/
+          BASE_PATH: ${{ endsWith(github.event.repository.name, '.github.io') && '/' || format('/{0}/', github.event.repository.name) }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
