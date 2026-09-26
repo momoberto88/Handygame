@@ -3,7 +3,7 @@ import { BotBrain, botProfile } from '../src/sim/bot';
 import { COUNTDOWN_TIME, LANE_ROWS, RUN_MAX, TICKS_PER_SEC, TILE } from '../src/sim/constants';
 import { Race } from '../src/sim/race';
 import { COURSES } from '../src/sim/track/courses';
-import { generateTrack } from '../src/sim/track/generator';
+import { generateTrack, terrainProfile } from '../src/sim/track/generator';
 import { MODULES } from '../src/sim/track/modules';
 import { NO_INPUT, type RunnerInput, type SimEvent } from '../src/sim/types';
 
@@ -40,6 +40,13 @@ describe('track generator', () => {
       const seconds = (t.finishX - t.startX) / RUN_MAX;
       expect(seconds, course.id).toBeGreaterThan(50);
       expect(seconds, course.id).toBeLessThan(75);
+    }
+  });
+
+  it('courses rise and fall: every course uses at least three terrain heights', () => {
+    for (const course of COURSES) {
+      const heights = new Set(terrainProfile(course.world, course.seed, course.modules.length));
+      expect(heights.size, course.id).toBeGreaterThanOrEqual(3);
     }
   });
 

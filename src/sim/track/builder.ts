@@ -45,6 +45,8 @@ export class TrackBuilder {
   lasers: Laser[] = [];
   cannons: Cannon[] = [];
   parts: { name: string; col: number; width: number }[] = [];
+  /** Height of the terrain in rows (negative = higher). Shifts all three storeys together. */
+  dy = 0;
 
   constructor(
     readonly world: WorldId,
@@ -77,9 +79,38 @@ export class TrackBuilder {
   // ---------------------------------------------------------------------------------------
   // lanes
 
+  /** Row whose top is the floor of `lane` at the current terrain height. */
+  row(lane: Lane): number {
+    return floorRow(lane) + this.dy;
+  }
+
+  /**
+   * Moves the terrain to height `dy` with 45° ramps on all three storeys, starting at column c0.
+   * Returns the width used (a flat column on each side plus one column per row of height).
+   */
+  shiftTerrain(c0: number, dy: number): number {
+    const delta = dy - this.dy;
+    const n = Math.abs(delta);
+    this.standard(c0, c0);
+    if (n === 0) return 1;
+    for (const lane of [TOP, MID, LOW] as Lane[]) {
+      const from = this.row(lane);
+      const bottom = lane === LOW ? ROWS - 1 : -1;
+      for (let i = 0; i < n; i++) {
+        const c = c0 + 1 + i;
+        const r = delta < 0 ? from - 1 - i : from + i;
+        this.set(c, r, delta < 0 ? Tile.SlopeUp : Tile.SlopeDown);
+        for (let rr = r + 1; rr <= bottom; rr++) this.set(c, rr, Tile.Solid);
+      }
+    }
+    this.dy = dy;
+    this.standard(c0 + 1 + n, c0 + 1 + n);
+    return n + 2;
+  }
+
   /** Floor of a lane from c0 to c1 (inclusive). The low lane is backed by solid ground to the bottom. */
   floor(lane: Lane, c0: number, c1: number, kind: FloorKind = lane === LOW ? 'solid' : 'ledge') {
-    const r = floorRow(lane);
+    const r = this.row(lane);
     const bottom = lane === LOW ? ROWS - 1 : r;
     for (let c = c0; c <= c1; c++) {
       if (kind === 'none') {
@@ -109,7 +140,7 @@ export class TrackBuilder {
     this.floor(MID, c0, c1, 'ledge');
     this.floor(LOW, c0, c1, 'solid');
     // keep the corridors open
-    for (const lane of [TOP, MID, LOW] as Lane[]) this.clear(c0, c1, floorRow(lane) - 4, floorRow(lane) - 1);
+    for (const lane of [TOP, MID, LOW] as Lane[]) this.clear(c0, c1, this.row(lane) - 4, this.row(lane) - 1);
   }
 
   /** Remove a lane's floor: a hole to the lane below (or a deadly pit in the low lane). */
@@ -119,13 +150,13 @@ export class TrackBuilder {
 
   /** Solid rectangle given in rows relative to a lane floor (0 = floor row, positive = upwards). */
   block(lane: Lane, c0: number, c1: number, fromUp: number, toUp: number, t: number = Tile.Solid) {
-    const base = floorRow(lane);
+    const base = this.row(lane);
     this.fill(c0, c1, base - toUp, base - fromUp, t);
   }
 
   /** A hill made of 45° ramps rising `height` rows above the lane floor. */
   hill(lane: Lane, c0: number, top: number, height: number) {
-    const base = floorRow(lane);
+    const base = this.row(lane);
     for (let i = 0; i < height; i++) {
       const row = base - 1 - i;
       this.set(c0 + i, row, Tile.SlopeUp);
@@ -145,8 +176,8 @@ export class TrackBuilder {
 
   /** Ramp from a lane floor down to the lane below (replaces the lower part of the floor with slopes). */
   rampDown(lane: Lane, c0: number) {
-    const from = floorRow(lane);
-    const to = floorRow((lane + 1) as Lane);
+    const from = this.row(lane);
+    const to = this.row((lane + 1) as Lane);
     for (let i = 0; i < to - from; i++) {
       this.set(c0 + i, from + i, Tile.SlopeDown);
       for (let rr = from + i + 1; rr < to; rr++) this.set(c0 + i, rr, Tile.Solid);
@@ -156,8 +187,8 @@ export class TrackBuilder {
 
   /** Ramp from a lane floor up to the lane above. Runners on the lane follow it upwards. */
   rampUp(lane: Lane, c0: number) {
-    const from = floorRow(lane);
-    const to = floorRow((lane - 1) as Lane);
+    const from = this.row(lane);
+    const to = this.row((lane - 1) as Lane);
     const n = from - to;
     for (let i = 0; i < n; i++) {
       const row = from - 1 - i;
@@ -173,7 +204,7 @@ export class TrackBuilder {
   }
 
   spikes(lane: Lane, c0: number, c1: number) {
-    const r = floorRow(lane) - 1;
+    const r = this.row(lane) - 1;
     for (let c = c0; c <= c1; c++) this.set(c, r, Tile.Spikes);
   }
 
@@ -185,7 +216,7 @@ export class TrackBuilder {
   }
 
   private laneY(lane: Lane, up = 0) {
-    return (floorRow(lane) - up) * TILE;
+    return (this.row(lane) - up) * TILE;
   }
 
   saw(col: number, lane: Lane, up: number, motion: SawMotion = 'still', range = 0, phase = this.rng.next() * 6) {
@@ -194,14 +225,14 @@ export class TrackBuilder {
 
   /** Pendulum saw hanging from the floor of the lane above. */
   pendulum(col: number, lane: Lane, rope = 110) {
-    const pivotY = (floorRow(lane) - 5 + 1) * TILE;
-    this.set(col, floorRow(lane) - 5, Tile.Solid);
+    const pivotY = (this.row(lane) - 5 + 1) * TILE;
+    this.set(col, this.row(lane) - 5, Tile.Solid);
     this.saws.push({ x: this.cx(col), y: pivotY, motion: 'pendulum', range: rope, phase: this.rng.next() * 6 });
   }
 
   /** Crusher hanging from the lane above's floor (turned solid at that column). */
   crusher(col: number, lane: Lane, phase = this.rng.next()) {
-    const row = floorRow(lane) - 5;
+    const row = this.row(lane) - 5;
     this.set(col, row, Tile.Solid);
     this.set(col - 1, row, Tile.Solid);
     this.set(col + 1, row, Tile.Solid);
@@ -247,7 +278,7 @@ export class TrackBuilder {
   }
 
   cannon(col: number, lane: Lane, up: number, dir: -1 | 1, period = 2.2, range = 14) {
-    this.set(col, floorRow(lane) - up, Tile.Solid);
+    this.set(col, this.row(lane) - up, Tile.Solid);
     this.cannons.push({
       x: this.cx(col),
       y: this.laneY(lane, up) + TILE / 2,

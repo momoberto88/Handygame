@@ -1,5 +1,5 @@
 import type { WorldId } from '../types';
-import { LOW, MID, TOP, floorRow, type TrackBuilder } from './builder';
+import { LOW, MID, TOP, type TrackBuilder } from './builder';
 
 /**
  * Track pieces. Every piece is 3 storeys high (TOP / MID / LOW lanes) and starts and ends with the
@@ -216,7 +216,7 @@ def('sky', 'islands', 1, 34, (b, x) => {
 def('sky', 'updraft', 2, 32, (b, x) => {
   b.gap(LOW, x + 8, x + 24);
   b.gap(MID, x + 12, x + 20);
-  b.zone('wind', x + 10, x + 22, floorRow(TOP) - 3, floorRow(LOW) + 4, 0, -3300);
+  b.zone('wind', x + 10, x + 22, b.row(TOP) - 3, b.row(LOW) + 4, 0, -3300);
   b.coins(x + 12, x + 20, TOP, 3, 1);
   b.box(x + 16, TOP, 5);
   b.coins(x + 4, x + 7, LOW);
@@ -257,7 +257,7 @@ def('sky', 'cloud-hop', 3, 34, (b, x) => {
 });
 
 def('sky', 'windy-ridge', 2, 30, (b, x) => {
-  b.zone('wind', x + 6, x + 24, floorRow(TOP) - 5, floorRow(TOP) - 1, -520, 0);
+  b.zone('wind', x + 6, x + 24, b.row(TOP) - 5, b.row(TOP) - 1, -520, 0);
   b.pad(x + 8, MID, 'boost');
   b.gap(LOW, x + 14, x + 17);
   b.coins(x + 6, x + 24, TOP);
@@ -346,7 +346,7 @@ def('neon', 'monorail', 2, 30, (b, x) => {
 // Versunkener Tempel – the lower storeys are flooded: slow, floaty swimming, currents, bubbles.
 
 function flood(b: TrackBuilder, x: number, w: number, fromLane = MID) {
-  b.zone('water', x, x + w - 1, floorRow(fromLane) - 4, floorRow(LOW) + 5);
+  b.zone('water', x, x + w - 1, b.row(fromLane) - 4, b.row(LOW) + 5);
 }
 
 def('water', 'flooded-hall', 1, 32, (b, x) => {
@@ -361,8 +361,8 @@ def('water', 'flooded-hall', 1, 32, (b, x) => {
 
 def('water', 'current', 2, 32, (b, x) => {
   flood(b, x, 32);
-  b.zone('wind', x + 4, x + 28, floorRow(LOW) - 4, floorRow(LOW) - 1, 700, 0);
-  b.zone('wind', x + 4, x + 28, floorRow(MID) - 4, floorRow(MID) - 1, -350, 0);
+  b.zone('wind', x + 4, x + 28, b.row(LOW) - 4, b.row(LOW) - 1, 700, 0);
+  b.zone('wind', x + 4, x + 28, b.row(MID) - 4, b.row(MID) - 1, -350, 0);
   b.coins(x + 6, x + 26, LOW);
   b.box(x + 16, TOP);
 });
@@ -371,7 +371,7 @@ def('water', 'bubble-lift', 2, 30, (b, x) => {
   flood(b, x, 30);
   b.gap(MID, x + 11, x + 14);
   b.gap(TOP, x + 11, x + 14);
-  b.zone('wind', x + 11, x + 14, floorRow(TOP) - 6, floorRow(LOW) - 1, 0, -2600);
+  b.zone('wind', x + 11, x + 14, b.row(TOP) - 6, b.row(LOW) - 1, 0, -2600);
   b.coins(x + 11, x + 14, TOP, 4);
   b.box(x + 20, TOP);
   b.spikes(LOW, x + 20, x + 22);
@@ -508,7 +508,7 @@ def('desert', 'quicksand', 2, 32, (b, x) => {
 });
 
 def('desert', 'sandstorm', 2, 32, (b, x) => {
-  b.zone('wind', x + 4, x + 28, floorRow(TOP) - 6, floorRow(TOP) - 1, -480, 0);
+  b.zone('wind', x + 4, x + 28, b.row(TOP) - 6, b.row(TOP) - 1, -480, 0);
   b.hill(MID, x + 10, 6, 2);
   b.gap(LOW, x + 14, x + 16);
   b.coins(x + 10, x + 20, MID, 4);
@@ -557,7 +557,7 @@ def('shroom', 'crystal-cave', 2, 32, (b, x) => {
 def('shroom', 'spore-lift', 2, 30, (b, x) => {
   b.gap(LOW, x + 10, x + 13);
   b.gap(MID, x + 10, x + 13);
-  b.zone('wind', x + 10, x + 13, floorRow(TOP) - 6, floorRow(LOW) + 4, 0, -3000);
+  b.zone('wind', x + 10, x + 13, b.row(TOP) - 6, b.row(LOW) + 4, 0, -3000);
   b.coins(x + 10, x + 13, TOP, 4);
   b.box(x + 20, TOP);
   b.spikes(MID, x + 18, x + 19);

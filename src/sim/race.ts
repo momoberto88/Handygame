@@ -27,7 +27,6 @@ import {
   WALL_START_OFFSET,
   CRUMBLE_DELAY,
   CRUMBLE_RESPAWN,
-  LANE_ROWS,
   TILE,
 } from './constants';
 import { applyPads, circleHitsBox, findSafeSpot, isSafeSpot, levelHazard, lowerBound, runnerBox } from './hazards';
@@ -274,7 +273,7 @@ export class Race {
   }
 
   private placeAhead(r: RunnerState) {
-    const spot = findSafeSpot(this.track, this.wallX + SWALLOW_JUMP_AHEAD, this.laneRowOf(r.y));
+    const spot = findSafeSpot(this.track, this.wallX + SWALLOW_JUMP_AHEAD, Math.round(r.y / TILE));
     r.x = spot.x;
     r.y = spot.y;
     r.safeX = spot.x;
@@ -290,12 +289,6 @@ export class Race {
     r.ghost = GHOST_TIME;
   }
 
-  /** Floor row of the storey closest to feet height y (keeps teleported runners on their storey). */
-  private laneRowOf(y: number): number {
-    let best: number = LANE_ROWS[1];
-    for (const row of LANE_ROWS) if (Math.abs(row * TILE - y) < Math.abs(best * TILE - y)) best = row;
-    return best;
-  }
 
   // --- crumbling platforms --------------------------------------------------------------
 
