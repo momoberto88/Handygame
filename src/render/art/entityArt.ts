@@ -182,12 +182,68 @@ function drawMagnet(ctx: CanvasRenderingContext2D, x: number, y: number, s: numb
   ctx.lineCap = 'round';
 }
 
+export const PAINTED_OBJECTS = [
+  'box',
+  'coin',
+  'saw',
+  'crusher',
+  'padJump',
+  'trapOpen',
+  'rocket',
+  'iconShield',
+  'iconLightning',
+  'iconMagnet',
+  'iconInk',
+  'iconTurbo',
+  'iconSaw',
+  'padBoost',
+  'flag',
+];
+
+export function preloadObjectArt(scene: Phaser.Scene) {
+  for (const name of PAINTED_OBJECTS) scene.load.image(`po-${name}`, `assets/objects/${name}.png`);
+}
+
+type Fit = 'contain' | 'fill';
+
+/**
+ * Uses the painted image `po-<painted>` for texture `key` if it was loaded (scaled into the same
+ * logical box the game code expects), otherwise draws the vector placeholder.
+ */
+function paintedOr(
+  scene: Phaser.Scene,
+  key: string,
+  painted: string,
+  w: number,
+  h: number,
+  draw: (ctx: CanvasRenderingContext2D) => void,
+  fit: Fit = 'contain',
+  align: 'center' | 'bottom' = 'center',
+) {
+  const pkey = `po-${painted}`;
+  if (!scene.textures.exists(pkey)) {
+    canvasTexture(scene, key, w, h, draw);
+    return;
+  }
+  const img = scene.textures.get(pkey).getSourceImage() as HTMLImageElement;
+  canvasTexture(scene, key, w, h, (ctx) => {
+    if (fit === 'fill') {
+      ctx.drawImage(img, 0, 0, w, h);
+      return;
+    }
+    const s = Math.min(w / img.width, h / img.height);
+    const dw = img.width * s;
+    const dh = img.height * s;
+    ctx.drawImage(img, (w - dw) / 2, align === 'bottom' ? h - dh : (h - dh) / 2, dw, dh);
+  });
+}
+
 export function itemIconKey(kind: ItemKind): string {
   return `item-${kind}`;
 }
 
 export function makeEntityArt(scene: Phaser.Scene) {
-  canvasTexture(scene, 'itembox', 42, 42, (ctx) => {
+  paintedOr(scene, 'itembox', 'box', 42, 42, (ctx) => {
     const g = ctx.createRadialGradient(21, 21, 4, 21, 21, 22);
     g.addColorStop(0, '#b6ff7a');
     g.addColorStop(1, '#2fa33a');
@@ -205,9 +261,9 @@ export function makeEntityArt(scene: Phaser.Scene) {
     ctx.strokeText('?', 21, 23);
     ctx.fillStyle = '#ffffff';
     ctx.fillText('?', 21, 23);
-  });
+  }, 'contain', 'center');
 
-  canvasTexture(scene, 'coin', 26, 26, (ctx) => {
+  paintedOr(scene, 'coin', 'coin', 26, 26, (ctx) => {
     ellipse(ctx, 13, 13, 10.5, 10.5);
     fillStroke(ctx, '#ffcf3a', '#7a4a10', 2.4);
     ellipse(ctx, 13, 13, 6.5, 6.5);
@@ -217,12 +273,12 @@ export function makeEntityArt(scene: Phaser.Scene) {
     star(ctx, 13, 13, 4.2, 1.9);
     ctx.fillStyle = '#fff3b0';
     ctx.fill();
-  });
+  }, 'contain', 'center');
 
-  canvasTexture(scene, 'saw', 50, 50, (ctx) => drawSaw(ctx, 25, 25, 23));
-  canvasTexture(scene, 'saw-small', 40, 40, (ctx) => drawSaw(ctx, 20, 20, 18.5));
+  paintedOr(scene, 'saw', 'saw', 50, 50, (ctx) => drawSaw(ctx, 25, 25, 23), 'contain', 'center');
+  paintedOr(scene, 'saw-small', 'saw', 40, 40, (ctx) => drawSaw(ctx, 20, 20, 18.5), 'contain', 'center');
 
-  canvasTexture(scene, 'crusher-head', 68, 40, (ctx) => {
+  paintedOr(scene, 'crusher-head', 'crusher', 68, 46, (ctx) => {
     roundRect(ctx, 3, 2, 62, 28, 4);
     fillStroke(ctx, '#7c8594', O, 2.6);
     ctx.fillStyle = '#5b6371';
@@ -253,7 +309,7 @@ export function makeEntityArt(scene: Phaser.Scene) {
     ctx.lineTo(37, 14);
     ctx.lineTo(46, 17);
     ctx.fill();
-  });
+  }, 'fill', 'center');
   canvasTexture(scene, 'crusher-rod', 14, 40, (ctx) => {
     ctx.fillStyle = '#5b6371';
     ctx.fillRect(3, 0, 8, 40);
@@ -269,8 +325,8 @@ export function makeEntityArt(scene: Phaser.Scene) {
     ctx.fillRect(5, 0, 2, 40);
   });
 
-  canvasTexture(scene, 'pad-jump', 44, 22, (ctx) => drawMushroom(ctx, 22, 12, 1.4));
-  canvasTexture(scene, 'pad-boost', 44, 10, (ctx) => {
+  paintedOr(scene, 'pad-jump', 'padJump', 44, 34, (ctx) => drawMushroom(ctx, 22, 12, 1.4), 'contain', 'bottom');
+  paintedOr(scene, 'pad-boost', 'padBoost', 44, 16, (ctx) => {
     roundRect(ctx, 2, 2, 40, 7, 3);
     fillStroke(ctx, '#ffcf3a', O, 2);
     ctx.fillStyle = '#ff6a2a';
@@ -281,11 +337,11 @@ export function makeEntityArt(scene: Phaser.Scene) {
       ctx.lineTo(8 + i * 11, 8);
       ctx.fill();
     }
-  });
+  }, 'contain', 'bottom');
 
-  canvasTexture(scene, 'trap-open', 34, 18, (ctx) => drawTrap(ctx, 17, 15, 1, false));
+  paintedOr(scene, 'trap-open', 'trapOpen', 34, 18, (ctx) => drawTrap(ctx, 17, 15, 1, false), 'contain', 'bottom');
   canvasTexture(scene, 'trap-closed', 34, 22, (ctx) => drawTrap(ctx, 17, 19, 1, true));
-  canvasTexture(scene, 'rocket', 36, 26, (ctx) => drawRocket(ctx, 19, 13, 1));
+  paintedOr(scene, 'rocket', 'rocket', 40, 26, (ctx) => drawRocket(ctx, 19, 13, 1), 'contain', 'center');
 
   canvasTexture(scene, 'shield-bubble', 74, 74, (ctx) => {
     const g = ctx.createRadialGradient(37, 37, 20, 37, 37, 36);
@@ -369,8 +425,26 @@ export function makeEntityArt(scene: Phaser.Scene) {
   });
 
   // item icons (HUD + roulette)
+  const paintedIcon: Record<ItemKind, string> = {
+    saw: 'iconSaw',
+    trap: 'trapOpen',
+    lightning: 'iconLightning',
+    shield: 'iconShield',
+    turbo: 'iconTurbo',
+    rocket: 'rocket',
+    ink: 'iconInk',
+    magnet: 'iconMagnet',
+  };
   const icon = (kind: ItemKind, draw: (ctx: CanvasRenderingContext2D) => void) =>
-    canvasTexture(scene, itemIconKey(kind), 44, 44, draw);
+    paintedOr(scene, itemIconKey(kind), paintedIcon[kind], 44, 44, draw);
+  paintedOr(scene, 'finish-flag', 'flag', 60, 56, (ctx) => {
+    ctx.fillStyle = '#5a3a22';
+    ctx.fillRect(6, 4, 4, 52);
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 6; x++) {
+      ctx.fillStyle = (x + y) % 2 ? '#1a1a1a' : '#ffffff';
+      ctx.fillRect(10 + x * 8, 6 + y * 7, 8, 7);
+    }
+  }, 'contain', 'bottom');
   icon('saw', (ctx) => drawSaw(ctx, 22, 22, 16));
   icon('trap', (ctx) => drawTrap(ctx, 22, 30, 1.2, false));
   icon('lightning', (ctx) => drawBolt(ctx, 22, 22, 1.2));

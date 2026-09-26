@@ -110,6 +110,8 @@ export class TrackView {
     const fx = track.finishX;
     scene.add.tileSprite(fx, 0, 20 * ART_RES, ROWS * TILE * ART_RES, 'finish-strip').setOrigin(0.5, 0).setScale(s).setDepth(5).setAlpha(0.9);
     scene.add.image(fx, 12 * TILE - 150, 'finish-banner').setScale(s).setDepth(6);
+    scene.add.image(fx - 26, 12 * TILE + 2, 'finish-flag').setOrigin(0.5, 1).setScale(s * 1.2).setDepth(6);
+    scene.add.image(fx + 30, 12 * TILE + 2, 'finish-flag').setOrigin(0.5, 1).setScale(s * 1.2).setDepth(6);
     // start line
     scene.add.rectangle(track.startX + 16, 12 * TILE - 60, 6, 60, 0xffffff, 0.8).setOrigin(0.5, 0).setDepth(5);
 
