@@ -52,6 +52,14 @@ for (let i = 0; i < 40; i++) {
 await host.waitForTimeout(500);
 await host.screenshot({ path: `${shots}/host-lobby-2.png` });
 await client.screenshot({ path: `${shots}/client-lobby.png` });
+if (process.env.PLAYLIST) {
+  // e.g. PLAYLIST='{"name":"Mix","courses":["custom:…"]}'
+  await host.evaluate((p) => {
+    window.chaosRoom.playlist = JSON.parse(p);
+    window.chaosRoom.broadcastLobby();
+  }, process.env.PLAYLIST);
+  await host.waitForTimeout(500);
+}
 if (process.env.CUP) {
   // a two-race cup, set the way the course screen would
   await host.evaluate(() => {
@@ -89,6 +97,8 @@ await Promise.all([host.screenshot({ path: `${shots}/host-result.png` }), client
 const fin = (page) => page.evaluate(() => window.game.scene.getScene('race').session.race.standings().map((r) => [r.id, r.place, +r.finishTime.toFixed(2)]));
 console.log('host standings  ', JSON.stringify(await fin(host)));
 console.log('client standings', JSON.stringify(await fin(client)));
+const courseOf = (page) => page.evaluate(() => window.game.scene.getScene('race').session.race.courseId);
+console.log('course host/client', await courseOf(host), await courseOf(client));
 const table = (page) => page.evaluate(() => window.chaosCup && { i: window.chaosCup.index, t: window.chaosCup.table.map((e) => [e.name, e.points]) });
 if (process.env.CUP) {
   console.log('cup after race 1 host  ', JSON.stringify(await table(host)));
