@@ -81,6 +81,67 @@ def process(src, dst, voice):
         run(chain[1:])
 
 
+def split_batch(src, files, texts):
+    """Cuts one recording with len(files) lines at its len(files)-1 longest pauses."""
+    def gaps_for(noise, dur):
+        log = subprocess.run(
+            [FFMPEG, '-i', src, '-af', f'silencedetect=noise={noise}dB:d={dur}', '-f', 'null', '-'],
+            capture_output=True, text=True,
+        ).stderr
+        starts = [float(l.split('silence_start: ')[1].split()[0]) for l in log.splitlines() if 'silence_start: ' in l]
+        ends = [float(l.split('silence_end: ')[1].split()[0]) for l in log.splitlines() if 'silence_end: ' in l]
+        total = 1e9
+        if 'Duration: ' in log:
+            h, mi, se = log.split('Duration: ')[1].split(',')[0].split(':')
+            total = int(h) * 3600 + int(mi) * 60 + float(se)
+        return [(e - s_, (s_ + e) / 2) for s_, e in zip(starts, ends) if s_ > 0.05 and (s_ + e) / 2 < total - 0.1]
+
+    # candidate pauses: generous detection, then pick the cuts whose pieces best match the
+    # expected line lengths (a line can contain a pause of its own, e.g. "Ich sehe … Sternchen")
+    gaps = []
+    for noise in (-40, -35, -30, -26, -22, -18):
+        gaps = gaps_for(noise, 0.12)
+        if len(gaps) >= len(files) - 1:
+            break
+    if len(gaps) < len(files) - 1:
+        print('  could not split: found', len(gaps) + 1, 'parts for', len(files), 'lines')
+        return
+    gaps.sort(key=lambda g: g[1])
+    total = gaps[-1][1] + 2.0
+    weights = [max(4, len(t)) for t in texts]
+    per_char = total / sum(weights)
+    n, c = len(files), len(gaps)
+    INF = float('inf')
+    # best[k][j]: cost when cut k (0-based) is placed at gap j
+    best = [[INF] * c for _ in range(n - 1)]
+    prev = [[-1] * c for _ in range(n - 1)]
+
+    def seg_cost(start, end, i):
+        return abs((end - start) - weights[i] * per_char) - 0.8 * 0
+
+    for j in range(c):
+        best[0][j] = seg_cost(0, gaps[j][1], 0) - 6.0 * gaps[j][0]
+    for k in range(1, n - 1):
+        for j in range(k, c):
+            for q in range(k - 1, j):
+                v = best[k - 1][q] + seg_cost(gaps[q][1], gaps[j][1], k) - 6.0 * gaps[j][0]
+                if v < best[k][j]:
+                    best[k][j], prev[k][j] = v, q
+    end_j = min(range(c), key=lambda j: best[n - 2][j] + seg_cost(gaps[j][1], total, n - 1))
+    idx = [end_j]
+    for k in range(n - 2, 0, -1):
+        idx.append(prev[k][idx[-1]])
+    cuts = [gaps[j][1] for j in reversed(idx)]
+    bounds = [0.0] + cuts + [None]
+    for i, f in enumerate(files):
+        with tempfile.NamedTemporaryFile(suffix='.wav') as part:
+            cmd = [FFMPEG, '-y', '-loglevel', 'error', '-i', src, '-ss', str(bounds[i])]
+            if bounds[i + 1] is not None:
+                cmd += ['-to', str(bounds[i + 1])]
+            subprocess.run(cmd + [part.name], check=True)
+            process(part.name, os.path.join(OUT, f), True)
+
+
 def newest_transcript():
     files = glob.glob('/root/.claude/projects/-home-user-Handygame/*.jsonl')
     return max(files, key=os.path.getmtime)
@@ -131,6 +192,21 @@ def main():
                 continue
             process(tmp.name, dst, job['type'] == 'tts')
         done += 1
+    # batched recordings: one take with many lines, cut at the longest pauses
+    batches_path = os.path.join(ROOT, 'tools', 'audio', 'batches.json')
+    if os.path.exists(batches_path):
+        for name, b in json.load(open(batches_path)).items():
+            todo = [f for f in b['files'] if not os.path.exists(os.path.join(OUT, f))]
+            if not todo:
+                continue
+            m = by_key.get((b['prompt'], b['voice']))
+            if not m:
+                print('batch not ready', name)
+                continue
+            with tempfile.NamedTemporaryFile(suffix='.mp3') as tmp:
+                urllib.request.urlretrieve(m['url'], tmp.name)
+                split_batch(tmp.name, b['files'], b.get('texts') or [''] * len(b['files']))
+            print('batch split', name, len(b['files']))
     # list of the clips that exist, for the game
     clips = sorted(
         os.path.relpath(os.path.join(d, f), OUT)[:-4]
