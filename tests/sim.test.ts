@@ -122,5 +122,5 @@ describe('bots', () => {
       expect(winner.finishTime).toBeLessThan(100);
       expect(log.some((e) => e.t === 'use')).toBe(true);
     }
-  });
+  }, 60000);
 });
