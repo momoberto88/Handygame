@@ -1,4 +1,4 @@
-import { DT } from './constants';
+import { BOOST_SPEED, DT, TURBO_TIME } from './constants';
 import { applyPads, levelHazard } from './hazards';
 import { stepRunnerPhysics } from './physics';
 import type { Race } from './race';
@@ -20,18 +20,18 @@ function buildPlans(horizon: number): Plan[] {
   };
   make(() => IDLE);
   for (const len of [16, 30, horizon]) make((t) => (t < len ? SLIDE : IDLE));
-  for (const delay of [0, 3, 6, 10, 15, 22]) {
+  for (const delay of [0, 3, 6, 10, 15, 22, 30]) {
     for (const hold of [5, 12, 24]) make((t) => (t >= delay && t < delay + hold ? JUMP : IDLE));
   }
-  // Repeated presses: climbs walls with wall-jumps.
+  // Two separate jumps (onto a ledge, then onwards).
   for (const delay of [0, 6]) {
-    for (const gap of [18, 24, 32]) {
-      make((t) => {
-        const k = t - delay;
-        if (k < 0) return IDLE;
-        return k % gap < 13 ? JUMP : IDLE;
-      });
+    for (const second of [24, 32, 40, 50]) {
+      make((t) => ((t >= delay && t < delay + 14) || (t >= second && t < second + 14) ? JUMP : IDLE));
     }
+  }
+  // Repeated presses: climbs walls with wall-jumps.
+  for (const gap of [18, 24]) {
+    make((t) => (t % gap < 13 ? JUMP : IDLE));
   }
   // Jump, then dive down (fast fall) to dodge something overhead.
   for (const diveAt of [14, 22]) make((t) => (t < 12 ? JUMP : t >= diveAt ? SLIDE : IDLE));
@@ -96,7 +96,7 @@ export class BotBrain {
     readonly profile: BotProfile,
   ) {
     this.rng = new Rng(seed);
-    this.horizon = Math.round(34 + 22 * profile.skill);
+    this.horizon = Math.round(40 + 40 * profile.skill);
     this.plans = buildPlans(this.horizon);
   }
 
@@ -152,6 +152,13 @@ export class BotBrain {
     this.itemTimer -= DT;
     if (this.itemTimer > 0) return 0;
 
+    if (r.item === 'turbo') {
+      if (!r.grounded) return 0;
+      const boosted = { ...r, boost: TURBO_TIME, vx: Math.max(r.vx, BOOST_SPEED) };
+      if (simulate(race, boosted, this.plan, this.planPos, this.horizon).dead) return 0;
+      this.sinceCheck = 99; // re-plan right away at the new speed
+      return 1;
+    }
     const others = race.runners.filter((o) => o.id !== r.id && o.mode === 'run');
     const ahead = others.filter((o) => o.x > r.x && o.x - r.x < 650 && Math.abs(o.y - r.y) < 90);
     const behind = others.filter((o) => o.x < r.x && r.x - o.x < 450);

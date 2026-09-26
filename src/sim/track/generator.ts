@@ -170,6 +170,17 @@ export function generateTrack(opts: TrackOptions): Track {
     col0 += p.width;
   });
 
+  // Item "gates": a stack of boxes at the start of most pieces, so everyone gets items regularly.
+  for (let i = 1; i < track.chunks.length - 1; i++) {
+    const col = track.chunks[i].col + 2;
+    const free = (r: number) => tiles[r * cols + col] === Tile.Empty;
+    const solid = (r: number) => tiles[r * cols + col] === Tile.Solid;
+    if (!solid(GROUND_ROW) || ![8, 9, 10, 11].every(free)) continue;
+    if (track.boxes.some((b) => Math.abs(b.x - (col * TILE + TILE / 2)) < TILE * 3)) continue;
+    track.boxes.push({ x: col * TILE + TILE / 2, y: 10 * TILE + TILE / 2 });
+    track.boxes.push({ x: col * TILE + TILE / 2, y: 8 * TILE + TILE / 2 });
+  }
+
   for (const cell of crusherCells) {
     const anchorY = (cell.row + 1) * TILE;
     let floorRow = cell.row + 1;

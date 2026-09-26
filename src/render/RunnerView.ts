@@ -93,6 +93,7 @@ export class RunnerView {
   private footF: Phaser.GameObjects.Image;
   private footB: Phaser.GameObjects.Image;
   private shield: Phaser.GameObjects.Image;
+  private magnet: Phaser.GameObjects.Image;
   private nameTag?: Phaser.GameObjects.Text;
 
   private pose: Pose = { ...REST };
@@ -169,8 +170,9 @@ export class RunnerView {
 
     this.handF = part(scene, partKey(c, 'hand'));
     this.shield = scene.add.image(0, -24, 'shield-bubble').setScale(1 / ART_RES).setVisible(false);
+    this.magnet = scene.add.image(0, -68, 'item-magnet').setScale(0.5 / ART_RES).setVisible(false);
 
-    this.root.add([this.footB, this.handB, this.body, this.bodyLower, this.footF, this.head, this.handF, this.shield]);
+    this.root.add([this.footB, this.handB, this.body, this.bodyLower, this.footF, this.head, this.handF, this.shield, this.magnet]);
     this.allParts = [this.body, this.bodyLower, this.headImg, this.handF, this.handB, this.footF, this.footB];
     if (this.earF) this.allParts.push(this.earF);
     if (this.earB) this.allParts.push(this.earB);
@@ -258,6 +260,7 @@ export class RunnerView {
 
     const ghost = r.ghost > 0 ? (Math.floor(time * 16) % 2 ? 0.35 : 0.9) : 1;
     this.root.setAlpha(ghost);
+    this.magnet.setVisible(r.magnet > 0).setY(-66 + Math.sin(time * 5) * 3).setRotation(Math.sin(time * 3) * 0.3);
     this.shield.setVisible(r.shield > 0);
     if (r.shield > 0) {
       const flicker = r.shield < 1.5 && Math.floor(time * 10) % 2 === 0;
@@ -422,6 +425,7 @@ export class RunnerView {
     this.debris = [];
     this.root.setScale(1).setAlpha(1);
     this.shield.setVisible(false);
+    this.magnet.setVisible(false);
     this.eyes.setTexture('eyes-dead');
     const kind = r.deathKind;
     const rnd = (i: number) => Math.sin(i * 12.9898 + r.id * 78.233 + r.deaths * 3.1) * 0.5 + 0.5;

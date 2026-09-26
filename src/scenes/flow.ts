@@ -30,10 +30,17 @@ export function randomWorld(seed: number): WorldId {
   return WORLD_ORDER[seed % WORLD_ORDER.length];
 }
 
+/** Debug switches via the URL, e.g. ?autoplay&world=neon&seed=42 (used for automated tests). */
+export function debugParam(name: string): string | null {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
 export function startLocalRace(scene: Phaser.Scene, world?: WorldId) {
   const save = loadSave();
-  const seed = randomSeed();
-  const me: RacerInfo = { id: 0, name: playerName(), character: save.character, isBot: false, cosmetics: save.equipped };
+  const seed = Number(debugParam('seed')) || randomSeed();
+  world = (debugParam('world') as WorldId | null) ?? world;
+  const autoplay = debugParam('autoplay') !== null;
+  const me: RacerInfo = { id: 0, name: playerName(), character: save.character, isBot: autoplay, cosmetics: save.equipped };
   const racers = fillWithBots([me], 4, seed);
   const session = new LocalSession({
     seed,

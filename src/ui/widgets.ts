@@ -96,15 +96,5 @@ export function panel(scene: Phaser.Scene, x: number, y: number, w: number, h: n
   g.fillStyle(0x8c8577, 1).fillRoundedRect(-w / 2, -h / 2, w, h, 22);
   g.fillStyle(0xa39c8c, 1).fillRoundedRect(-w / 2 + 10, -h / 2 + 10, w - 20, h - 20, 16);
   g.lineStyle(5, 0x2a241c, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, 22);
-  g.lineStyle(2, 0x6c6557, 1);
-  for (let i = 0; i < 6; i++) {
-    const cx = -w / 2 + 30 + ((i * 97) % (w - 60));
-    const cy = -h / 2 + 30 + ((i * 53) % (h - 60));
-    g.beginPath();
-    g.moveTo(cx, cy);
-    g.lineTo(cx + 12, cy + 7);
-    g.lineTo(cx + 18, cy + 3);
-    g.strokePath();
-  }
   return g;
 }

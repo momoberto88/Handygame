@@ -49,6 +49,7 @@ export class HudScene extends Phaser.Scene {
   private bigText!: Phaser.GameObjects.Text;
   private toastText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
+  private warnText!: Phaser.GameObjects.Text;
   private progressBar!: Phaser.GameObjects.Graphics;
   private progressHeads: Phaser.GameObjects.Image[] = [];
   private wallMarker!: Phaser.GameObjects.Arc;
@@ -94,6 +95,7 @@ export class HudScene extends Phaser.Scene {
     this.bigText = uiText(this, 0, VIEW_H * 0.36, '', 72, '#ffd84a').setOrigin(0.5).setAlpha(0);
     this.toastText = uiText(this, 0, 110, '', 30).setOrigin(0.5).setAlpha(0);
     this.statusText = uiText(this, 0, 76, '', 16, '#ffb0b0').setOrigin(0.5, 0);
+    this.warnText = uiText(this, 0, 150, '⚠ RAKETE!', 26, '#ff6a4a').setOrigin(0.5).setVisible(false);
     this.progressBar = this.add.graphics();
     this.wallMarker = this.add.circle(0, 0, 7, 0x6a2a8a).setStrokeStyle(2, 0xc77dff);
     const session = this.raceScene.session;
@@ -202,6 +204,7 @@ export class HudScene extends Phaser.Scene {
     this.bigText.setX(W / 2);
     this.toastText.setX(W / 2);
     this.statusText.setX(W / 2);
+    this.warnText.setX(W / 2);
     this.danger.setDisplaySize(W * 0.28, H);
   }
 
@@ -314,6 +317,9 @@ export class HudScene extends Phaser.Scene {
       this.itemIcon.setVisible(false);
     }
     this.itemBtn.bg.setFillStyle(0x7aff6a, me.item ? 0.45 : 0.15);
+
+    const rocketIncoming = race.projectiles.some((p) => p.kind === 'rocket' && p.target === me.id);
+    this.warnText.setVisible(rocketIncoming && Math.floor(race.clock * 6) % 2 === 0);
 
     // chaos wall danger
     const gap = me.x - race.wallX;
