@@ -6,6 +6,7 @@ import { TickClock } from './LocalSession';
 import { SNAPSHOT_EVERY, packProjectile, packRunner, packTrap, type ClientMsg, type SnapshotMsg } from './protocol';
 import type { NetRoom } from './room';
 import type { LocalInput, RaceSession, RacerInfo } from './session';
+import { abilitiesOf } from '../meta/characters';
 
 const TICK_MS = DT * 1000;
 
@@ -15,6 +16,7 @@ interface RemotePlayer {
   last: { j: 0 | 1; d: 0 | 1 };
   ack: number;
   use: -1 | 0 | 1;
+  ability: boolean;
 }
 
 export interface HostSetup {
@@ -36,6 +38,7 @@ export class HostSession implements RaceSession {
   private remotes = new Map<number, RemotePlayer>();
   private clock = new TickClock();
   private pendingUse: -1 | 0 | 1 = 0;
+  private pendingAbility = false;
   private outEvents: SimEvent[] = [];
   private notice: { text: string; until: number } | null = null;
   private announcedEnd = false;
@@ -44,11 +47,11 @@ export class HostSession implements RaceSession {
     private room: NetRoom,
     setup: HostSetup,
   ) {
-    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId });
+    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers) });
     this.racers = setup.racers.map((r) => ({ ...r }));
     this.brains = this.racers.map((r, i) => (r.isBot ? new BotBrain(setup.seed + i * 7919, botProfile('normal', i)) : null));
     for (const [seat, id] of setup.seatToRacer) {
-      this.remotes.set(id, { seat, queue: [], last: { j: 0, d: 0 }, ack: 0, use: 0 });
+      this.remotes.set(id, { seat, queue: [], last: { j: 0, d: 0 }, ack: 0, use: 0, ability: false });
     }
     room.onClientMessage = this.onClientMessage;
     room.onSeatLeft = this.onSeatLeft;
@@ -69,6 +72,7 @@ export class HostSession implements RaceSession {
     if (!rp) return;
     if (msg.t === 'in') rp.queue.push({ s: msg.s, j: msg.j, d: msg.d });
     else if (msg.t === 'use') rp.use = msg.dir;
+    else if (msg.t === 'ab') rp.ability = true;
   }
 
   private onLeft(seat: number, name: string) {
@@ -87,6 +91,7 @@ export class HostSession implements RaceSession {
   update(dtMs: number, input: LocalInput): SimEvent[] {
     const events: SimEvent[] = [];
     if (input.use) this.pendingUse = input.use;
+    if (input.ability) this.pendingAbility = true;
     this.clock.acc += Math.min(dtMs, 200);
     while (this.clock.acc >= TICK_MS) {
       this.clock.acc -= TICK_MS;
@@ -96,8 +101,10 @@ export class HostSession implements RaceSession {
         if (brain) return brain.think(this.race, info.id);
         if (info.id === this.localId) {
           const use = this.pendingUse;
+          const ability = this.pendingAbility;
           this.pendingUse = 0;
-          return { jump: input.jump, slide: input.slide, use };
+          this.pendingAbility = false;
+          return { jump: input.jump, slide: input.slide, use, ability };
         }
         const rp = this.remotes.get(info.id);
         if (!rp) return { jump: false, slide: false, use: 0 };
@@ -109,8 +116,10 @@ export class HostSession implements RaceSession {
           rp.ack = next.s;
         }
         const use = rp.use;
+        const ability = rp.ability;
         rp.use = 0;
-        return { jump: rp.last.j === 1, slide: rp.last.d === 1, use };
+        rp.ability = false;
+        return { jump: rp.last.j === 1, slide: rp.last.d === 1, use, ability };
       });
       const stepEvents = this.race.step(inputs);
       events.push(...stepEvents);

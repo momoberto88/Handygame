@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { sfx } from '../audio/sfx';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
-import { characterById } from '../meta/characters';
+import { ABILITIES, characterById } from '../meta/characters';
 import { loadSave } from '../meta/save';
 import type { LocalInput } from '../net/session';
 import { ITEM_KINDS } from '../sim/types';
@@ -44,6 +44,11 @@ export class HudScene extends Phaser.Scene {
   private slideBtn!: Button;
   private itemBtn!: Button;
   private itemIcon!: Phaser.GameObjects.Image;
+  private abilityBtn!: Button;
+  private abilityIcon!: Phaser.GameObjects.Text;
+  private abilityRing!: Phaser.GameObjects.Graphics;
+  private pendingAbility = false;
+  private wasCharged = false;
   private placeText!: Phaser.GameObjects.Text;
   private placeSub!: Phaser.GameObjects.Text;
   private coinText!: Phaser.GameObjects.Text;
@@ -75,6 +80,8 @@ export class HudScene extends Phaser.Scene {
     this.raceScene = data.race;
     this.itemPointers.clear();
     this.pendingUse = 0;
+    this.pendingAbility = false;
+    this.wasCharged = false;
     this.progressHeads = [];
     this.edgeMarkers = [];
   }
@@ -91,6 +98,10 @@ export class HudScene extends Phaser.Scene {
     this.slideBtn = this.makeButton('ui-slide', 0xffb84a);
     this.itemBtn = this.makeButton('', 0x7aff6a);
     this.itemIcon = this.add.image(0, 0, itemIconKey('saw')).setScale(1.1 / ART_RES).setVisible(false);
+    this.abilityBtn = this.makeButton('', 0xffd84a);
+    this.abilityRing = this.add.graphics();
+    const myAbility = characterById(this.raceScene.session.racers[this.raceScene.session.localId].character).ability;
+    this.abilityIcon = uiText(this, 0, 0, ABILITIES[myAbility].icon, 34).setOrigin(0.5);
 
     this.placeText = uiText(this, 22, 10, '1.', 40, '#ffd84a');
     this.placeSub = uiText(this, 80, 30, '/4', 20);
@@ -136,7 +147,9 @@ export class HudScene extends Phaser.Scene {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       sfx.unlock();
       const pos = this.toUi(p);
-      if (this.zoneOf(pos.x, pos.y) === 'item') this.itemPointers.set(p.id, pos);
+      const zone = this.zoneOf(pos.x, pos.y);
+      if (zone === 'item') this.itemPointers.set(p.id, pos);
+      if (zone === 'ability') this.pendingAbility = true;
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
       const start = this.itemPointers.get(p.id);
@@ -152,6 +165,7 @@ export class HudScene extends Phaser.Scene {
       sfx.unlock();
       if (['ArrowRight', 'd', 'D', 'e', 'E'].includes(ev.key)) this.pendingUse = 1;
       if (['ArrowLeft', 'a', 'A', 'q', 'Q'].includes(ev.key)) this.pendingUse = -1;
+      if (['f', 'F', 'r', 'R', 'Shift'].includes(ev.key)) this.pendingAbility = true;
       if (ev.key === 'Escape') this.quitRace();
     });
   }
@@ -212,6 +226,8 @@ export class HudScene extends Phaser.Scene {
     this.placeButton(this.slideBtn, left(236), H - 64, 52);
     this.placeButton(this.itemBtn, this.leftHanded ? 96 : W - 96, H - 92, 66);
     this.itemIcon.setPosition(this.itemBtn.x, this.itemBtn.y);
+    this.placeButton(this.abilityBtn, this.leftHanded ? 236 : W - 236, H - 62, 44);
+    this.abilityIcon.setPosition(this.abilityBtn.x, this.abilityBtn.y);
     this.coinText.setPosition(W - 70, 16);
     this.coinIcon.setPosition(W - 56, 30);
     this.quitBtn.setPosition(W - 16, 14);
@@ -222,10 +238,13 @@ export class HudScene extends Phaser.Scene {
     this.danger.setDisplaySize(W * 0.28, H);
   }
 
-  private zoneOf(x: number, y: number): 'jump' | 'slide' | 'item' | null {
+  private zoneOf(x: number, y: number): 'jump' | 'slide' | 'item' | 'ability' | null {
     if (y < 70) return null; // top bar (quit button, etc.)
     const onLeft = this.leftHanded ? x > this.W * 0.5 : x < this.W * 0.5;
-    if (!onLeft) return 'item';
+    if (!onLeft) {
+      const d = Phaser.Math.Distance.Between(x, y, this.abilityBtn.x, this.abilityBtn.y);
+      return d < this.abilityBtn.r * 1.3 ? 'ability' : 'item';
+    }
     const d = Phaser.Math.Distance.Between(x, y, this.slideBtn.x, this.slideBtn.y);
     if (d < this.slideBtn.r * 1.35) return 'slide';
     // Everything else on the thumb side jumps, except a strip right of the slide button (also slide).
@@ -250,10 +269,12 @@ export class HudScene extends Phaser.Scene {
       slide ||= k.DOWN.isDown || k.S.isDown;
     }
     const use = this.pendingUse;
+    const ability = this.pendingAbility;
     this.pendingUse = 0;
+    this.pendingAbility = false;
     this.jumpBtn.bg.setFillStyle(0x4ad0ff, jump ? 0.6 : 0.28);
     this.slideBtn.bg.setFillStyle(0xffb84a, slide ? 0.6 : 0.28);
-    return { jump, slide, use };
+    return { jump, slide, use, ability };
   }
 
   /** Rivals that are off screen show up as heads at the screen edge (with distance in metres). */
@@ -373,6 +394,24 @@ export class HudScene extends Phaser.Scene {
       this.itemIcon.setVisible(false);
     }
     this.itemBtn.bg.setFillStyle(0x7aff6a, me.item ? 0.45 : 0.15);
+
+    // ability: ring fills up, the button glows when it is ready
+    const ready = me.charge >= 1;
+    const ab = this.abilityBtn;
+    const ring = this.abilityRing;
+    ring.clear();
+    ring.lineStyle(6, 0x1d1a2f, 0.5).strokeCircle(ab.x, ab.y, ab.r + 4);
+    ring.lineStyle(6, ready ? 0xffd84a : 0xfff2b0, 1);
+    ring.beginPath();
+    ring.arc(ab.x, ab.y, ab.r + 4, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * me.charge, false);
+    ring.strokePath();
+    ab.bg.setFillStyle(0xffd84a, ready ? 0.45 + Math.sin(race.clock * 9) * 0.15 : 0.12);
+    this.abilityIcon.setAlpha(ready ? 1 : 0.45).setScale(ready ? 0.5 + Math.sin(race.clock * 9) * 0.03 : 0.45);
+    if (ready && !this.wasCharged) {
+      sfx.play('item');
+      this.toast(`${ABILITIES[race.abilities[me.id] ?? 'sprint'].name} bereit!`, '#ffd84a');
+    }
+    this.wasCharged = ready;
 
     this.updateEdgeMarkers();
 

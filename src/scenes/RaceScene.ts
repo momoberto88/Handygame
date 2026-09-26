@@ -316,6 +316,27 @@ export class RaceScene extends Phaser.Scene {
       case 'trapSet':
         if (this.nearCamera(e.x)) sfx.play('trap');
         break;
+      case 'ability': {
+        this.fx.ability(e.kind, e.x, e.y);
+        if (this.nearCamera(e.x)) sfx.play(e.kind === 'quake' ? 'squash' : e.kind === 'megajump' ? 'pad' : e.kind === 'spores' ? 'ink' : 'turbo');
+        if (this.isLocal(e.r)) {
+          this.camera.shake(e.kind === 'quake' ? 0.6 : 0.25);
+          if (e.kind === 'sprint' || e.kind === 'bash') this.camera.kick(-40);
+          if (e.kind === 'steal' && e.target !== undefined) this.hud?.toast(`Geklaut von ${this.session.racers[e.target].name}!`, '#ffd84a');
+        } else if (e.target === this.session.localId) {
+          this.hud?.toast(`${this.session.racers[e.r].name} hat dein Power-Up geklaut!`, '#ff9a8a');
+        }
+        break;
+      }
+      case 'stunned': {
+        const r = race.runners[e.r];
+        this.fx.dizzy(r.x, r.y);
+        if (this.isLocal(e.r)) {
+          this.hud?.toast('Benommen!', '#b07cff');
+          if (vib) navigator.vibrate?.(60);
+        }
+        break;
+      }
       case 'finish': {
         const r = race.runners[e.r];
         if (this.isLocal(e.r)) {

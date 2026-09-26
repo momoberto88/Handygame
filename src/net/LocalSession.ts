@@ -3,6 +3,7 @@ import { DT } from '../sim/constants';
 import { Race } from '../sim/race';
 import type { RunnerInput, SimEvent, WorldId } from '../sim/types';
 import type { LocalInput, RaceSession, RacerInfo } from './session';
+import { abilitiesOf } from '../meta/characters';
 
 const TICK_MS = DT * 1000;
 
@@ -41,9 +42,10 @@ export class LocalSession implements RaceSession {
   private brains: (BotBrain | null)[];
   private clock = new TickClock();
   private pendingUse: -1 | 0 | 1 = 0;
+  private pendingAbility = false;
 
   constructor(setup: LocalSetup) {
-    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId });
+    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers) });
     this.racers = setup.racers;
     this.localId = setup.localId;
     this.brains = setup.racers.map((r, i) =>
@@ -59,6 +61,7 @@ export class LocalSession implements RaceSession {
   update(dtMs: number, input: LocalInput): SimEvent[] {
     const events: SimEvent[] = [];
     if (input.use) this.pendingUse = input.use;
+    if (input.ability) this.pendingAbility = true;
     this.clock.acc += Math.min(dtMs, 200);
     while (this.clock.acc >= TICK_MS) {
       this.clock.acc -= TICK_MS;
@@ -68,8 +71,10 @@ export class LocalSession implements RaceSession {
         if (brain) return brain.think(this.race, info.id);
         if (info.id === this.localId) {
           const use = this.pendingUse;
+          const ability = this.pendingAbility;
           this.pendingUse = 0;
-          return { jump: input.jump, slide: input.slide, use };
+          this.pendingAbility = false;
+          return { jump: input.jump, slide: input.slide, use, ability };
         }
         return { jump: false, slide: false, use: 0 };
       });

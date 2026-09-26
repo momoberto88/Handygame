@@ -1,3 +1,5 @@
+import type { AbilityKind } from '../sim/types';
+
 export type EarStyle = 'long' | 'pointy' | 'round' | 'none' | 'frog' | 'feathers' | 'ponytail';
 export type TailStyle = 'puff' | 'bushy' | 'ringed' | 'none';
 export type HeadStyle = 'round' | 'cap' | 'gnome' | 'mask' | 'wide';
@@ -20,7 +22,20 @@ export interface CharacterDef {
   tail: TailStyle;
   /** Tint of the rival marker / progress bar head. */
   marker: number;
+  ability: AbilityKind;
 }
+
+/** Name and short explanation of every ability (menu, HUD). */
+export const ABILITIES: Record<AbilityKind, { name: string; icon: string; text: string }> = {
+  megajump: { name: 'Riesensprung', icon: '🦘', text: 'Ein gewaltiger Satz nach oben – sogar mitten in der Luft.' },
+  sprint: { name: 'Sprint', icon: '💨', text: '1,6 Sekunden Turbo-Tempo.' },
+  spores: { name: 'Sporenwolke', icon: '🍄', text: 'Wer dicht hinter dir ist, wird kurz benebelt und langsam.' },
+  tongue: { name: 'Zungenschnapp', icon: '👅', text: 'Schnappt dir sofort ein Power-Up.' },
+  steal: { name: 'Langfinger', icon: '🦝', text: 'Klaut das Power-Up vom nächsten Gegner vor dir.' },
+  quake: { name: 'Stampfwelle', icon: '💥', text: 'Eine Bodenwelle wirft Gegner in deiner Nähe aus dem Tritt.' },
+  mask: { name: 'Geistermaske', icon: '👻', text: '2,5 Sekunden lang unverwundbar.' },
+  bash: { name: 'Schildstoß', icon: '🛡️', text: 'Schild plus ein kurzer Sprint nach vorn.' },
+};
 
 export const CHARACTERS: CharacterDef[] = [
   {
@@ -33,6 +48,7 @@ export const CHARACTERS: CharacterDef[] = [
     ears: 'long',
     tail: 'puff',
     marker: 0xd9a066,
+    ability: 'megajump',
   },
   {
     id: 'pilz',
@@ -44,6 +60,7 @@ export const CHARACTERS: CharacterDef[] = [
     ears: 'none',
     tail: 'none',
     marker: 0xd8332f,
+    ability: 'spores',
   },
   {
     id: 'fuchs',
@@ -55,6 +72,7 @@ export const CHARACTERS: CharacterDef[] = [
     ears: 'pointy',
     tail: 'bushy',
     marker: 0xef7d2d,
+    ability: 'sprint',
   },
   {
     id: 'frosch',
@@ -66,6 +84,7 @@ export const CHARACTERS: CharacterDef[] = [
     ears: 'frog',
     tail: 'none',
     marker: 0x6cc04a,
+    ability: 'tongue',
   },
   {
     id: 'waschbaer',
@@ -77,6 +96,7 @@ export const CHARACTERS: CharacterDef[] = [
     ears: 'round',
     tail: 'ringed',
     marker: 0x8e8e9a,
+    ability: 'steal',
   },
   {
     id: 'zwerg',
@@ -88,6 +108,7 @@ export const CHARACTERS: CharacterDef[] = [
     ears: 'none',
     tail: 'none',
     marker: 0xc8302a,
+    ability: 'quake',
   },
   {
     id: 'kobold',
@@ -99,6 +120,7 @@ export const CHARACTERS: CharacterDef[] = [
     ears: 'feathers',
     tail: 'none',
     marker: 0x2fb7c4,
+    ability: 'mask',
   },
   {
     id: 'kriegerin',
@@ -110,8 +132,14 @@ export const CHARACTERS: CharacterDef[] = [
     ears: 'ponytail',
     tail: 'none',
     marker: 0x9b59d0,
+    ability: 'bash',
   },
 ];
+
+/** Ability of every racer, in racer order (for the race simulation). */
+export function abilitiesOf(racers: { character: string }[]): AbilityKind[] {
+  return racers.map((r) => characterById(r.character).ability);
+}
 
 export function characterById(id: string): CharacterDef {
   return CHARACTERS.find((c) => c.id === id) ?? CHARACTERS[0];

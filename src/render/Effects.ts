@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { DeathKind } from '../sim/types';
+import type { AbilityKind, DeathKind } from '../sim/types';
 
 type Emitter = Phaser.GameObjects.Particles.ParticleEmitter;
 
@@ -174,6 +174,56 @@ export class Effects {
         onComplete: () => chunk.destroy(),
       });
     }
+  }
+
+  /** Visual burst for a character ability. */
+  ability(kind: AbilityKind, x: number, y: number) {
+    const s = this.scene;
+    switch (kind) {
+      case 'megajump':
+        this.slam(x, y);
+        break;
+      case 'sprint':
+      case 'bash':
+        for (let i = 0; i < 6; i++) this.speedLines.explode(1, x - 20 - i * 12, y - 10 - Math.random() * 40);
+        this.sparks.explode(8, x, y - 24);
+        break;
+      case 'spores':
+        for (let i = 0; i < 9; i++) {
+          const puff = s.add.circle(x - 20, y - 30, 14 + Math.random() * 10, i % 2 ? 0xb07cff : 0x8fe36a, 0.55).setDepth(33);
+          s.tweens.add({
+            targets: puff,
+            x: x - 60 - Math.random() * 260,
+            y: y - 20 - Math.random() * 90,
+            scale: 2.4,
+            alpha: 0,
+            duration: 900 + Math.random() * 300,
+            onComplete: () => puff.destroy(),
+          });
+        }
+        break;
+      case 'quake': {
+        this.dust.explode(18, x, y);
+        for (const dir of [-1, 1]) {
+          const wave = s.add.ellipse(x, y - 4, 30, 12).setStrokeStyle(4, 0xffe0a0, 0.9).setDepth(31);
+          s.tweens.add({ targets: wave, x: x + dir * 300, scaleX: 3, alpha: 0, duration: 450, onComplete: () => wave.destroy() });
+        }
+        break;
+      }
+      case 'tongue':
+      case 'steal':
+        this.stars.explode(5, x + 20, y - 30);
+        this.sparks.explode(6, x + 20, y - 30);
+        break;
+      case 'mask':
+        this.smoke.explode(6, x, y - 24);
+        break;
+    }
+  }
+
+  /** Little stars circling over a dazed runner. */
+  dizzy(x: number, y: number) {
+    this.stars.explode(4, x, y - 56);
   }
 
   respawnPuff(x: number, y: number) {

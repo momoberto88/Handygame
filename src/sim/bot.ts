@@ -146,7 +146,29 @@ export class BotBrain {
     }
     const input = this.plan[this.planPos] ?? IDLE;
     this.planPos++;
-    return { ...input, use: this.decideItem(race, r) };
+    return { ...input, use: this.decideItem(race, r), ability: this.decideAbility(race, r) };
+  }
+
+  /** Fire the special ability when it is charged and useful right now. */
+  private decideAbility(race: Race, r: RunnerState): boolean {
+    const kind = race.abilities[r.id];
+    if (!kind || r.charge < 1 || this.rng.next() > 0.04 + 0.04 * this.profile.skill) return false;
+    const others = race.runners.filter((o) => o !== r && o.mode === 'run');
+    switch (kind) {
+      case 'spores':
+        return others.some((o) => o.x < r.x && r.x - o.x < 300 && Math.abs(o.y - r.y) < 150);
+      case 'quake':
+        return others.some((o) => Math.abs(o.x - r.x) < 300 && Math.abs(o.y - r.y) < 80);
+      case 'tongue':
+        return !r.item && r.rolling <= 0;
+      case 'steal':
+        return !r.item && r.rolling <= 0 && others.some((o) => o.item && o.x > r.x && o.x - r.x < 850);
+      case 'megajump':
+      case 'sprint':
+      case 'bash':
+      case 'mask':
+        return r.grounded && !r.sliding;
+    }
   }
 
   private choosePlan(race: Race, r: RunnerState, horizon: number, current: Outcome) {

@@ -6,6 +6,7 @@ import { Tile, type RunnerState, type SimEvent } from '../sim/types';
 import { unpackProjectile, unpackRunner, unpackTrap, type HostMsg, type SnapshotMsg } from './protocol';
 import type { NetRoom } from './room';
 import type { LocalInput, RaceSession, RacerInfo } from './session';
+import { abilitiesOf } from '../meta/characters';
 
 const TICK_MS = DT * 1000;
 /** Remote runners are drawn this many ticks in the past so there are always two snapshots to blend. */
@@ -42,7 +43,7 @@ export class ClientSession implements RaceSession {
     private room: NetRoom,
     start: Extract<HostMsg, { t: 'start' }>,
   ) {
-    this.race = new Race({ seed: start.seed, world: start.world, runnerCount: start.racers.length, courseId: start.courseId });
+    this.race = new Race({ seed: start.seed, world: start.world, runnerCount: start.racers.length, courseId: start.courseId, abilities: abilitiesOf(start.racers) });
     this.racers = start.racers;
     this.localId = start.you;
     const me = this.race.runners[this.localId];
@@ -74,6 +75,7 @@ export class ClientSession implements RaceSession {
     this.race.tick = Math.max(0, Math.floor(this.hostTick));
 
     if (input.use) this.room.send({ t: 'use', dir: input.use });
+    if (input.ability) this.room.send({ t: 'ab' });
     this.acc += dt * 1000;
     while (this.acc >= TICK_MS) {
       this.acc -= TICK_MS;

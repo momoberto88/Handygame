@@ -15,6 +15,8 @@ export interface LocalInput {
   slide: boolean;
   /** One-shot item use (-1 backward, 1 forward). */
   use: -1 | 0 | 1;
+  /** One-shot: fire the character ability. */
+  ability?: boolean;
 }
 
 /**

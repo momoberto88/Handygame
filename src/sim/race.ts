@@ -1,5 +1,16 @@
 import {
+  ABILITY_CHARGE_BOX,
+  ABILITY_CHARGE_COIN,
+  ABILITY_CHARGE_RATE,
+  BASH_SHIELD,
   BOOST_SPEED,
+  MASK_TIME,
+  MEGAJUMP_V,
+  QUAKE_RANGE,
+  SPORE_RANGE_BACK,
+  SPRINT_TIME,
+  STEAL_RANGE,
+  STUN_TIME,
   BOX_RADIUS,
   BOX_RESPAWN,
   COIN_RADIUS,
@@ -37,6 +48,7 @@ import { generateTrack } from './track/generator';
 import {
   NO_INPUT,
   Tile,
+  type AbilityKind,
   type DeathKind,
   type ItemKind,
   type Projectile,
@@ -58,6 +70,8 @@ export interface RaceSetup {
   courseId?: string;
   /** No chaos wall (practice runs, route analysis). */
   noWall?: boolean;
+  /** Special ability of each runner (by character); none if left out. */
+  abilities?: (AbilityKind | null)[];
 }
 
 export const SAW_PROJECTILE_RADIUS = 18;
@@ -99,6 +113,8 @@ export function createRunner(id: number, x: number, y: number): RunnerState {
     boost: 0,
     magnet: 0,
     ink: 0,
+    charge: 0,
+    stun: 0,
     coins: 0,
     finishTime: -1,
     place: 0,
@@ -146,9 +162,12 @@ export class Race {
     this.coinTaken = this.runners.map(() => new Uint8Array(this.track.coins.length));
     this.wallX = this.track.startX - WALL_START_OFFSET;
     this.noWall = setup.noWall ?? false;
+    this.abilities = this.runners.map((_, i) => setup.abilities?.[i] ?? null);
   }
 
   private readonly noWall: boolean;
+  /** Ability of each runner (null = none). */
+  readonly abilities: (AbilityKind | null)[];
 
   /** Seconds since the simulation started (including the countdown). Drives moving hazards. */
   get clock(): number {
@@ -224,6 +243,7 @@ export class Race {
     r.boost = Math.max(0, r.boost - DT);
     r.magnet = Math.max(0, r.magnet - DT);
     r.ink = Math.max(0, r.ink - DT);
+    r.stun = Math.max(0, r.stun - DT);
 
     if (r.mode === 'dead') {
       r.deathTimer -= DT;
@@ -239,6 +259,10 @@ export class Race {
       }
     }
     if (r.mode === 'run' && input.use !== 0 && r.item && r.rolling <= 0) this.useItem(r, input.use, events);
+    if (r.mode === 'run' && this.abilities[r.id]) {
+      r.charge = Math.min(1, r.charge + ABILITY_CHARGE_RATE * DT);
+      if (input.ability && r.charge >= 1) this.useAbility(r, events);
+    }
 
     const phys = stepRunnerPhysics(r, r.mode === 'finished' ? NO_INPUT : input, this.track, DT, this.clock);
     if (phys.jumped) events.push({ t: 'jump', r: r.id, wall: phys.wallJumped, double: phys.doubleJumped });
@@ -390,6 +414,7 @@ export class Race {
       this.boxCooldown[i] = BOX_RESPAWN;
       events.push({ t: 'box', r: r.id, box: i });
       if (!r.item && r.rolling <= 0) r.rolling = ITEM_ROLL_TIME;
+      if (this.abilities[r.id]) r.charge = Math.min(1, r.charge + ABILITY_CHARGE_BOX);
     }
 
     const coins = this.track.coins;
@@ -404,6 +429,7 @@ export class Race {
       if (!hit) continue;
       taken[i] = 1;
       r.coins++;
+      if (this.abilities[r.id]) r.charge = Math.min(1, r.charge + ABILITY_CHARGE_COIN);
       events.push({ t: 'coin', r: r.id, coin: i });
     }
   }
@@ -417,6 +443,76 @@ export class Race {
       }
     }
     return best;
+  }
+
+  /** Knocks runners near (x, y) off balance for a moment (items and shields protect as usual). */
+  private stunNear(r: RunnerState, test: (o: RunnerState) => boolean, events: SimEvent[]) {
+    for (const o of this.runners) {
+      if (o === r || o.mode !== 'run' || o.ghost > 0 || !test(o)) continue;
+      if (o.shield > 0) {
+        o.shield = 0;
+        events.push({ t: 'shieldBlock', r: o.id });
+        continue;
+      }
+      o.stun = STUN_TIME;
+      o.boost = 0;
+      o.vx *= 0.4;
+      events.push({ t: 'stunned', r: o.id });
+    }
+  }
+
+  private useAbility(r: RunnerState, events: SimEvent[]) {
+    const kind = this.abilities[r.id]!;
+    r.charge = 0;
+    let target: number | undefined;
+    switch (kind) {
+      case 'megajump': // Hoppel: huge leap, even in mid-air
+        r.vy = -MEGAJUMP_V;
+        r.grounded = false;
+        r.sliding = false;
+        r.diving = false;
+        break;
+      case 'sprint': // Flinki
+        r.boost = SPRINT_TIME;
+        r.vx = Math.max(r.vx, BOOST_SPEED);
+        break;
+      case 'spores': // Pilzi: a cloud that dazes everyone close behind
+        this.stunNear(r, (o) => o.x < r.x + 60 && o.x > r.x - SPORE_RANGE_BACK && Math.abs(o.y - r.y) < 170, events);
+        break;
+      case 'tongue': // Quaki: snaps an item out of thin air
+        if (!r.item && r.rolling <= 0) r.rolling = ITEM_ROLL_TIME * 0.4;
+        else r.boost = Math.max(r.boost, 0.6);
+        break;
+      case 'steal': { // Rocco: steals the item of the nearest runner ahead that has one
+        let best: RunnerState | null = null;
+        for (const o of this.runners) {
+          if (o === r || o.mode !== 'run' || !o.item || o.x < r.x || o.x - r.x > STEAL_RANGE) continue;
+          if (!best || o.x < best.x) best = o;
+        }
+        if (best && !r.item && r.rolling <= 0) {
+          r.item = best.item;
+          best.item = null;
+          target = best.id;
+        } else if (!r.item && r.rolling <= 0) {
+          r.rolling = ITEM_ROLL_TIME * 0.4;
+        } else {
+          r.boost = Math.max(r.boost, 0.6);
+        }
+        break;
+      }
+      case 'quake': // Grumbold: shock wave along the ground
+        this.stunNear(r, (o) => Math.abs(o.x - r.x) < QUAKE_RANGE && Math.abs(o.y - r.y) < 90 && o.grounded, events);
+        break;
+      case 'mask': // Tiki: untouchable for a moment
+        r.ghost = Math.max(r.ghost, MASK_TIME);
+        break;
+      case 'bash': // Kira: shield and a short dash
+        r.shield = Math.max(r.shield, BASH_SHIELD);
+        r.boost = Math.max(r.boost, 0.7);
+        r.vx = Math.max(r.vx, BOOST_SPEED * 0.9);
+        break;
+    }
+    events.push({ t: 'ability', r: r.id, kind, x: r.x, y: r.y, target });
   }
 
   private useItem(r: RunnerState, dir: -1 | 1, events: SimEvent[]) {

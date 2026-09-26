@@ -132,6 +132,10 @@ export type ItemKind = 'saw' | 'trap' | 'lightning' | 'shield' | 'turbo' | 'rock
 export const ITEM_KINDS: ItemKind[] = ['saw', 'trap', 'lightning', 'shield', 'turbo', 'rocket', 'ink', 'magnet'];
 export type RunnerMode = 'run' | 'dead' | 'finished';
 
+/** Special ability of each character, charged by coins, boxes and time. */
+export type AbilityKind = 'megajump' | 'sprint' | 'spores' | 'tongue' | 'steal' | 'quake' | 'mask' | 'bash';
+export const ABILITY_KINDS: AbilityKind[] = ['megajump', 'sprint', 'spores', 'tongue', 'steal', 'quake', 'mask', 'bash'];
+
 /** Flat on purpose: it is cloned for bot look-ahead and copied into network snapshots. */
 export interface RunnerState {
   id: number;
@@ -170,6 +174,10 @@ export interface RunnerState {
   boost: number;
   magnet: number;
   ink: number;
+  /** Ability charge 0..1 (usable at 1). */
+  charge: number;
+  /** Seconds of being dazed (runs slowly) after spores or a shock wave. */
+  stun: number;
   coins: number;
   finishTime: number;
   place: number;
@@ -181,6 +189,8 @@ export interface RunnerInput {
   slide: boolean;
   /** 1 = use item forward, -1 = use item backward, 0 = nothing. */
   use: -1 | 0 | 1;
+  /** Fire the character's special ability (when fully charged). */
+  ability?: boolean;
 }
 
 export const NO_INPUT: RunnerInput = { jump: false, slide: false, use: 0 };
@@ -230,5 +240,7 @@ export type SimEvent =
   | { t: 'explode'; x: number; y: number }
   | { t: 'sawBreak'; x: number; y: number }
   | { t: 'trapSet'; x: number; y: number }
+  | { t: 'ability'; r: number; kind: AbilityKind; x: number; y: number; target?: number }
+  | { t: 'stunned'; r: number }
   | { t: 'finish'; r: number; place: number }
   | { t: 'end' };

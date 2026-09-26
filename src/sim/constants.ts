@@ -92,6 +92,22 @@ export const CRUSHER_PERIOD = 2.6;
 export const ITEM_ROLL_TIME = 1.0;
 export const SHIELD_TIME = 8;
 export const TURBO_TIME = 1.6;
+
+// --- character abilities ---
+/** Charge per second just by running (full after ~35 s without pickups). */
+export const ABILITY_CHARGE_RATE = 0.028;
+export const ABILITY_CHARGE_COIN = 0.045;
+export const ABILITY_CHARGE_BOX = 0.18;
+export const MEGAJUMP_V = 1180;
+export const SPRINT_TIME = 1.6;
+export const SPORE_RANGE_BACK = 340;
+export const QUAKE_RANGE = 340;
+export const STUN_TIME = 1.0;
+/** Top speed while stunned, as a share of the normal speed. */
+export const STUN_SPEED = 0.35;
+export const MASK_TIME = 2.6;
+export const STEAL_RANGE = 900;
+export const BASH_SHIELD = 3.5;
 export const MAGNET_TIME = 6;
 export const MAGNET_RADIUS = 170;
 export const INK_TIME = 3.5;

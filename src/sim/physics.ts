@@ -2,6 +2,7 @@ import {
   AIR_ACCEL,
   AIR_JUMPS,
   AIR_OVERSPEED_DECAY,
+  STUN_SPEED,
   BOOST_SPEED,
   CONVEYOR_SPEED,
   DOUBLE_JUMP_V,
@@ -264,6 +265,7 @@ export function stepRunnerPhysics(r: RunnerState, input: RunnerInput, track: Tra
     if (r.boost > 0) max = BOOST_SPEED;
     if (mud) max *= MUD_SPEED;
     if (r.inWater) max *= WATER_SPEED;
+    if (r.stun > 0) max *= STUN_SPEED;
     const accel = r.grounded ? RUN_ACCEL : AIR_ACCEL;
     if (r.vx < max) r.vx = Math.min(max, r.vx + accel * dt);
     else if (r.grounded || r.inWater) r.vx = Math.max(max, r.vx - (mud || r.inWater ? 900 : OVERSPEED_DECAY) * dt);

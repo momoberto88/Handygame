@@ -14,7 +14,7 @@ import type { CupState } from '../meta/cup';
 import type { RacerInfo } from './session';
 
 /** Bump when the messages change so old and new app versions don't try to play together. */
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 export const MAX_PLAYERS = 4;
 /** Host sends a world snapshot every this many ticks (60 / 3 = 20 per second). */
 export const SNAPSHOT_EVERY = 3;
@@ -39,6 +39,7 @@ export type ClientMsg =
   | { t: 'hello'; v: number; name: string; character: string; cosmetics?: RacerInfo['cosmetics'] }
   | { t: 'in'; s: number; j: 0 | 1; d: 0 | 1 }
   | { t: 'use'; dir: -1 | 1 }
+  | { t: 'ab' }
   | { t: 'profile'; name: string; character: string; cosmetics?: RacerInfo['cosmetics'] };
 
 export interface SnapshotMsg {
@@ -111,6 +112,8 @@ export function packRunner(r: RunnerState): number[] {
     r2(r.boost),
     r2(r.magnet),
     r2(r.ink),
+    r2(r.charge),
+    r2(r.stun),
     r.coins,
     r2(r.finishTime),
     r.place,
@@ -149,6 +152,8 @@ export function unpackRunner(a: number[], into: RunnerState): RunnerState {
   into.boost = a[i++];
   into.magnet = a[i++];
   into.ink = a[i++];
+  into.charge = a[i++];
+  into.stun = a[i++];
   into.coins = a[i++];
   into.finishTime = a[i++];
   into.place = a[i++];

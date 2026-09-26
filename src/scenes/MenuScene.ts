@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { sfx } from '../audio/sfx';
 import { viewWidth, viewZoom, VIEW_H } from '../layout';
-import { CHARACTERS, characterById } from '../meta/characters';
+import { ABILITIES, CHARACTERS, characterById } from '../meta/characters';
 import { CAMERA_DISTANCES, loadSave, writeSave } from '../meta/save';
 import { createRunner } from '../sim/race';
 import { ART_RES } from '../render/art/canvas';
@@ -18,6 +18,7 @@ export class MenuScene extends Phaser.Scene {
   private preview?: RunnerView;
   private previewState = createRunner(0, 0, 0);
   private nameText!: Phaser.GameObjects.Text;
+  private abilityText!: Phaser.GameObjects.Text;
   private ui!: Phaser.GameObjects.Container;
 
   constructor() {
@@ -76,6 +77,8 @@ export class MenuScene extends Phaser.Scene {
     this.makePreview(px, py, save.character);
     this.nameText = uiText(this, px, py + 26, '', 20).setOrigin(0.5, 0);
     this.ui.add(this.nameText);
+    this.abilityText = uiText(this, px, py - 178, '', 16, '#fff2b0').setOrigin(0.5, 1).setAlign('center').setWordWrapWidth(460);
+    this.ui.add(this.abilityText);
     this.updateName(save.character);
     const unlocked = () => CHARACTERS.filter((c) => loadSave().unlocked.includes(c.id));
     const cycle = (dir: number) => {
@@ -139,7 +142,9 @@ export class MenuScene extends Phaser.Scene {
 
   private updateName(id: string) {
     const c = characterById(id);
+    const a = ABILITIES[c.ability];
     this.nameText.setText(`${c.name} (${c.species})`);
+    this.abilityText.setText(`${a.icon} ${a.name}\n${a.text}`);
   }
 
   update(_t: number, delta: number) {
