@@ -4,8 +4,9 @@
 //
 // The sheet must have a flat background colour (we use pure magenta). Every connected blob of
 // non-background pixels becomes one part; parts are ordered like the grid cells they sit in and
-// named in that order ("-" skips a cell). Parts are trimmed, keyed out with soft edges and scaled
-// so the longest side is at most --max pixels.
+// named in that order ("-" skips a cell). With --cells=0,1,2,… each name belongs to that fixed grid
+// cell instead (row by row from 0), so stray specks in empty cells cannot shift the names.
+// Parts are trimmed, keyed out with soft edges and scaled so the longest side is at most --max pixels.
 import sharp from 'sharp';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -21,6 +22,7 @@ const cols = Number(opt.cols ?? 4);
 const maxSide = Number(opt.max ?? 256);
 const keyHex = opt.key ?? 'ff00ff';
 const names = namesArg.split(',');
+const fixedCells = opt.cells ? opt.cells.split(',').map(Number) : null;
 mkdirSync(outDir, { recursive: true });
 
 const { data, info } = await sharp(sheetPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -104,7 +106,7 @@ let nameIndex = 0;
 for (let k = 0; k < rows * cols; k++) {
   const group = cells.get(k);
   if (!group) continue;
-  const name = names[nameIndex++];
+  const name = fixedCells ? names[fixedCells.indexOf(k)] : names[nameIndex++];
   if (!name || name === '-') continue;
   const main = group.reduce((a, b) => (b.count > a.count ? b : a));
   // include other blobs of the cell that are reasonably big (e.g. separate highlights)

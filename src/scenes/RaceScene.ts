@@ -91,10 +91,9 @@ export class RaceScene extends Phaser.Scene {
 
     for (const info of this.session.racers) {
       const isLocal = info.id === this.session.localId;
-      const view = new RunnerView(this, characterById(info.character), isLocal, isLocal ? undefined : info.name);
+      const view = new RunnerView(this, characterById(info.character), isLocal, isLocal ? undefined : info.name, info.cosmetics?.skin);
       view.setDepth(isLocal ? 36 : 32 + info.id * 0.1);
       if (info.team !== undefined) view.setTeam(TEAMS[info.team].color, TEAMS[info.team].css);
-      view.setCosmetics(info.cosmetics);
       this.views.push(view);
     }
     this.setupGhost();

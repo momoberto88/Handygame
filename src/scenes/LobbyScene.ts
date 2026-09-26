@@ -214,7 +214,7 @@ export class LobbyScene extends Phaser.Scene {
       c.add(uiText(this, 0, -ch / 2 + 142, '★'.repeat(course.difficulty), 18, '#ffd84a').setOrigin(0.5));
       const voters = vote.votes.filter(([, o]) => o === i).map(([s]) => room.players.find((p) => p.seat === s)).filter((p) => !!p);
       voters.forEach((p, k) => {
-        const icon = headIcon(this, characterById(p!.character), 34);
+        const icon = headIcon(this, characterById(p!.character), 34, p!.cosmetics?.skin);
         c.add(this.add.image((k - (voters.length - 1) / 2) * 40, ch / 2 - 40, icon.key).setScale(icon.scale));
       });
       if (!voters.length) c.add(uiText(this, 0, ch / 2 - 40, 'noch keine Stimme', 14, '#8a84b8').setOrigin(0.5));
@@ -258,7 +258,7 @@ export class LobbyScene extends Phaser.Scene {
       if (team) this.ui.add(uiText(this, x + slotW / 2 - 16, y - 50, team.icon, 16).setOrigin(0.5));
       if (p) {
         const c = characterById(p.character);
-        const icon = headIcon(this, c, 56);
+        const icon = headIcon(this, c, 56, p.cosmetics?.skin);
         this.ui.add(this.add.image(x, y - 14, icon.key).setScale(icon.scale));
         this.ui.add(uiText(this, x, y + 38, p.name, 18).setOrigin(0.5));
         if (seat === 0) this.ui.add(uiText(this, x, y - 52, 'Gastgeber', 12, '#ffd84a').setOrigin(0.5));

@@ -289,11 +289,10 @@ export class MenuScene extends Phaser.Scene {
 
   private makePreview(x: number, y: number, id: string) {
     this.preview?.destroy();
-    this.preview = new RunnerView(this, characterById(id), true);
+    this.preview = new RunnerView(this, characterById(id), true, undefined, loadSave().skins[id]);
     this.preview.root.setScrollFactor(0);
     this.preview.root.setScale(2.2);
     this.preview.setDepth(20);
-    this.preview.setCosmetics(loadSave().equipped);
     this.preview.root.setPosition(x, y);
     this.registry.set('previewPos', { x, y });
   }

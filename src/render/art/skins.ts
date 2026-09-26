@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import type { CharacterDef } from '../../meta/characters';
+import { SKINS, skinById } from '../../meta/cosmetics';
 import { ART_RES } from './canvas';
 import { partKey, type Expression } from './characterArt';
 
@@ -15,8 +16,6 @@ interface PaintedDef {
   parts: Partial<Record<SkinPart | 'head', number>>;
   ears?: { fx: number; fy: number; bx: number; by: number; rot: number };
   tail?: { x: number; y: number; originX: number };
-  /** Where hats and glasses sit, relative to the default spot (dx, dy in head pixels, scale factor). */
-  wear?: { hat?: [number, number, number]; glasses?: [number, number, number] };
 }
 
 export const PAINTED: Record<string, PaintedDef> = {
@@ -78,10 +77,14 @@ export function paintedKey(id: string, file: string): string {
   return `pc-${id}-${file}`;
 }
 
-/** Queue the painted parts for loading (call from a scene's preload). */
+/** Queue the painted parts for loading (call from a scene's preload). Skins have the same parts. */
 export function preloadPainted(scene: Phaser.Scene) {
   for (const id of Object.keys(PAINTED)) {
     for (const f of filesFor(id)) scene.load.image(paintedKey(id, f), `assets/characters/${id}/${f}.png`);
+  }
+  for (const skin of SKINS) {
+    if (!PAINTED[skin.character]) continue;
+    for (const f of filesFor(skin.character)) scene.load.image(paintedKey(skin.id, f), `assets/characters/${skin.id}/${f}.png`);
   }
 }
 
@@ -96,10 +99,13 @@ export interface Skin {
   tail: { x: number; y: number; originX: number } | null;
 }
 
-export function skinFor(scene: Phaser.Scene, c: CharacterDef): Skin {
+/** Parts of a character, in its painted skin if `skinId` names one of its skins. */
+export function skinFor(scene: Phaser.Scene, c: CharacterDef, skinId?: string | null): Skin {
   const def = PAINTED[c.id];
-  if (def && scene.textures.exists(paintedKey(c.id, 'headN'))) {
-    const k = (f: string) => (scene.textures.exists(paintedKey(c.id, f)) ? paintedKey(c.id, f) : null);
+  const alt = skinById(skinId);
+  const base = alt && alt.character === c.id && scene.textures.exists(paintedKey(alt.id, 'headN')) ? alt.id : c.id;
+  if (def && scene.textures.exists(paintedKey(base, 'headN'))) {
+    const k = (f: string) => (scene.textures.exists(paintedKey(base, f)) ? paintedKey(base, f) : null);
     return {
       painted: true,
       key(part, which = 'F') {
@@ -118,9 +124,9 @@ export function skinFor(scene: Phaser.Scene, c: CharacterDef): Skin {
         return def.scale * (def.parts[part] ?? 1);
       },
       head(expr) {
-        if (expr === 'scared') return paintedKey(c.id, 'headS');
-        if (expr === 'strain' || expr === 'dead') return paintedKey(c.id, 'headH');
-        return paintedKey(c.id, 'headN');
+        if (expr === 'scared') return paintedKey(base, 'headS');
+        if (expr === 'strain' || expr === 'dead') return paintedKey(base, 'headH');
+        return paintedKey(base, 'headN');
       },
       eyeOverlay: false,
       ears: def.ears ?? null,
@@ -147,8 +153,8 @@ export function skinFor(scene: Phaser.Scene, c: CharacterDef): Skin {
 }
 
 /** Texture + scale for a head icon of about `size` world units (HUD, lobby, results). */
-export function headIcon(scene: Phaser.Scene, c: CharacterDef, size: number): { key: string; scale: number } {
-  const skin = skinFor(scene, c);
+export function headIcon(scene: Phaser.Scene, c: CharacterDef, size: number, skinId?: string | null): { key: string; scale: number } {
+  const skin = skinFor(scene, c, skinId);
   const key = skin.head('normal');
   const frame = scene.textures.getFrame(key);
   const w = frame ? Math.max(frame.width, frame.height) : 36 * ART_RES;

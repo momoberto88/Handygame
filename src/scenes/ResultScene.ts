@@ -97,7 +97,7 @@ export class ResultScene extends Phaser.Scene {
       content.add(row);
       content.add(this.add.circle(cx - pw / 2 + 62, y, 17, medal[i]).setStrokeStyle(3, info.team !== undefined ? TEAMS[info.team].color : 0x2a241c));
       content.add(uiText(this, cx - pw / 2 + 62, y, String(i + 1), 20, '#2a241c').setOrigin(0.5).setStroke('#ffffff', 0));
-      const icon = headIcon(this, characterById(info.character), 34);
+      const icon = headIcon(this, characterById(info.character), 34, info.cosmetics?.skin);
       content.add(this.add.image(cx - pw / 2 + 110, y, icon.key).setScale(icon.scale));
       content.add(uiText(this, cx - pw / 2 + 140, y, info.name + (info.isBot ? ' 🤖' : ''), 22, isMe ? '#3a2a10' : '#ffffff').setOrigin(0, 0.5).setStroke(isMe ? '#fff2b0' : '#1d1a2f', 6));
       const time = r.finishTime >= 0 ? `${r.finishTime.toFixed(2)} s` : '—';

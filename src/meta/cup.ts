@@ -9,6 +9,8 @@ export interface CupEntry {
   key: string;
   name: string;
   character: string;
+  /** Painted skin the racer wore. */
+  skin?: string | null;
   isBot: boolean;
   points: number;
   /** Points from the latest race (for the "+6" next to the table). */
@@ -74,7 +76,7 @@ export function addRaceResult(cup: CupState, order: RacerInfo[]) {
     const key = racerKey(r);
     let e = cup.table.find((x) => x.key === key);
     if (!e) {
-      e = { key, name: r.name, character: r.character, isBot: r.isBot, points: 0, last: 0, team: r.team };
+      e = { key, name: r.name, character: r.character, skin: r.cosmetics?.skin ?? null, isBot: r.isBot, points: 0, last: 0, team: r.team };
       cup.table.push(e);
     }
     const pts = CUP_POINTS[place] ?? 0;

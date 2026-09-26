@@ -10,8 +10,8 @@ export interface RacerInfo {
   seat?: number;
   /** 2 vs 2: team 0 (blue) or 1 (red). */
   team?: number;
-  /** Accessories (hat, glasses, outfit ids). */
-  cosmetics?: { hat: string | null; glasses: string | null; outfit: string | null };
+  /** Look: painted skin of the character and trail (outfit) id. */
+  cosmetics?: { skin?: string | null; outfit: string | null };
 }
 
 export interface LocalInput {

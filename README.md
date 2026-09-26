@@ -37,7 +37,7 @@ Tipps:
 - 12 Strecken in 8 Welten mit 3 Stockwerken, Cups mit Siegerpodest, K.-o.-Cup, Geist deiner Bestzeit
 - Streckeneditor: eigene Strecken bauen, testen und per Link teilen
 - 9 Figuren mit eigener Stimme und Fähigkeit, 8 Power-Ups, brüllender Ansager, Musik für jede Welt
-- Garderobe & Shop (Hüte, Brillen, Spuren), tägliche Schatzkiste und Tagesaufgaben
+- Garderobe & Shop: gemalte Skins für jede Figur und Spuren, tägliche Schatzkiste und Tagesaufgaben
 - **„Derb: an/aus“** oben im Menü schaltet die Schimpfwörter ab (dann zählt nur noch der Ansager)
 
 ## Für Entwickler

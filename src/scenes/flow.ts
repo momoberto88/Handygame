@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import { CHARACTERS, characterById } from '../meta/characters';
+import { SKINS } from '../meta/cosmetics';
 import { loadSave } from '../meta/save';
 import { ClientSession } from '../net/ClientSession';
 import { HostSession } from '../net/HostSession';
@@ -22,13 +23,17 @@ export function playerName(): string {
 /** Fills the empty seats with bots using characters nobody else picked. */
 export function fillWithBots(humans: RacerInfo[], total: number, seed: number): RacerInfo[] {
   const rng = new Rng(seed);
+  // a separate stream, so the skins do not change which characters the bots pick
+  const look = new Rng(seed ^ 0x5eed);
   const used = new Set(humans.map((h) => h.character));
   const pool = CHARACTERS.filter((c) => !used.has(c.id)).map((c) => c.id);
   const result = [...humans];
   while (result.length < total) {
     const idx = rng.int(pool.length);
     const character = pool.splice(idx, 1)[0] ?? CHARACTERS[result.length % CHARACTERS.length].id;
-    result.push({ id: result.length, name: characterById(character).name, character, isBot: true });
+    // every third bot or so shows off its painted skin
+    const skin = look.next() < 0.35 ? (SKINS.find((k) => k.character === character)?.id ?? null) : null;
+    result.push({ id: result.length, name: characterById(character).name, character, isBot: true, cosmetics: { skin, outfit: null } });
   }
   return result.map((r, i) => ({ ...r, id: i }));
 }
@@ -54,7 +59,7 @@ export function startLocalRace(
   if (!courseId && !world) courseId = COURSES[seed % COURSES.length].id;
   if (courseId) world = courseById(courseId).world;
   const autoplay = debugParam('autoplay') !== null;
-  const me: RacerInfo = { id: 0, seat: 0, name: playerName(), character: save.character, isBot: autoplay, cosmetics: save.equipped };
+  const me: RacerInfo = { id: 0, seat: 0, name: playerName(), character: save.character, isBot: autoplay, cosmetics: myLook() };
   let racers = opts.racers ?? fillWithBots([me], 4, seed);
   // 2 vs 2 offline: you and one bot against two bots
   if (!opts.racers && save.teamMode) racers = assignTeams(racers);
@@ -74,7 +79,7 @@ export function startLocalRace(
 export function startTutorial(scene: Phaser.Scene) {
   setActiveCup(null);
   const save = loadSave();
-  const me: RacerInfo = { id: 0, seat: 0, name: playerName(), character: save.character, isBot: false, cosmetics: save.equipped };
+  const me: RacerInfo = { id: 0, seat: 0, name: playerName(), character: save.character, isBot: false, cosmetics: myLook() };
   const courseId = 'lianen-lauf';
   const session = new LocalSession({ seed: 1, world: courseById(courseId).world, courseId, racers: [me], botLevel: 'easy', localId: 0, tutorial: true });
   startRace(scene, session);
@@ -84,7 +89,7 @@ export function startTutorial(scene: Phaser.Scene) {
 export function startSoloCup(scene: Phaser.Scene, id: string, name: string, courses: string[], mode: 'points' | 'ko' = 'points') {
   const save = loadSave();
   const cup = newCup(id, name, courses, randomSeed(), mode);
-  const me: RacerInfo = { id: 0, seat: 0, name: playerName(), character: save.character, isBot: debugParam('autoplay') !== null, cosmetics: save.equipped };
+  const me: RacerInfo = { id: 0, seat: 0, name: playerName(), character: save.character, isBot: debugParam('autoplay') !== null, cosmetics: myLook() };
   cup.racers = fillWithBots([me], 4, cup.seed);
   if (save.teamMode && mode === 'points') {
     cup.teams = true;
@@ -122,9 +127,15 @@ export function goToMenu(scene: Phaser.Scene, message?: string) {
   mgr.start('menu', { message });
 }
 
+/** What the player wears: the skin of the chosen character and the trail. */
+export function myLook(): NonNullable<RacerInfo['cosmetics']> {
+  const s = loadSave();
+  return { skin: s.skins[s.character] ?? null, outfit: s.equipped.outfit };
+}
+
 export function myProfile(): Profile {
   const s = loadSave();
-  return { name: playerName(), character: s.character, cosmetics: s.equipped };
+  return { name: playerName(), character: s.character, cosmetics: myLook() };
 }
 
 /** Clients start a race whenever the host says so, whatever screen they are on. */

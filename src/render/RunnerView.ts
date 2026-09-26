@@ -1,11 +1,10 @@
 import Phaser from 'phaser';
-import { makeCosmeticTextures } from '../meta/cosmetics';
 import { DEATH_TIME } from '../sim/constants';
 import type { RunnerState } from '../sim/types';
 import type { CharacterDef } from '../meta/characters';
 import { ART_RES } from './art/canvas';
 import { headLayout, type Expression } from './art/characterArt';
-import { PAINTED, skinFor, type Skin, type SkinPart } from './art/skins';
+import { skinFor, type Skin, type SkinPart } from './art/skins';
 
 interface Pose {
   bodyX: number;
@@ -120,10 +119,12 @@ export class RunnerView {
     readonly character: CharacterDef,
     readonly isLocal: boolean,
     label?: string,
+    /** Painted skin id (see SKINS); the normal look when missing. */
+    skinId?: string | null,
   ) {
     const c = character;
     const hl = headLayout(c);
-    const skin = skinFor(scene, c);
+    const skin = skinFor(scene, c, skinId);
     this.skin = skin;
     this.root = scene.add.container(0, 0);
     const P = (p: SkinPart, which: 'F' | 'B' = 'F', ox = 0.5, oy = 0.5) =>
@@ -212,32 +213,6 @@ export class RunnerView {
     this.nameTag?.setColor(css);
   }
 
-  private hat?: Phaser.GameObjects.Image;
-  private glasses?: Phaser.GameObjects.Image;
-
-  /** Puts on a hat and glasses (drawn once by makeCosmeticTextures). */
-  setCosmetics(c: { hat: string | null; glasses: string | null } | undefined) {
-    this.hat?.destroy();
-    this.glasses?.destroy();
-    this.hat = this.glasses = undefined;
-    if (!c) return;
-    const scene = this.root.scene;
-    makeCosmeticTextures(scene);
-    const w = this.headImg.displayWidth;
-    const h = this.headImg.displayHeight;
-    const wear = PAINTED[this.character.id]?.wear;
-    if (c.hat && scene.textures.exists(`cos-${c.hat}`)) {
-      const [dx, dy, f] = wear?.hat ?? [0, 0, 1];
-      this.hat = scene.add.image(w * 0.02 + dx, -h * 0.3 + dy, `cos-${c.hat}`).setOrigin(0.5, 1).setScale(((w * 0.72) / 80) * f);
-      this.head.add(this.hat);
-    }
-    if (c.glasses && scene.textures.exists(`cos-${c.glasses}`)) {
-      const [dx, dy, f] = wear?.glasses ?? [0, 0, 1];
-      this.glasses = scene.add.image(w * 0.16 + dx, -h * 0.04 + dy, `cos-${c.glasses}`).setScale(((w * 0.6) / 60) * f);
-      this.head.add(this.glasses);
-    }
-  }
-
   setDepth(d: number) {
     this.root.setDepth(d);
   }
@@ -263,9 +238,6 @@ export class RunnerView {
   update(r: RunnerState, x: number, y: number, dt: number, time: number) {
     this.root.setPosition(x, y);
 
-    const alive = r.mode !== 'dead';
-    this.hat?.setVisible(alive);
-    this.glasses?.setVisible(alive);
     if (r.mode === 'dead') {
       if (!this.wasDead) this.startDeath(r);
       this.wasDead = true;

@@ -1,3 +1,4 @@
+import { RETIRED_PRICES } from './cosmetics';
 import { EMPTY_DAILY, type DailyState } from './daily';
 const KEY = 'chaos-sprint-save-v1';
 
@@ -16,7 +17,9 @@ export interface SaveData {
   character: string;
   unlocked: string[];
   owned: string[];
-  equipped: { hat: string | null; glasses: string | null; outfit: string | null };
+  equipped: { outfit: string | null };
+  /** Worn skin per character id (missing = the normal look). */
+  skins: Record<string, string>;
   settings: { sound: boolean; music: boolean; leftHanded: boolean; vibration: boolean; camera: CameraDistance; rude: boolean };
   stats: { races: number; wins: number };
   /** Best finishing time per course id (seconds). */
@@ -40,7 +43,8 @@ const DEFAULT: SaveData = {
   character: 'hase',
   unlocked: ['hase', 'katze', 'ratte'],
   owned: [],
-  equipped: { hat: null, glasses: null, outfit: null },
+  equipped: { outfit: null },
+  skins: {},
   settings: { sound: true, music: true, leftHanded: false, vibration: true, camera: 'mid', rude: true },
   stats: { races: 0, wins: 0 },
   best: {},
@@ -63,7 +67,8 @@ export function loadSave(): SaveData {
       data = {
         ...data,
         ...parsed,
-        equipped: { ...data.equipped, ...parsed.equipped },
+        equipped: { outfit: parsed.equipped?.outfit ?? null },
+        skins: { ...parsed.skins },
         settings: { ...data.settings, ...parsed.settings },
         stats: { ...data.stats, ...parsed.stats },
         best: { ...parsed.best },
@@ -78,6 +83,17 @@ export function loadSave(): SaveData {
   const known = ['hase', 'katze', 'ratte', 'otter', 'kraehe', 'dachs', 'maulwurf', 'chinchilla', 'schildkroete'];
   data.unlocked = [...new Set([...DEFAULT.unlocked, ...data.unlocked.filter((id) => known.includes(id))])];
   if (!known.includes(data.character)) data.character = 'hase';
+  // hats and glasses left the shop: pay them back once
+  const retired = data.owned.filter((id) => id in RETIRED_PRICES);
+  if (retired.length) {
+    data.coins += retired.reduce((sum, id) => sum + RETIRED_PRICES[id], 0);
+    data.owned = data.owned.filter((id) => !(id in RETIRED_PRICES));
+    try {
+      localStorage.setItem(KEY, JSON.stringify(data));
+    } catch {
+      // ignore
+    }
+  }
   cache = data;
   return data;
 }

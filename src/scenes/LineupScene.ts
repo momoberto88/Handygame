@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
 import { CHARACTERS } from '../meta/characters';
+import { SKINS } from '../meta/cosmetics';
 import { RunnerView } from '../render/RunnerView';
 import { createRunner } from '../sim/race';
 import type { RunnerState } from '../sim/types';
@@ -33,10 +34,9 @@ export class LineupScene extends Phaser.Scene {
       CHARACTERS.forEach((c, i) => {
         const state = createRunner(i, 0, 0);
         row.set(state);
-        const view = new RunnerView(this, c, true);
-        // ?lineup&wear=crown,shades shows the characters with accessories (for tuning)
-        const wear = new URLSearchParams(location.search).get('wear');
-        if (wear) view.setCosmetics({ hat: wear.split(',')[0] || null, glasses: wear.split(',')[1] || null });
+        // ?lineup&skins shows every character in its painted skin
+        const skin = new URLSearchParams(location.search).has('skins') ? SKINS.find((k) => k.character === c.id)?.id : null;
+        const view = new RunnerView(this, c, true, undefined, skin);
         view.root.setScale(1.8);
         const x = 60 + step * (i + 0.5);
         this.views.push({ view, state, x, y: row.y });

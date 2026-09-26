@@ -95,7 +95,7 @@ export class PodiumScene extends Phaser.Scene {
       uiText(this, x, baseY - b.h / 2, String(b.place), 44, '#1d1a2f').setOrigin(0.5).setStroke('#ffffff', 8);
       const e = ranking[b.place - 1];
       if (!e) continue;
-      const view = new RunnerView(this, characterById(e.character), true);
+      const view = new RunnerView(this, characterById(e.character), true, undefined, e.skin);
       view.root.setScale(1.6);
       view.setDepth(5);
       const fy = baseY - b.h;

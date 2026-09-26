@@ -130,7 +130,7 @@ export class HudScene extends Phaser.Scene {
     if (this.teamDots.length) this.teamText = uiText(this, 22, 62, '', 18, '#ffffff');
     for (const info of session.racers) {
       const c = characterById(info.character);
-      const icon = headIcon(this, c, info.id === session.localId ? 28 : 21);
+      const icon = headIcon(this, c, info.id === session.localId ? 28 : 21, info.cosmetics?.skin);
       const head = this.add.image(0, 0, icon.key).setScale(icon.scale);
       this.progressHeads.push(head);
     }
@@ -138,7 +138,7 @@ export class HudScene extends Phaser.Scene {
       const c = characterById(info.character);
       const root = this.add.container(0, 0).setVisible(false);
       const bg = this.add.circle(0, 0, 19, 0x1d1a2f, 0.75).setStrokeStyle(3, info.team !== undefined ? TEAMS[info.team].color : c.marker);
-      const icon = headIcon(this, c, 24);
+      const icon = headIcon(this, c, 24, info.cosmetics?.skin);
       const head = this.add.image(0, 0, icon.key).setScale(icon.scale);
       const arrow = this.add.triangle(0, 0, 0, -7, 12, 0, 0, 7, c.marker);
       const dist = uiText(this, 0, 24, '', 12).setOrigin(0.5, 0);
