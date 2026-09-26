@@ -146,4 +146,19 @@ describe('bots', () => {
       expect(winner.finishTime, course.id).toBeLessThan(110);
     }
   }, 240000);
+
+  it('every route is fair: each personality finishes alone without the wall, close together', () => {
+    for (const course of COURSES) {
+      const times = [0, 1, 2, 3].map((who) => {
+        const race = new Race({ seed: course.seed, world: course.world, runnerCount: 1, courseId: course.id, noWall: true });
+        const brain = new BotBrain(course.seed + who * 7919, botProfile('hard', who));
+        for (let t = 0; t < 150 * TICKS_PER_SEC && race.runners[0].mode !== 'finished'; t++) {
+          race.step([{ ...brain.think(race, 0), use: 0 }]);
+        }
+        return race.runners[0].finishTime;
+      });
+      for (const t of times) expect(t, `${course.id}: ${times}`).toBeGreaterThan(0);
+      expect(Math.max(...times) - Math.min(...times), `${course.id}: ${times}`).toBeLessThan(10);
+    }
+  }, 240000);
 });

@@ -1,6 +1,7 @@
 import {
   AIR_ACCEL,
   AIR_JUMPS,
+  AIR_OVERSPEED_DECAY,
   BOOST_SPEED,
   CONVEYOR_SPEED,
   DOUBLE_JUMP_V,
@@ -266,6 +267,8 @@ export function stepRunnerPhysics(r: RunnerState, input: RunnerInput, track: Tra
     const accel = r.grounded ? RUN_ACCEL : AIR_ACCEL;
     if (r.vx < max) r.vx = Math.min(max, r.vx + accel * dt);
     else if (r.grounded || r.inWater) r.vx = Math.max(max, r.vx - (mud || r.inWater ? 900 : OVERSPEED_DECAY) * dt);
+    // extra speed fades in the air too, so bunny-hopping can't keep a boost forever
+    else r.vx = Math.max(max, r.vx - OVERSPEED_DECAY * AIR_OVERSPEED_DECAY * dt);
   }
 
   // --- jumping ----------------------------------------------------------------------

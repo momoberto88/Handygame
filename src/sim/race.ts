@@ -57,6 +57,8 @@ export interface RaceSetup {
   chunkNames?: string[];
   /** Race on one of the fixed courses. */
   courseId?: string;
+  /** No chaos wall (practice runs, route analysis). */
+  noWall?: boolean;
 }
 
 export const SAW_PROJECTILE_RADIUS = 18;
@@ -140,7 +142,10 @@ export class Race {
     this.boxCooldown = this.track.boxes.map(() => 0);
     this.coinTaken = this.runners.map(() => new Uint8Array(this.track.coins.length));
     this.wallX = this.track.startX - WALL_START_OFFSET;
+    this.noWall = setup.noWall ?? false;
   }
+
+  private readonly noWall: boolean;
 
   /** Seconds since the simulation started (including the countdown). Drives moving hazards. */
   get clock(): number {
@@ -198,6 +203,10 @@ export class Race {
   }
 
   private updateWall(time: number) {
+    if (this.noWall) {
+      this.wallX = -1e9;
+      return;
+    }
     const speed = Math.min(WALL_MAX_SPEED, WALL_BASE_SPEED + WALL_RAMP * time);
     this.wallX += speed * DT;
     let leader = -Infinity;

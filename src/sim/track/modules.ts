@@ -80,7 +80,7 @@ def('jungle', 'pad-grove', 1, 30, (b, x) => {
   b.pad(x + 18, LOW);
   b.pad(x + 12, MID);
   b.pad(x + 8, TOP, 'boost');
-  b.pad(x + 20, TOP, 'boost');
+  b.pad(x + 22, LOW, 'boost');
   b.saw(x + 23, MID, 2, 'vertical', 50);
   b.coins(x + 10, x + 16, TOP);
   b.box(x + 15, LOW);
@@ -273,7 +273,7 @@ def('neon', 'rooftops', 1, 34, (b, x) => {
   b.gap(MID, x + 19, x + 21);
   b.laser(x + 16, LOW, 1.2, 1.0);
   b.pad(x + 8, TOP, 'boost');
-  b.pad(x + 22, TOP, 'boost');
+  b.pad(x + 24, LOW, 'boost');
   b.coins(x + 13, x + 18, MID, 4);
   b.box(x + 26, LOW);
 });
@@ -302,9 +302,9 @@ def('neon', 'elevators', 2, 30, (b, x) => {
 
 def('neon', 'boost-highway', 3, 34, (b, x) => {
   b.pad(x + 4, TOP, 'boost');
-  b.pad(x + 12, TOP, 'boost');
   b.pad(x + 20, TOP, 'boost');
-  b.pad(x + 28, TOP, 'boost');
+  b.pad(x + 8, LOW, 'boost');
+  b.pad(x + 24, LOW, 'boost');
   b.gap(TOP, x + 8, x + 10);
   b.gap(TOP, x + 16, x + 18);
   b.gap(TOP, x + 24, x + 26);
@@ -440,8 +440,10 @@ def('pirates', 'rigging', 2, 30, (b, x) => {
 });
 
 def('pirates', 'plank-walk', 3, 32, (b, x) => {
+  // hole in the bottom deck: jump it, or take the pad up onto the crumbling planks
   b.floor(MID, x + 8, x + 22, 'crumble');
-  b.gap(LOW, x + 8, x + 22);
+  b.gap(LOW, x + 12, x + 18);
+  b.pad(x + 8, LOW);
   b.gap(TOP, x + 12, x + 13);
   b.gap(TOP, x + 18, x + 19);
   b.cannon(x + 30, TOP, 1, -1, 2.6, 24);
@@ -462,7 +464,7 @@ def('pirates', 'broadside', 3, 34, (b, x) => {
   b.cannon(x + 30, LOW, 1, -1, 1.8, 24);
   b.cannon(x + 4, MID, 1, 1, 2.2, 24);
   b.pad(x + 8, TOP, 'boost');
-  b.pad(x + 20, TOP, 'boost');
+  b.pad(x + 23, LOW, 'boost');
   b.gap(TOP, x + 14, x + 16);
   b.coins(x + 6, x + 26, TOP, 1);
   b.box(x + 18, LOW);
@@ -487,7 +489,7 @@ def('desert', 'pyramid', 2, 38, (b, x) => {
   b.hill(MID, x + 6, 16, 5);
   b.crusher(x + 14, LOW);
   b.crusher(x + 24, LOW);
-  b.floor(LOW, x + 16, x + 22, 'mud');
+  b.coins(x + 16, x + 22, LOW, 1);
   b.coins(x + 12, x + 26, TOP, 1);
   b.box(x + 19, LOW);
   b.box(x + 30, TOP);
@@ -495,8 +497,9 @@ def('desert', 'pyramid', 2, 38, (b, x) => {
 
 def('desert', 'quicksand', 2, 32, (b, x) => {
   b.floor(MID, x + 6, x + 26, 'mud');
-  b.floor(LOW, x + 4, x + 28, 'mud');
+  b.floor(LOW, x + 6, x + 20, 'mud');
   b.spikes(LOW, x + 14, x + 15);
+  b.pad(x + 24, LOW, 'boost');
   b.pad(x + 6, TOP, 'boost');
   b.gap(TOP, x + 12, x + 14);
   b.gap(TOP, x + 20, x + 22);

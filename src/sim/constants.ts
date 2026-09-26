@@ -29,6 +29,8 @@ export const RUN_MAX_UPHILL = 290;
 export const RUN_MAX_DOWNHILL = 390;
 export const RUN_ACCEL = 560;
 export const AIR_ACCEL = 300;
+/** Share of OVERSPEED_DECAY that also applies in the air. */
+export const AIR_OVERSPEED_DECAY = 0.6;
 export const OVERSPEED_DECAY = 240;
 export const RESPAWN_SPEED = 170;
 
