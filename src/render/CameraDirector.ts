@@ -62,8 +62,8 @@ export class CameraDirector {
     const lookAhead = vw * (0.16 + 0.08 * speedT) + (r.mode === 'finished' ? -vw * 0.1 : 0);
     const targetX = rx + lookAhead;
     const falling = r.mode === 'run' && !r.grounded && r.vy > 500 ? Math.min(90, (r.vy - 500) * 0.2) : 0;
-    // Feet sit at ~64% of the screen height.
-    const targetY = Phaser.Math.Clamp(this.anchorY - vh * 0.14 + falling, vh / 2 - 60, LEVEL_BOTTOM - vh / 2 + 10);
+    // Feet sit at ~60% of the screen height, so the storey below stays in view too.
+    const targetY = Phaser.Math.Clamp(this.anchorY - vh * 0.1 + falling, vh / 2 - 60, LEVEL_BOTTOM - vh / 2 + 10);
 
     if (!this.started) {
       this.x = targetX;

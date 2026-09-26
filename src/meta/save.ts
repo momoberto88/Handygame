@@ -1,5 +1,13 @@
 const KEY = 'chaos-sprint-save-v1';
 
+/** How much of the level the race camera shows. */
+export type CameraDistance = 'near' | 'mid' | 'far';
+export const CAMERA_DISTANCES: { id: CameraDistance; label: string; viewH: number }[] = [
+  { id: 'near', label: 'nah', viewH: 440 },
+  { id: 'mid', label: 'mittel', viewH: 540 },
+  { id: 'far', label: 'weit', viewH: 640 },
+];
+
 export interface SaveData {
   name: string;
   coins: number;
@@ -8,7 +16,7 @@ export interface SaveData {
   unlocked: string[];
   owned: string[];
   equipped: { hat: string | null; glasses: string | null; outfit: string | null };
-  settings: { sound: boolean; music: boolean; leftHanded: boolean; vibration: boolean };
+  settings: { sound: boolean; music: boolean; leftHanded: boolean; vibration: boolean; camera: CameraDistance };
   stats: { races: number; wins: number };
 }
 
@@ -20,7 +28,7 @@ const DEFAULT: SaveData = {
   unlocked: ['hase', 'pilz', 'fuchs'],
   owned: [],
   equipped: { hat: null, glasses: null, outfit: null },
-  settings: { sound: true, music: true, leftHanded: false, vibration: true },
+  settings: { sound: true, music: true, leftHanded: false, vibration: true, camera: 'mid' },
   stats: { races: 0, wins: 0 },
 };
 

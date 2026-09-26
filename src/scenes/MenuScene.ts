@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { sfx } from '../audio/sfx';
 import { viewWidth, viewZoom, VIEW_H } from '../layout';
 import { CHARACTERS, characterById } from '../meta/characters';
-import { loadSave, writeSave } from '../meta/save';
+import { CAMERA_DISTANCES, loadSave, writeSave } from '../meta/save';
 import { createRunner } from '../sim/race';
 import { ART_RES } from '../render/art/canvas';
 import { makeTileset } from '../render/art/worldArt';
@@ -113,6 +113,17 @@ export class MenuScene extends Phaser.Scene {
     });
     sfx.enabled = save.settings.sound;
     this.ui.add(snd.container);
+
+    // camera distance: how much of the level you see while racing
+    const camLabel = () => `🎥 ${CAMERA_DISTANCES.find((c) => c.id === loadSave().settings.camera)?.label ?? 'mittel'}`;
+    const cam = textButton(this, 136, 30, 140, 40, camLabel(), 0x6b8cff, () => {
+      writeSave((s) => {
+        const i = CAMERA_DISTANCES.findIndex((c) => c.id === s.settings.camera);
+        s.settings.camera = CAMERA_DISTANCES[(i + 1) % CAMERA_DISTANCES.length].id;
+      });
+      cam.label.setText(camLabel());
+    }, 18);
+    this.ui.add(cam.container);
   }
 
   private makePreview(x: number, y: number, id: string) {

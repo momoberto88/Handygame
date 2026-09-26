@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { sfx } from '../audio/sfx';
 import { viewZoom, VIEW_H } from '../layout';
 import { characterById } from '../meta/characters';
-import { loadSave } from '../meta/save';
+import { CAMERA_DISTANCES, loadSave } from '../meta/save';
 import type { LocalInput, RaceSession } from '../net/session';
 import type { SimEvent } from '../sim/types';
 import { ART_RES } from '../render/art/canvas';
@@ -16,7 +16,11 @@ import type { HudScene } from './HudScene';
 import { BotBrain } from '../sim/bot';
 import { debugParam } from './flow';
 
-const RACE_VIEW_H = 440;
+/** World pixels visible from top to bottom of the race view (camera distance setting). */
+function raceViewH(): number {
+  const id = debugParam('cam') ?? loadSave().settings.camera;
+  return (CAMERA_DISTANCES.find((c) => c.id === id) ?? CAMERA_DISTANCES[1]).viewH;
+}
 
 export interface RaceSceneData {
   session: RaceSession;
@@ -67,7 +71,7 @@ export class RaceScene extends Phaser.Scene {
     }
 
     // The race camera is a bit closer than the menus so the runners read well on small phones.
-    this.camera = new CameraDirector(this.cameras.main, () => viewZoom(this) * (VIEW_H / RACE_VIEW_H));
+    this.camera = new CameraDirector(this.cameras.main, () => viewZoom(this) * (VIEW_H / raceViewH()));
     this.events.once('shutdown', () => this.session.destroy());
 
     this.scene.launch('hud', { race: this });

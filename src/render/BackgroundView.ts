@@ -38,26 +38,30 @@ export class BackgroundView {
     const z = cam.zoom;
     const offX = cam.originX * cam.width * (1 - 1 / z);
     const offY = cam.originY * cam.height * (1 - 1 / z);
-    const w = view.width;
-    const h = view.height;
+    // a little bleed on every side so rounding at any zoom never shows an uncovered strip
+    const bleed = view.width * 0.04;
+    const w = view.width + bleed * 2;
+    const h = view.height + bleed * 2;
+    const x0 = offX - bleed;
+    const y0 = offY - bleed;
     if (this.painted) {
       // Slightly taller than the view so a little vertical parallax is possible.
       const scale = (h * 1.12) / this.paintedH;
       const drift = Phaser.Math.Clamp((view.y - 100) * 0.05, -h * 0.06, h * 0.06);
       const width = w / scale + 2;
       if (Math.abs(this.painted.width - width) > 0.5) this.painted.setSize(width, this.paintedH);
-      this.painted.setScale(scale).setPosition(offX, offY - h * 0.06 - drift);
+      this.painted.setScale(scale).setPosition(x0, y0 - h * 0.06 - drift);
       this.painted.tilePositionX = (view.x * PAINTED_FACTOR) / scale;
       return;
     }
-    this.sky?.setPosition(offX, offY).setDisplaySize(w, h);
+    this.sky?.setPosition(x0, y0).setDisplaySize(w, h);
     this.layers.forEach((layer, i) => {
-      layer.setPosition(offX, offY);
+      layer.setPosition(x0, y0);
       if (Math.abs(layer.width - w) > 0.5) layer.setSize(w, BG_H);
       layer.setScale(1, h / BG_H);
       layer.tilePositionX = view.x * FACTORS[i];
       const drift = (view.y - 100) * FACTORS[i] * 0.4;
-      layer.y = offY - drift * 0.2;
+      layer.y = y0 - drift * 0.2;
     });
   }
 }
