@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { TEAMS, scoreLine, teamScores } from '../meta/teams';
 import { EMOTES, emoteChoices } from '../meta/emotes';
+import { TutorialCoach } from './TutorialCoach';
 import { sfx } from '../audio/sfx';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
 import { ABILITIES, characterById } from '../meta/characters';
@@ -153,8 +154,11 @@ export class HudScene extends Phaser.Scene {
       this.quitRace();
     });
 
-    if (!session.spectator && session.sendEmote) this.makeEmotes();
+    if (!session.spectator && session.sendEmote && !session.tutorial) this.makeEmotes();
     this.layout();
+    this.coach = session.tutorial
+      ? new TutorialCoach(this, session, { jump: this.jumpBtn.bg, slide: this.slideBtn.bg, item: this.itemBtn.bg, ability: this.abilityBtn.bg }, this.W)
+      : undefined;
     if (session.spectator) {
       // knocked out of a K.-o. cup: no controls, just a banner
       for (const b of [this.jumpBtn, this.slideBtn, this.itemBtn, this.abilityBtn]) {
@@ -196,6 +200,7 @@ export class HudScene extends Phaser.Scene {
     });
   }
 
+  private coach?: TutorialCoach;
   private emoteBtn?: Phaser.GameObjects.Text;
   private emoteBar?: Phaser.GameObjects.Container;
   private lastEmote = 0;
@@ -289,6 +294,7 @@ export class HudScene extends Phaser.Scene {
     this.coinText.setPosition(W - 70, 16);
     this.coinIcon.setPosition(W - 56, 30);
     this.quitBtn.setPosition(W - 16, 14);
+    this.coach?.layout(W);
     this.emoteBtn?.setPosition(W - 172, 10);
     this.emoteBar?.setPosition(W - 196, 0);
     this.bigText.setX(W / 2);
@@ -419,6 +425,7 @@ export class HudScene extends Phaser.Scene {
     this.placeSub.setText(`/${race.runners.length}`);
     this.coinText.setText(String(me.coins));
     this.statusText.setText(session.status() ?? '');
+    this.coach?.update(dt, this.raceScene.lastEvents);
 
     // progress bar
     const W = this.W;

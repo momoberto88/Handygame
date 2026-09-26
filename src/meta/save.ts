@@ -29,6 +29,8 @@ export interface SaveData {
   teamMode: boolean;
   /** Daily chest and tasks. */
   daily: DailyState;
+  /** The practice run was finished once. */
+  tutorialDone: boolean;
 }
 
 const DEFAULT: SaveData = {
@@ -46,6 +48,7 @@ const DEFAULT: SaveData = {
   tracks: [],
   teamMode: false,
   daily: { ...EMPTY_DAILY },
+  tutorialDone: false,
 };
 
 let cache: SaveData | null = null;

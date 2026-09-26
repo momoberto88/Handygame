@@ -70,6 +70,16 @@ export function startLocalRace(
   startRace(scene, session);
 }
 
+/** Practice run: alone on the easiest course, without the chaos wall; the HUD coach explains. */
+export function startTutorial(scene: Phaser.Scene) {
+  setActiveCup(null);
+  const save = loadSave();
+  const me: RacerInfo = { id: 0, seat: 0, name: playerName(), character: save.character, isBot: false, cosmetics: save.equipped };
+  const courseId = 'lianen-lauf';
+  const session = new LocalSession({ seed: 1, world: courseById(courseId).world, courseId, racers: [me], botLevel: 'easy', localId: 0, tutorial: true });
+  startRace(scene, session);
+}
+
 /** Starts an offline cup against bots (fixed cups, a custom selection or random courses). */
 export function startSoloCup(scene: Phaser.Scene, id: string, name: string, courses: string[], mode: 'points' | 'ko' = 'points') {
   const save = loadSave();

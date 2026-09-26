@@ -36,6 +36,8 @@ export interface RaceSession {
   readonly online: boolean;
   /** Knocked out of a K.-o. cup: just watching `localId`, no controls. */
   readonly spectator?: boolean;
+  /** Practice run with the coach in the HUD. */
+  readonly tutorial?: boolean;
   update(dtMs: number, input: LocalInput): SimEvent[];
   prevPosition(id: number): { x: number; y: number };
   /** Visual correction applied on top of the simulated position (smooths network corrections). */

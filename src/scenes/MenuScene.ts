@@ -11,7 +11,7 @@ import { BackgroundView } from '../render/BackgroundView';
 import { RunnerView } from '../render/RunnerView';
 import { WORLD_ORDER } from '../render/worlds';
 import { iconButton, panel, textButton } from '../ui/widgets';
-import { startLocalRace } from './flow';
+import { startLocalRace, startTutorial } from './flow';
 import { uiText } from './HudScene';
 
 export class MenuScene extends Phaser.Scene {
@@ -149,8 +149,32 @@ export class MenuScene extends Phaser.Scene {
     this.giftBadge = this.add.circle(418, 12, 8, 0xff3a3a).setStrokeStyle(2, 0xffffff);
     this.ui.add(this.giftBadge);
     this.refreshBadge();
+    // practice run
+    this.ui.add(iconButton(this, 452, 30, 22, '🎓', 0x5fd35a, () => startTutorial(this)).container);
     // the menu camera scrolls: pin every button (also for tapping), not only the drawing
     this.ui.setScrollFactor(0, 0, true);
+    // very first start: offer the practice run
+    if (!save.tutorialDone && save.stats.races === 0 && !this.registry.get('tutorialAsked') && !location.search.includes('autoplay')) {
+      this.registry.set('tutorialAsked', true);
+      this.askTutorial();
+    }
+  }
+
+  private askTutorial() {
+    const W = viewWidth(this);
+    const ui = this.add.container(0, 0).setDepth(100);
+    ui.add(this.add.rectangle(0, 0, W, VIEW_H, 0x0d0a1a, 0.7).setOrigin(0, 0).setInteractive());
+    ui.add(panel(this, W / 2, VIEW_H / 2, Math.min(560, W - 40), 280));
+    ui.add(uiText(this, W / 2, VIEW_H / 2 - 92, 'Neu hier?', 32, '#ffd84a').setOrigin(0.5));
+    ui.add(
+      uiText(this, W / 2, VIEW_H / 2 - 30, 'Eine kurze Übungsrunde zeigt dir Springen, Sliden,\nStampfen, Power-Ups und deine Fähigkeit.\nDafür gibt es 100 Münzen.', 17, '#1d1a2f')
+        .setOrigin(0.5)
+        .setAlign('center')
+        .setStroke('#fff8e6', 4),
+    );
+    ui.add(textButton(this, W / 2 - 120, VIEW_H / 2 + 80, 210, 54, '🎓 Los geht’s', 0x5fd35a, () => startTutorial(this), 20).container);
+    ui.add(textButton(this, W / 2 + 120, VIEW_H / 2 + 80, 210, 54, 'Überspringen', 0x8a84a8, () => ui.destroy(), 20).container);
+    ui.setScrollFactor(0, 0, true);
   }
 
   private coinLabel?: Phaser.GameObjects.Text;
