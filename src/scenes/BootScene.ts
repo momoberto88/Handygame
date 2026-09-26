@@ -3,6 +3,7 @@ import { CHARACTERS } from '../meta/characters';
 import { makeCharacterArt, makeEyes } from '../render/art/characterArt';
 import { makeEntityArt } from '../render/art/entityArt';
 import { preloadPainted } from '../render/art/skins';
+import { preloadWorldArt } from '../render/art/worldArt';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -11,6 +12,7 @@ export class BootScene extends Phaser.Scene {
 
   preload() {
     preloadPainted(this);
+    preloadWorldArt(this);
   }
 
   create() {

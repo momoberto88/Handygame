@@ -5,7 +5,7 @@ import { CHARACTERS, characterById } from '../meta/characters';
 import { loadSave, writeSave } from '../meta/save';
 import { createRunner } from '../sim/race';
 import { ART_RES } from '../render/art/canvas';
-import { EDGE_TOP, makeTileset } from '../render/art/worldArt';
+import { makeTileset } from '../render/art/worldArt';
 import { BackgroundView } from '../render/BackgroundView';
 import { RunnerView } from '../render/RunnerView';
 import { WORLD_ORDER } from '../render/worlds';
@@ -55,13 +55,13 @@ export class MenuScene extends Phaser.Scene {
     this.ui = this.add.container(0, 0).setScrollFactor(0).setDepth(10);
 
     const ground = this.add
-      .tileSprite(0, H - 70, W * ART_RES, 80 * ART_RES, `tiles-${world}`, `t${EDGE_TOP}`)
+      .tileSprite(0, H - 70, W * ART_RES, 80 * ART_RES, `ground-${world}`)
       .setOrigin(0, 0)
       .setScale(1 / ART_RES)
       .setScrollFactor(0);
     this.ui.add(ground);
     this.events.on('update', () => {
-      ground.tilePositionX = (this.cameras.main.scrollX * 1.0 * ART_RES) % (40 * ART_RES);
+      ground.tilePositionX = (this.cameras.main.scrollX * ART_RES) % (160 * ART_RES);
     });
 
     const title = uiText(this, W * 0.5, 58, 'CHAOS-SPRINT', 64, '#ffd84a').setOrigin(0.5);

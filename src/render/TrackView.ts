@@ -11,9 +11,9 @@ import {
   EDGE_TOP,
   makeTileset,
   TILE_PLATFORM,
-  TILE_SLOPE_DOWN,
-  TILE_SLOPE_UP,
   TILE_SPIKES,
+  slopeIndex,
+  solidIndex,
   TILE_PAD,
 } from './art/worldArt';
 
@@ -23,6 +23,8 @@ function covers(t: number): boolean {
 
 export function tileIndexFor(track: Track, col: number, row: number): number {
   const t = tileAt(track, col, row);
+  const vx = ((col % 4) + 4) % 4;
+  const vy = ((row % 2) + 2) % 2;
   switch (t) {
     case Tile.Solid: {
       let mask = 0;
@@ -32,14 +34,14 @@ export function tileIndexFor(track: Track, col: number, row: number): number {
       if (row < ROWS - 1 && tileAt(track, col, row + 1) !== Tile.Solid) mask |= EDGE_BOTTOM;
       const left = tileAt(track, col - 1, row);
       if (left !== Tile.Solid && left !== Tile.SlopeUp) mask |= EDGE_LEFT;
-      return mask;
+      return solidIndex(mask, vx, vy);
     }
     case Tile.SlopeUp:
-      return TILE_SLOPE_UP;
+      return slopeIndex(true, vx, vy);
     case Tile.SlopeDown:
-      return TILE_SLOPE_DOWN;
+      return slopeIndex(false, vx, vy);
     case Tile.Platform:
-      return TILE_PLATFORM;
+      return TILE_PLATFORM + (vx % 2);
     case Tile.Spikes:
       return TILE_SPIKES;
     default:

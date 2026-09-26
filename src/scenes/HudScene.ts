@@ -322,7 +322,7 @@ export class HudScene extends Phaser.Scene {
         .setAlpha(0.92);
       this.inkLayer.add(img);
       img.setScale(0);
-      this.tweens.add({ targets: img, scale: (0.8 + Math.random() * 0.45) / ART_RES, duration: 180, delay: i * 70, ease: 'Back.Out' });
+      this.tweens.add({ targets: img, scale: (0.42 + Math.random() * 0.22) / ART_RES, duration: 180, delay: i * 70, ease: "Back.Out" });
     });
   }
 

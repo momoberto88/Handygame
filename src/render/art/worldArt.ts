@@ -4,11 +4,12 @@ import type { WorldId } from '../../sim/types';
 import { WORLDS, type WorldTheme } from '../worlds';
 import { ART_RES, canvasTexture, ellipse, fillStroke, shade } from './canvas';
 
-export const TILESET_COUNT = 20;
-export const TILE_SLOPE_UP = 16;
-export const TILE_SLOPE_DOWN = 17;
-export const TILE_PLATFORM = 18;
-export const TILE_SPIKES = 19;
+// Tileset layout: 16 edge masks × 8 texture sections, then ramps (8 sections each), 2 plank halves, spikes.
+export const TILE_SLOPE_UP = 128;
+export const TILE_SLOPE_DOWN = 136;
+export const TILE_PLATFORM = 144;
+export const TILE_SPIKES = 146;
+export const TILESET_COUNT = 147;
 /** Exposure bits for solid tiles. */
 export const EDGE_TOP = 1;
 export const EDGE_RIGHT = 2;
@@ -96,19 +97,78 @@ function topStrip(ctx: CanvasRenderingContext2D, w: WorldTheme, x: number, y: nu
   ctx.fillRect(x, y, width, 7);
 }
 
-function drawSolid(ctx: CanvasRenderingContext2D, w: WorldTheme, x: number, mask: number) {
-  groundFill(ctx, w, x, 0, 17 + mask * 3);
+/** Painted (AI) textures for a world's ground, if they were loaded. */
+interface PaintedTiles {
+  fill: HTMLImageElement;
+  top: HTMLImageElement;
+  plank: HTMLImageElement;
+  spikes: HTMLImageElement;
+}
+
+export const PAINTED_WORLDS: WorldId[] = ['jungle'];
+const PAINTED_TILE_FILES = ['fill', 'top', 'plank', 'spikes', 'bg'] as const;
+
+export function worldAssetKey(world: WorldId, file: string): string {
+  return `wt-${world}-${file}`;
+}
+
+export function preloadWorldArt(scene: Phaser.Scene) {
+  for (const w of PAINTED_WORLDS) {
+    for (const f of PAINTED_TILE_FILES) {
+      scene.load.image(worldAssetKey(w, f), `assets/worlds/${w}/${f}.${f === 'bg' ? 'jpg' : 'png'}`);
+    }
+  }
+}
+
+function paintedTiles(scene: Phaser.Scene, world: WorldId): PaintedTiles | null {
+  const get = (f: string) => {
+    const key = worldAssetKey(world, f);
+    return scene.textures.exists(key) ? (scene.textures.get(key).getSourceImage() as HTMLImageElement) : null;
+  };
+  const fill = get('fill');
+  const top = get('top');
+  const plank = get('plank');
+  const spikes = get('spikes');
+  return fill && top && plank && spikes ? { fill, top, plank, spikes } : null;
+}
+
+function fillArea(ctx: CanvasRenderingContext2D, w: WorldTheme, p: PaintedTiles | null, x: number, vx: number, vy: number, seed: number) {
+  if (!p) {
+    groundFill(ctx, w, x, 0, seed);
+    return;
+  }
+  // The fill texture covers a 2 × 2 block of tiles, so neighbouring tiles continue it seamlessly.
+  const fw = p.fill.width / 2;
+  const fh = p.fill.height / 2;
+  ctx.drawImage(p.fill, (vx % 2) * fw, vy * fh, fw, fh, x, 0, T, T);
+}
+
+function topArea(ctx: CanvasRenderingContext2D, w: WorldTheme, p: PaintedTiles | null, x: number, y: number, width: number, vx: number) {
+  if (!p) {
+    topStrip(ctx, w, x, y, width);
+    return;
+  }
+  // The grass strip spans four tiles.
+  const seg = p.top.width / 4;
+  const h = (T * 4 * p.top.height) / p.top.width;
+  let dx = x;
+  let remaining = width;
+  let sx = (vx % 4) * seg;
+  while (remaining > 0.01) {
+    const take = Math.min(remaining, ((p.top.width - sx) / seg) * T);
+    ctx.drawImage(p.top, sx, 0, (take / T) * seg, p.top.height, dx, y - 1, take, h);
+    dx += take;
+    remaining -= take;
+    sx = 0;
+  }
+}
+
+function drawSolid(ctx: CanvasRenderingContext2D, w: WorldTheme, p: PaintedTiles | null, x: number, mask: number, vx: number, vy: number) {
+  fillArea(ctx, w, p, x, vx, vy, 17 + mask * 3 + vx);
   ctx.strokeStyle = w.outline;
   ctx.lineWidth = 3;
-  if (mask & EDGE_TOP) {
-    topStrip(ctx, w, x, 0, T);
-    ctx.beginPath();
-    ctx.moveTo(x, 1.5);
-    ctx.lineTo(x + T, 1.5);
-    ctx.stroke();
-  }
   if (mask & EDGE_BOTTOM) {
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.fillRect(x, T - 7, T, 7);
     ctx.beginPath();
     ctx.moveTo(x, T - 1.5);
@@ -116,10 +176,10 @@ function drawSolid(ctx: CanvasRenderingContext2D, w: WorldTheme, x: number, mask
     ctx.stroke();
   }
   if (mask & EDGE_RIGHT) {
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
     ctx.fillRect(x + T - 6, 0, 6, T);
     ctx.beginPath();
-    ctx.moveTo(x + T - 1.5, mask & EDGE_TOP ? 1.5 : 0);
+    ctx.moveTo(x + T - 1.5, 0);
     ctx.lineTo(x + T - 1.5, T);
     ctx.stroke();
   }
@@ -127,13 +187,22 @@ function drawSolid(ctx: CanvasRenderingContext2D, w: WorldTheme, x: number, mask
     ctx.fillStyle = 'rgba(255,255,255,0.08)';
     ctx.fillRect(x, 0, 6, T);
     ctx.beginPath();
-    ctx.moveTo(x + 1.5, mask & EDGE_TOP ? 1.5 : 0);
+    ctx.moveTo(x + 1.5, 0);
     ctx.lineTo(x + 1.5, T);
     ctx.stroke();
   }
+  if (mask & EDGE_TOP) {
+    topArea(ctx, w, p, x, 0, T, vx);
+    if (!p) {
+      ctx.beginPath();
+      ctx.moveTo(x, 1.5);
+      ctx.lineTo(x + T, 1.5);
+      ctx.stroke();
+    }
+  }
 }
 
-function drawSlope(ctx: CanvasRenderingContext2D, w: WorldTheme, x: number, up: boolean) {
+function drawSlope(ctx: CanvasRenderingContext2D, w: WorldTheme, p: PaintedTiles | null, x: number, up: boolean, vx: number, vy: number) {
   ctx.save();
   ctx.beginPath();
   if (up) {
@@ -147,27 +216,35 @@ function drawSlope(ctx: CanvasRenderingContext2D, w: WorldTheme, x: number, up: 
   }
   ctx.closePath();
   ctx.clip();
-  groundFill(ctx, w, x, 0, up ? 91 : 92);
+  fillArea(ctx, w, p, x, vx, vy, up ? 91 : 92);
   // grass band along the ramp
   ctx.translate(x + T / 2, T / 2);
   ctx.rotate(up ? -Math.PI / 4 : Math.PI / 4);
   const len = T * 1.5;
-  topStrip(ctx, w, -len / 2, 0, len);
+  topArea(ctx, w, p, -len / 2, 0, len, vx);
   ctx.restore();
-  ctx.strokeStyle = w.outline;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  if (up) {
-    ctx.moveTo(x, T);
-    ctx.lineTo(x + T, 0);
-  } else {
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x + T, T);
+  if (!p) {
+    ctx.strokeStyle = w.outline;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    if (up) {
+      ctx.moveTo(x, T);
+      ctx.lineTo(x + T, 0);
+    } else {
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + T, T);
+    }
+    ctx.stroke();
   }
-  ctx.stroke();
 }
 
-function drawPlatform(ctx: CanvasRenderingContext2D, w: WorldTheme, x: number) {
+function drawPlatform(ctx: CanvasRenderingContext2D, w: WorldTheme, p: PaintedTiles | null, x: number, vx: number) {
+  if (p) {
+    const half = p.plank.width / 2;
+    const h = (T * 2 * p.plank.height) / p.plank.width;
+    ctx.drawImage(p.plank, (vx % 2) * half, 0, half, p.plank.height, x, 0, T, h);
+    return;
+  }
   ctx.fillStyle = w.platform;
   ctx.strokeStyle = w.outline;
   ctx.lineWidth = 2.5;
@@ -193,7 +270,12 @@ function drawPlatform(ctx: CanvasRenderingContext2D, w: WorldTheme, x: number) {
   ctx.fill();
 }
 
-function drawSpikes(ctx: CanvasRenderingContext2D, w: WorldTheme, x: number) {
+function drawSpikes(ctx: CanvasRenderingContext2D, w: WorldTheme, p: PaintedTiles | null, x: number) {
+  if (p) {
+    const h = Math.min(T * 0.7, (T * p.spikes.height) / p.spikes.width);
+    ctx.drawImage(p.spikes, x, T - h, T, h);
+    return;
+  }
   const metal = w.id === 'neon' ? '#ff4fb8' : '#c9ced8';
   for (let i = 0; i < 3; i++) {
     const bx = x + 2 + i * 12;
@@ -219,11 +301,22 @@ export function tilesetKey(world: WorldId): string {
 
 /** Pixels of extruded border around each tile in the tileset (avoids seams when filtering). */
 export const TILE_PAD = 2;
+export const TILESET_COLS = 12;
+
+/** Tile index of a solid tile with the given exposed edges; vx 0..3 and vy 0..1 pick the texture section. */
+export function solidIndex(mask: number, vx: number, vy: number): number {
+  return mask * 8 + vy * 4 + vx;
+}
+
+export function slopeIndex(up: boolean, vx: number, vy: number): number {
+  return (up ? TILE_SLOPE_UP : TILE_SLOPE_DOWN) + vy * 4 + vx;
+}
 
 export function makeTileset(scene: Phaser.Scene, world: WorldId): string {
   const w = WORLDS[world];
   const key = tilesetKey(world);
   if (scene.textures.exists(key)) return key;
+  const painted = paintedTiles(scene, world);
   const size = T * ART_RES;
   const cell = size + TILE_PAD * 2;
   const tile = document.createElement('canvas');
@@ -231,22 +324,31 @@ export function makeTileset(scene: Phaser.Scene, world: WorldId): string {
   tile.height = size;
   const tctx = tile.getContext('2d')!;
   const sheet = document.createElement('canvas');
-  sheet.width = cell * TILESET_COUNT;
-  sheet.height = cell;
+  sheet.width = cell * TILESET_COLS;
+  sheet.height = cell * Math.ceil(TILESET_COUNT / TILESET_COLS);
   const sctx = sheet.getContext('2d')!;
   for (let i = 0; i < TILESET_COUNT; i++) {
     tctx.setTransform(1, 0, 0, 1, 0, 0);
     tctx.clearRect(0, 0, size, size);
-    tctx.setTransform(ART_RES, 0, 0, ART_RES, -i * T * ART_RES, 0);
+    tctx.setTransform(ART_RES, 0, 0, ART_RES, 0, 0);
     tctx.lineJoin = 'round';
     tctx.lineCap = 'round';
-    if (i < 16) drawSolid(tctx, w, i * T, i);
-    else if (i === TILE_SLOPE_UP) drawSlope(tctx, w, i * T, true);
-    else if (i === TILE_SLOPE_DOWN) drawSlope(tctx, w, i * T, false);
-    else if (i === TILE_PLATFORM) drawPlatform(tctx, w, i * T);
-    else drawSpikes(tctx, w, i * T);
-    const x = i * cell + TILE_PAD;
-    const y = TILE_PAD;
+    if (i < TILE_SLOPE_UP) {
+      const mask = Math.floor(i / 8);
+      drawSolid(tctx, w, painted, 0, mask, i % 4, Math.floor(i / 4) % 2);
+    } else if (i < TILE_SLOPE_DOWN) {
+      const k = i - TILE_SLOPE_UP;
+      drawSlope(tctx, w, painted, 0, true, k % 4, Math.floor(k / 4));
+    } else if (i < TILE_PLATFORM) {
+      const k = i - TILE_SLOPE_DOWN;
+      drawSlope(tctx, w, painted, 0, false, k % 4, Math.floor(k / 4));
+    } else if (i < TILE_SPIKES) {
+      drawPlatform(tctx, w, painted, 0, i - TILE_PLATFORM);
+    } else {
+      drawSpikes(tctx, w, painted, 0);
+    }
+    const x = (i % TILESET_COLS) * cell + TILE_PAD;
+    const y = Math.floor(i / TILESET_COLS) * cell + TILE_PAD;
     // extrude edges
     sctx.drawImage(tile, 0, 0, 1, size, x - TILE_PAD, y, TILE_PAD, size);
     sctx.drawImage(tile, size - 1, 0, 1, size, x + size, y, TILE_PAD, size);
@@ -257,7 +359,21 @@ export function makeTileset(scene: Phaser.Scene, world: WorldId): string {
   scene.textures.addCanvas(key, sheet);
   // Named frames so single tiles can be used outside of tilemaps (menus, previews).
   const tex = scene.textures.get(key);
-  for (let i = 0; i < TILESET_COUNT; i++) tex.add(`t${i}`, 0, i * cell + TILE_PAD, TILE_PAD, size, size);
+  for (let i = 0; i < TILESET_COUNT; i++) {
+    tex.add(`t${i}`, 0, (i % TILESET_COLS) * cell + TILE_PAD, Math.floor(i / TILESET_COLS) * cell + TILE_PAD, size, size);
+  }
+  // A 4 × 2 tile ground block for menus.
+  const strip = document.createElement('canvas');
+  strip.width = size * 4;
+  strip.height = size * 2;
+  const g = strip.getContext('2d')!;
+  for (let vx = 0; vx < 4; vx++) {
+    for (let vy = 0; vy < 2; vy++) {
+      const idx = solidIndex(vy === 0 ? EDGE_TOP : 0, vx, vy);
+      g.drawImage(sheet, (idx % TILESET_COLS) * cell + TILE_PAD, Math.floor(idx / TILESET_COLS) * cell + TILE_PAD, size, size, vx * size, vy * size, size, size);
+    }
+  }
+  scene.textures.addCanvas(`ground-${world}`, strip);
   return key;
 }
 
