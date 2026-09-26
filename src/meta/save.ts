@@ -31,7 +31,7 @@ const DEFAULT: SaveData = {
   coins: 0,
   trophies: 0,
   character: 'hase',
-  unlocked: ['hase', 'pilz', 'fuchs'],
+  unlocked: ['hase', 'katze', 'ratte'],
   owned: [],
   equipped: { hat: null, glasses: null, outfit: null },
   settings: { sound: true, music: true, leftHanded: false, vibration: true, camera: 'mid' },
@@ -63,6 +63,10 @@ export function loadSave(): SaveData {
   } catch {
     // storage blocked (private mode): play with defaults
   }
+  // old saves may still name characters from before the new cast
+  const known = ['hase', 'katze', 'ratte', 'otter', 'kraehe', 'dachs', 'maulwurf', 'chinchilla', 'schildkroete'];
+  data.unlocked = [...new Set([...DEFAULT.unlocked, ...data.unlocked.filter((id) => known.includes(id))])];
+  if (!known.includes(data.character)) data.character = 'hase';
   cache = data;
   return data;
 }

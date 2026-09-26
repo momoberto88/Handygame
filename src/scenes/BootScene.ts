@@ -15,6 +15,8 @@ export class BootScene extends Phaser.Scene {
     preloadPainted(this);
     preloadWorldArt(this);
     preloadObjectArt(this);
+    this.load.image('brand-title', 'assets/brand/title.png');
+    this.load.image('brand-emblem', 'assets/brand/emblem.png');
   }
 
   create() {

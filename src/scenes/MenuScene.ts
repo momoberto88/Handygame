@@ -65,11 +65,11 @@ export class MenuScene extends Phaser.Scene {
       ground.tilePositionX = (this.cameras.main.scrollX * ART_RES) % (160 * ART_RES);
     });
 
-    const title = uiText(this, W * 0.5, 58, 'CHAOS-SPRINT', 64, '#ffd84a').setOrigin(0.5);
-    title.setStroke('#3a1a0a', 30);
-    this.ui.add(title);
-    this.tweens.add({ targets: title, angle: { from: -2, to: 2 }, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-    this.ui.add(uiText(this, W * 0.5, 104, 'Das chaotische Jump-’n’-Run-Rennen', 18, '#ffffff').setOrigin(0.5));
+    // title logo "Runaway Rivals"
+    const logo = this.add.image(W * 0.7, 72, 'brand-title');
+    logo.setScale(Math.min(250, W * 0.3) / logo.width);
+    this.ui.add(logo);
+    this.tweens.add({ targets: logo, angle: { from: -1.5, to: 1.5 }, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
 
     // character preview
     const px = W * 0.27;
@@ -143,8 +143,8 @@ export class MenuScene extends Phaser.Scene {
   private updateName(id: string) {
     const c = characterById(id);
     const a = ABILITIES[c.ability];
-    this.nameText.setText(`${c.name} (${c.species})`);
-    this.abilityText.setText(`${a.icon} ${a.name}\n${a.text}`);
+    this.nameText.setText(`${c.name} – ${c.species}`);
+    this.abilityText.setText(`„${c.quote}“\n${a.icon} ${a.name}: ${a.text}`);
   }
 
   update(_t: number, delta: number) {

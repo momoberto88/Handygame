@@ -210,6 +210,10 @@ export class Effects {
         }
         break;
       }
+      case 'fireworks':
+        this.sparks.explode(14, x + 10, y - 44);
+        this.smoke.explode(4, x, y - 30);
+        break;
       case 'tongue':
       case 'steal':
         this.stars.explode(5, x + 20, y - 30);

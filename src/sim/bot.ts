@@ -163,6 +163,8 @@ export class BotBrain {
         return !r.item && r.rolling <= 0;
       case 'steal':
         return !r.item && r.rolling <= 0 && others.some((o) => o.item && o.x > r.x && o.x - r.x < 850);
+      case 'fireworks':
+        return others.some((o) => o.x > r.x && o.x - r.x < 1400);
       case 'megajump':
       case 'sprint':
       case 'bash':

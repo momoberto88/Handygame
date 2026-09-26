@@ -506,7 +506,25 @@ export class Race {
       case 'mask': // Tiki: untouchable for a moment
         r.ghost = Math.max(r.ghost, MASK_TIME);
         break;
-      case 'bash': // Kira: shield and a short dash
+      case 'fireworks': { // Bumm-Bert: a homing firework rocket at the next runner ahead
+        const aim = this.runnerAhead(r, 1);
+        this.projectiles.push({
+          id: this.nextId++,
+          owner: r.id,
+          life: 4.5,
+          ownerSafe: 0.8,
+          grounded: false,
+          kind: 'rocket',
+          target: aim ? aim.id : -1,
+          x: r.x + 10,
+          y: r.y - 40,
+          vx: 450,
+          vy: -160,
+        });
+        target = aim?.id;
+        break;
+      }
+      case 'bash': // Madame Flausch: cloud shield and a short push
         r.shield = Math.max(r.shield, BASH_SHIELD);
         r.boost = Math.max(r.boost, 0.7);
         r.vx = Math.max(r.vx, BOOST_SPEED * 0.9);

@@ -307,7 +307,7 @@ export class EditorScene extends Phaser.Scene {
     const url = `${window.location.origin}${window.location.pathname}?strecke=${encodeURIComponent(code)}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: `Chaos-Sprint: ${this.track.name}`, text: 'Fahr meine Strecke!', url });
+        await navigator.share({ title: `Runaway Rivals: ${this.track.name}`, text: 'Fahr meine Strecke!', url });
         this.status = 'Link geteilt!';
       } else {
         await navigator.clipboard.writeText(url);

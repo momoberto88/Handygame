@@ -42,15 +42,18 @@ describe('character abilities', () => {
       quake: (race) => expect(race.runners.slice(1).some((o) => o.stun > STUN_TIME * 0.5)).toBe(true),
       mask: (race) => expect(race.runners[0].ghost).toBeGreaterThan(2),
       bash: (race) => expect(race.runners[0].shield).toBeGreaterThan(3),
+      fireworks: (race) => expect(race.projectiles.some((p) => p.kind === 'rocket' && p.owner === 0)).toBe(true),
     };
     for (const kind of ABILITY_KINDS) {
       const race = raceWith(kind);
       const [me, a] = race.runners;
       // put a rival right behind (spores) or just ahead with an item (steal)
-      a.x = kind === 'steal' ? me.x + 200 : me.x - 60;
+      a.x = kind === 'steal' || kind === 'fireworks' ? me.x + 200 : me.x - 60;
       a.y = me.y;
       a.item = 'shield';
       a.grounded = true;
+      // the other two wait far behind, so a rocket can't hit them at launch
+      for (const o of race.runners.slice(2)) o.x = me.x - 400;
       fire(race);
       check[kind](race);
     }

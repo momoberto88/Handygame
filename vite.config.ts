@@ -15,8 +15,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.png'],
       manifest: {
-        name: 'Chaos-Sprint',
-        short_name: 'Chaos-Sprint',
+        name: 'Runaway Rivals',
+        short_name: 'Runaway Rivals',
         description: 'Chaotisches Jump-’n’-Run-Rennen für bis zu 4 Spieler',
         lang: 'de',
         display: 'fullscreen',

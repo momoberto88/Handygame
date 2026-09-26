@@ -19,36 +19,45 @@ interface PaintedDef {
 
 export const PAINTED: Record<string, PaintedDef> = {
   hase: {
-    scale: 0.17,
-    parts: { hand: 0.62, foot: 0.72, tail: 0.62, earF: 0.95, earB: 0.95 },
+    scale: 0.162,
+    parts: { head: 1.15, hand: 0.6, foot: 0.59, earF: 0.87, earB: 0.87, tail: 0.79 },
     ears: { fx: 1, fy: -13, bx: -7, by: -12, rot: -0.12 },
     tail: { x: -12, y: 4, originX: 0.5 },
   },
-  pilz: { scale: 0.165, parts: { head: 1.05, hand: 0.75, foot: 0.77 } },
-  fuchs: {
-    scale: 0.161,
-    parts: { head: 1.02, hand: 0.69, foot: 0.7, earF: 0.8, earB: 0.8, tail: 0.76 },
-    ears: { fx: 1, fy: -11, bx: -7, by: -11, rot: -0.05 },
-    tail: { x: -11, y: 5, originX: 0.95 },
+  katze: {
+    scale: 0.13,
+    parts: { head: 1.26, hand: 0.54, foot: 0.77, tail: 0.91 },
+    tail: { x: -11, y: 6, originX: 0.95 },
   },
-  frosch: { scale: 0.134, parts: { head: 1.28, hand: 0.64, foot: 0.77 } },
-  waschbaer: {
-    scale: 0.135,
-    parts: { head: 1.18, hand: 0.92, foot: 1.06, earF: 0.95, earB: 0.95, tail: 0.91 },
-    ears: { fx: 2, fy: -12, bx: -7, by: -11, rot: 0 },
-    tail: { x: -11, y: 5, originX: 0.95 },
+  ratte: {
+    scale: 0.136,
+    parts: { head: 1.14, hand: 0.7, foot: 0.8, earF: 1.18, earB: 1.18, tail: 0.87 },
+    ears: { fx: 3, fy: -10, bx: -5, by: -10, rot: 0 },
+    tail: { x: -11, y: 7, originX: 0.97 },
   },
-  zwerg: { scale: 0.136, parts: { head: 1.36, hand: 0.89, foot: 0.91 } },
-  kobold: {
-    scale: 0.147,
-    parts: { head: 1.05, hand: 0.61, foot: 0.79, earF: 0.86 },
-    ears: { fx: -3, fy: -14, bx: -3, by: -14, rot: -0.1 },
+  otter: {
+    scale: 0.152,
+    parts: { head: 1.05, hand: 0.5, foot: 0.66, tail: 0.78 },
+    tail: { x: -11, y: 7, originX: 0.97 },
   },
-  kriegerin: {
-    scale: 0.161,
-    parts: { head: 0.99, hand: 0.61, foot: 0.78, earF: 1.05 },
-    ears: { fx: -13, fy: -8, bx: -13, by: -8, rot: 0.15 },
+  kraehe: {
+    scale: 0.149,
+    parts: { head: 1.16, hand: 0.47, foot: 0.6, tail: 0.79 },
+    tail: { x: -11, y: 6, originX: 0.95 },
   },
+  dachs: {
+    scale: 0.13,
+    parts: { head: 1.26, hand: 0.54, foot: 0.67, tail: 1.0 },
+    tail: { x: -11, y: 7, originX: 0.95 },
+  },
+  maulwurf: { scale: 0.13, parts: { head: 1.33, hand: 0.61, foot: 0.69 } },
+  chinchilla: {
+    scale: 0.148,
+    parts: { head: 1.11, hand: 0.51, foot: 0.7, earF: 0.58, earB: 0.58, tail: 0.8 },
+    ears: { fx: 2, fy: -12, bx: -7, by: -12, rot: -0.05 },
+    tail: { x: -12, y: 6, originX: 0.95 },
+  },
+  schildkroete: { scale: 0.182, parts: { head: 0.95, hand: 0.48, foot: 0.63 } },
 };
 
 const BASE_FILES = ['headN', 'headS', 'headH', 'body', 'handF', 'handB', 'footF', 'footB'];

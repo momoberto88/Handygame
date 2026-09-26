@@ -133,8 +133,8 @@ export const ITEM_KINDS: ItemKind[] = ['saw', 'trap', 'lightning', 'shield', 'tu
 export type RunnerMode = 'run' | 'dead' | 'finished';
 
 /** Special ability of each character, charged by coins, boxes and time. */
-export type AbilityKind = 'megajump' | 'sprint' | 'spores' | 'tongue' | 'steal' | 'quake' | 'mask' | 'bash';
-export const ABILITY_KINDS: AbilityKind[] = ['megajump', 'sprint', 'spores', 'tongue', 'steal', 'quake', 'mask', 'bash'];
+export type AbilityKind = 'megajump' | 'sprint' | 'spores' | 'tongue' | 'steal' | 'quake' | 'mask' | 'bash' | 'fireworks';
+export const ABILITY_KINDS: AbilityKind[] = ['megajump', 'sprint', 'spores', 'tongue', 'steal', 'quake', 'mask', 'bash', 'fireworks'];
 
 /** Flat on purpose: it is cloned for bot look-ahead and copied into network snapshots. */
 export interface RunnerState {
