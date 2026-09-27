@@ -309,6 +309,11 @@ class Synth {
     return this.buses?.[name] ?? this.master!;
   }
 
+  /** Spoken lines can be heard (sound on, voices not turned all the way down). */
+  get voicesHeard(): boolean {
+    return this.enabled && this.levels.voice > 0;
+  }
+
   /** Current volume of a bus from the settings (0…1). */
   level(name: Bus): number {
     return this.levels[name];

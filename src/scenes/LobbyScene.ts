@@ -4,6 +4,7 @@ import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
 import { characterById } from '../meta/characters';
 import { MAX_PLAYERS, type Playlist } from '../net/protocol';
 import { NetRoom, currentRoom, setCurrentRoom } from '../net/room';
+import { ROOM_CODE_LENGTH, isRoomCode } from '../net/protocol';
 import { headIcon } from '../render/art/skins';
 import { panel, textButton } from '../ui/widgets';
 import { goToMenu, hostStartRace, myProfile, wireClientRoom } from './flow';
@@ -34,6 +35,8 @@ export class LobbyScene extends Phaser.Scene {
   private error = '';
   private code = '';
   private busyText = '';
+  /** Gives up knocking (while the host still has to let you in). */
+  private cancelJoin: AbortController | null = null;
   private W = 960;
   private alive = false;
   private voteSecs = -1;
@@ -66,7 +69,7 @@ export class LobbyScene extends Phaser.Scene {
     if (room) this.attach(room);
     this.render();
     // opened through an invitation link: straight into the room
-    if (!room && data?.join && /^\d{4}$/.test(data.join)) {
+    if (!room && data?.join && isRoomCode(data.join)) {
       this.code = data.join;
       void this.joinRoom();
     }
@@ -130,8 +133,11 @@ export class LobbyScene extends Phaser.Scene {
         this.renderJoin();
         break;
       case 'busy':
-        this.ui.add(uiText(this, W / 2, VIEW_H / 2 - 20, this.busyText, 26).setOrigin(0.5));
-        this.ui.add(uiText(this, W / 2, VIEW_H / 2 + 20, 'Einen Moment …', 18, '#c9c2e8').setOrigin(0.5));
+        this.ui.add(uiText(this, W / 2, VIEW_H / 2 - (this.busyText.includes('\n') ? 40 : 20), this.busyText, 26).setOrigin(0.5).setAlign('center'));
+        if (this.cancelJoin) {
+          this.ui.add(textButton(this, W / 2, VIEW_H / 2 + 90, 200, 52, 'Abbrechen', 0x8a84a8, () => this.cancelJoin?.abort(), 20).container);
+        }
+        this.ui.add(uiText(this, W / 2, VIEW_H / 2 + (this.busyText.includes('\n') ? 40 : 20), 'Einen Moment …', 18, '#c9c2e8').setOrigin(0.5));
         break;
       case 'room':
         this.renderRoom();
@@ -171,16 +177,16 @@ export class LobbyScene extends Phaser.Scene {
     const W = this.W;
     const left = W * 0.3;
     this.ui.add(uiText(this, left, 100, 'Raum-Code eingeben:', 22).setOrigin(0.5));
-    for (let i = 0; i < 4; i++) {
-      const x = left - 105 + i * 70;
+    for (let i = 0; i < ROOM_CODE_LENGTH; i++) {
+      const x = left + (i - (ROOM_CODE_LENGTH - 1) / 2) * 62;
       const g = this.add.graphics();
-      g.fillStyle(0xffffff, 1).fillRoundedRect(x - 28, 140, 56, 72, 10);
-      g.lineStyle(4, 0x1d1a2f, 1).strokeRoundedRect(x - 28, 140, 56, 72, 10);
+      g.fillStyle(0xffffff, 1).fillRoundedRect(x - 26, 140, 52, 72, 10);
+      g.lineStyle(4, 0x1d1a2f, 1).strokeRoundedRect(x - 26, 140, 52, 72, 10);
       this.ui.add(g);
-      this.ui.add(uiText(this, x, 176, this.code[i] ?? '', 40, '#1d1a2f').setOrigin(0.5).setStroke('#ffffff', 0));
+      this.ui.add(uiText(this, x, 176, this.code[i] ?? '', 38, '#1d1a2f').setOrigin(0.5).setStroke('#ffffff', 0));
     }
     const join = textButton(this, left, 290, 250, 60, 'Beitreten', 0x5fd35a, () => void this.joinRoom(), 24);
-    join.setEnabled(this.code.length === 4);
+    join.setEnabled(this.code.length === ROOM_CODE_LENGTH);
     this.ui.add(join.container);
     this.ui.add(
       textButton(this, left, 372, 180, 50, 'Zurück', 0x8a84a8, () => {
@@ -197,7 +203,7 @@ export class LobbyScene extends Phaser.Scene {
       const y = 120 + Math.floor(i / 3) * 76;
       const color = k === 'OK' ? 0x5fd35a : k === '⌫' ? 0xffa94a : 0xe8e2ff;
       const b = textButton(this, x, y, 74, 62, k, color, () => this.keypad(k), 26);
-      if (k === 'OK') b.setEnabled(this.code.length === 4);
+      if (k === 'OK') b.setEnabled(this.code.length === ROOM_CODE_LENGTH);
       this.ui.add(b.container);
     });
   }
@@ -205,9 +211,9 @@ export class LobbyScene extends Phaser.Scene {
   private keypad(k: string) {
     if (k === '⌫') this.code = this.code.slice(0, -1);
     else if (k === 'OK') {
-      if (this.code.length === 4) void this.joinRoom();
+      if (this.code.length === ROOM_CODE_LENGTH) void this.joinRoom();
       return;
-    } else if (this.code.length < 4) this.code += k;
+    } else if (this.code.length < ROOM_CODE_LENGTH) this.code += k;
     this.render();
   }
 
@@ -273,7 +279,7 @@ export class LobbyScene extends Phaser.Scene {
     }
     this.ui.add(panel(this, W / 2, 128, 340, 76));
     this.ui.add(uiText(this, W / 2, 106, 'Raum-Code', 16, '#3a3228').setOrigin(0.5).setStroke('#a39c8c', 0));
-    this.ui.add(uiText(this, W / 2, 138, room.code.split('').join(' '), 40, '#ffffff').setOrigin(0.5));
+    this.ui.add(uiText(this, W / 2, 138, `${room.code.slice(0, 3)} ${room.code.slice(3)}`, 40, '#ffffff').setOrigin(0.5));
     this.ui.add(textButton(this, W / 2 + 280, 128, 190, 50, '📨 Einladen', 0x5fd35a, () => void this.invite(room), 19).container);
 
     const slotW = Math.min(170, (W - 80) / 4);
@@ -367,13 +373,27 @@ export class LobbyScene extends Phaser.Scene {
     this.error = '';
     this.busyText = `Verbinde mit Raum ${this.code} …`;
     this.setView('busy');
+    const cancel = new AbortController();
     try {
-      const room = await NetRoom.join(this.code, myProfile());
+      const room = await NetRoom.join(
+        this.code,
+        myProfile(),
+        () => {
+          // the host's phone now asks "let them in?"
+          this.cancelJoin = cancel;
+          this.busyText = `Angeklopft bei Raum ${this.code} 🚪\nWarte, bis der Gastgeber dich reinlässt …`;
+          if (this.scene.isActive()) this.setView('busy');
+        },
+        cancel.signal,
+      );
+      this.cancelJoin = null;
       setCurrentRoom(room);
       this.attach(room);
       this.setView('room');
     } catch (e) {
-      this.error = (e as Error).message;
+      this.cancelJoin = null;
+      if (!this.scene.isActive()) return;
+      this.error = cancel.signal.aborted ? '' : (e as Error).message;
       this.setView('join');
     }
   }

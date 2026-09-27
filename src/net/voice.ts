@@ -96,8 +96,8 @@ export class Walkie {
     }
   }
 
-  /** Button pressed: resolves false when there is no microphone. */
-  async start(): Promise<boolean> {
+  /** Button pressed: resolves false when there is no microphone. `limit` ms (0 = until stop()). */
+  async start(limit = MAX_TALK_MS): Promise<boolean> {
     if (this.closed) return false;
     const press = ++this.press;
     this.on = true;
@@ -114,7 +114,7 @@ export class Walkie {
     this.callAll(mic);
     this.room.sendTalk(true);
     window.clearTimeout(this.stopTimer);
-    this.stopTimer = window.setTimeout(() => this.stop(), MAX_TALK_MS);
+    if (limit > 0) this.stopTimer = window.setTimeout(() => this.stop(), limit);
     return true;
   }
 

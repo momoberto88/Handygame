@@ -14,6 +14,7 @@ import {
 import type { RacerInfo } from './session';
 import { chatText } from '../meta/chat';
 import { walkieFor } from './voice';
+import { parseClientMsg, parseHostMsg } from './validate';
 
 export interface ChatMessage {
   seat: number;
@@ -31,8 +32,10 @@ export interface Profile {
 
 function peerOptions(): Partial<PeerOptions> {
   // Tests (and self-hosting) can point to another signalling server: ?peerhost=localhost&peerport=9000
+  // Only on this computer: a shared link must never send players to somebody else's server.
   const q = new URLSearchParams(window.location.search);
-  const host = q.get('peerhost');
+  const local = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  const host = local ? q.get('peerhost') : null;
   if (!host) return { debug: 1 };
   return {
     host,
@@ -70,6 +73,19 @@ interface RemoteSeat {
   conn: DataConnection;
   player: LobbyPlayer;
 }
+
+/** Somebody knocked with the right code and waits for the host to let them in. */
+export interface JoinRequest {
+  id: number;
+  name: string;
+  character: string;
+  admit: (yes: boolean) => void;
+}
+
+/** At most this many people can wait at the door at once. */
+const MAX_REQUESTS = 3;
+/** Chat messages a guest may send in a row before the host drops them (per 10 s). */
+const CHAT_BURST = 6;
 
 /** Friendly German error messages for the lobby. */
 export function describeError(e: unknown): string {
@@ -137,6 +153,12 @@ export class NetRoom {
   readonly talkListeners = new Set<() => void>();
   /** Run once when the room closes (the walkie-talkie lets go of the microphone). */
   readonly onCloseHooks = new Set<() => void>();
+  /** Host: people waiting to be let in, and who wants to know about them. */
+  requests: JoinRequest[] = [];
+  readonly requestListeners = new Set<() => void>();
+  private requestId = 0;
+  /** Host: recent chat times per seat (spam guard). */
+  private chatTimes = new Map<number, number[]>();
 
   private constructor(role: 'host' | 'client', code: string, peer: Peer) {
     this.role = role;
@@ -168,7 +190,8 @@ export class NetRoom {
     throw new Error(describeError(lastError));
   }
 
-  static async join(code: string, profile: Profile): Promise<NetRoom> {
+  /** `onWaiting` is called when the host still has to let you in; `signal` gives up. */
+  static async join(code: string, profile: Profile, onWaiting?: () => void, signal?: AbortSignal): Promise<NetRoom> {
     const peer = new Peer(peerOptions());
     try {
       await withTimeout(waitOpen(peer), 12000, 'Der Vermittlungsdienst antwortet nicht.');
@@ -184,23 +207,45 @@ export class NetRoom {
         'Raum antwortet nicht. Stimmt der Code?',
       );
       room.hostConn = conn;
+      let waiting!: () => void;
+      const asked = new Promise<void>((resolve) => (waiting = resolve));
+      let failed!: (e: Error) => void;
       const welcome = new Promise<void>((resolve, reject) => {
+        failed = reject;
         conn.on('data', (raw) => {
-          const msg = raw as HostMsg;
+          const msg = parseHostMsg(raw);
+          if (!msg) return;
           if (msg.t === 'welcome') {
             room.mySeat = msg.seat;
             resolve();
           } else if (msg.t === 'reject') {
             reject(new Error(msg.reason));
+          } else if (msg.t === 'wait') {
+            waiting();
           } else {
-            room.handleHostMessage(msg);
+            try {
+              room.handleHostMessage(msg);
+            } catch (e) {
+              // a broken message must not take the game down
+              console.warn('Nachricht vom Gastgeber übersprungen', e);
+            }
           }
         });
       });
-      conn.on('close', () => room.lostConnection('Die Verbindung zum Gastgeber ist weg.'));
+      conn.on('close', () => {
+        failed(new Error('Der Gastgeber hat dich nicht reingelassen.'));
+        room.lostConnection('Die Verbindung zum Gastgeber ist weg.');
+      });
       conn.on('error', () => room.lostConnection('Die Verbindung zum Gastgeber ist weg.'));
+      signal?.addEventListener('abort', () => {
+        failed(new Error(''));
+        room.close();
+      });
       room.send({ t: 'hello', v: PROTOCOL_VERSION, ...profile });
-      await withTimeout(welcome, 10000, 'Keine Antwort vom Gastgeber.');
+      // first the host answers at all, then a person decides (that may take a while)
+      await withTimeout(Promise.race([welcome, asked]), 10000, 'Keine Antwort vom Gastgeber.');
+      onWaiting?.();
+      await withTimeout(welcome, 180000, 'Der Gastgeber hat dich nicht reingelassen.');
       return room;
     } catch (e) {
       peer.destroy();
@@ -213,31 +258,55 @@ export class NetRoom {
 
   private acceptConnection(conn: DataConnection) {
     let seat = -1;
+    let knocked = false;
+    let request: JoinRequest | null = null;
     const helloTimer = window.setTimeout(() => {
-      if (seat < 0) conn.close();
+      if (seat < 0 && !knocked) conn.close();
     }, 10000);
+    const refuse = (reason: string) => {
+      this.rawSend(conn, { t: 'reject', reason });
+      window.setTimeout(() => conn.close(), 500);
+    };
+    const dropRequest = () => {
+      if (!request) return;
+      this.requests = this.requests.filter((r) => r !== request);
+      request = null;
+      for (const l of this.requestListeners) l();
+    };
     conn.on('data', (raw) => {
-      const msg = raw as ClientMsg;
+      // only well-formed messages from a known game get in
+      const msg = parseClientMsg(raw);
+      if (!msg) return;
       if (seat < 0) {
-        if (msg.t !== 'hello') return;
+        if (msg.t !== 'hello' || knocked) return;
         window.clearTimeout(helloTimer);
-        if (msg.v !== PROTOCOL_VERSION) {
-          this.rawSend(conn, { t: 'reject', reason: 'Unterschiedliche Spielversionen – bitte beide die App neu laden.' });
-          window.setTimeout(() => conn.close(), 500);
-          return;
-        }
-        seat = this.freeSeat();
-        if (seat < 0) {
-          this.rawSend(conn, { t: 'reject', reason: 'Der Raum ist schon voll (4 Spieler).' });
-          window.setTimeout(() => conn.close(), 500);
-          return;
-        }
-        const player: LobbyPlayer = { seat, name: msg.name, character: msg.character, cosmetics: msg.cosmetics };
-        this.seats.set(seat, { conn, player });
-        this.players.push(player);
-        this.players.sort((a, b) => a.seat - b.seat);
-        this.rawSend(conn, { t: 'welcome', seat });
-        this.broadcastLobby();
+        if (msg.v !== PROTOCOL_VERSION) return refuse('Unterschiedliche Spielversionen – bitte beide die App neu laden.');
+        if (this.freeSeat() < 0) return refuse('Der Raum ist schon voll (4 Spieler).');
+        if (this.requests.length >= MAX_REQUESTS) return refuse('Gerade klopfen zu viele an – versuch es gleich nochmal.');
+        // the host decides who gets in: a guessed code alone is not enough
+        knocked = true;
+        const hello = msg;
+        request = {
+          id: ++this.requestId,
+          name: hello.name,
+          character: hello.character,
+          admit: (yes) => {
+            if (!request || this.closed) return;
+            dropRequest();
+            if (!yes) return refuse('Der Gastgeber hat dich nicht reingelassen.');
+            seat = this.freeSeat();
+            if (seat < 0) return refuse('Der Raum ist schon voll (4 Spieler).');
+            const player: LobbyPlayer = { seat, name: hello.name, character: hello.character, cosmetics: hello.cosmetics };
+            this.seats.set(seat, { conn, player });
+            this.players.push(player);
+            this.players.sort((a, b) => a.seat - b.seat);
+            this.rawSend(conn, { t: 'welcome', seat });
+            this.broadcastLobby();
+          },
+        };
+        this.requests.push(request);
+        this.rawSend(conn, { t: 'wait' });
+        for (const l of this.requestListeners) l();
         return;
       }
       if (msg.t === 'vote') {
@@ -249,7 +318,7 @@ export class NetRoom {
         return;
       }
       if (msg.t === 'chat') {
-        this.relayChat(seat, msg.q, msg.x);
+        if (this.chatAllowed(seat)) this.relayChat(seat, msg.q, msg.x);
         return;
       }
       if (msg.t === 'talk') {
@@ -266,6 +335,7 @@ export class NetRoom {
     });
     const drop = () => {
       window.clearTimeout(helloTimer);
+      dropRequest();
       if (seat < 0 || !this.seats.has(seat)) return;
       const name = this.seats.get(seat)!.player.name;
       this.seats.delete(seat);
@@ -277,6 +347,16 @@ export class NetRoom {
     };
     conn.on('close', drop);
     conn.on('error', drop);
+  }
+
+  /** Spam guard: a guest may send a few messages in a row, then has to wait a bit. */
+  private chatAllowed(seat: number): boolean {
+    const now = Date.now();
+    const times = (this.chatTimes.get(seat) ?? []).filter((t) => now - t < 10000);
+    if (times.length >= CHAT_BURST) return false;
+    times.push(now);
+    this.chatTimes.set(seat, times);
+    return true;
   }
 
   private freeSeat(): number {
@@ -459,6 +539,7 @@ export class NetRoom {
     this.closed = true;
     for (const s of this.seats.values()) s.conn.close();
     this.seats.clear();
+    this.requests = [];
     this.hostConn?.close();
     this.peer.destroy();
     for (const h of this.onCloseHooks) h();

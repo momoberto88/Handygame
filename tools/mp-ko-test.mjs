@@ -16,7 +16,7 @@ let code = null; for (let i = 0; i < 40 && !code; i++) { await host.waitForTimeo
 await tap(client, W * 0.7, 320); await client.waitForTimeout(400); await tap(client, W / 2, 316); await client.waitForTimeout(300);
 for (const d of code) { const k = ['1','2','3','4','5','6','7','8','9','⌫','0','OK'].indexOf(d); await tap(client, W * 0.72 + ((k % 3) - 1) * 84, 120 + Math.floor(k / 3) * 76); await client.waitForTimeout(120); }
 await tap(client, W * 0.3, 290);
-for (let i = 0; i < 40; i++) { await host.waitForTimeout(250); if ((await host.evaluate(() => window.chaosRoom?.players.length ?? 0)) >= 2) break; }
+for (let i = 0; i < 40; i++) { await host.waitForTimeout(250); if (await host.evaluate(() => { window.chaosRoom?.requests[0]?.admit(true); return (window.chaosRoom?.players.length ?? 0) >= 2; })) break; }
 await host.evaluate(() => { window.chaosRoom.playlist = { name: 'K.-o.-Cup', courses: ['lianen-lauf', 'zahnrad-express', 'wolkenhuepfer'], ko: true }; window.chaosRoom.broadcastLobby(); });
 await host.waitForTimeout(500);
 await tap(host, W / 2 + 150, 380);

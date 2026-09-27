@@ -1,3 +1,4 @@
+import { isRoomCode } from '../net/protocol';
 import Phaser from 'phaser';
 import { sfx } from '../audio/sfx';
 import { viewWidth, viewZoom, VIEW_H } from '../layout';
@@ -126,9 +127,9 @@ export class MenuScene extends Phaser.Scene {
     this.ui.add(iconButton(this, 280, 30, 22, '⏻', 0xe0604a, () => this.quit()).container);
     // the menu camera scrolls: pin every button (also for tapping), not only the drawing
     this.ui.setScrollFactor(0, 0, true);
-    // opened through an invitation link (?raum=1234): straight into that room, once
+    // opened through an invitation link (?raum=123456): straight into that room, once
     const invite = new URLSearchParams(location.search).get('raum');
-    if (invite && !this.registry.get('inviteUsed')) {
+    if (invite && !this.registry.get('inviteUsed') && isRoomCode(invite)) {
       this.registry.set('inviteUsed', true);
       const url = new URL(location.href);
       url.searchParams.delete('raum');

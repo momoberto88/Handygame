@@ -14,7 +14,7 @@ import type { CupState } from '../meta/cup';
 import type { RacerInfo } from './session';
 
 /** Bump when the messages change so old and new app versions don't try to play together. */
-export const PROTOCOL_VERSION = 4;
+export const PROTOCOL_VERSION = 5;
 export const MAX_PLAYERS = 4;
 /** Host sends a world snapshot every this many ticks (60 / 3 = 20 per second). */
 export const SNAPSHOT_EVERY = 3;
@@ -91,6 +91,8 @@ export interface SnapshotMsg {
 export type HostMsg =
   | { t: 'welcome'; seat: number }
   | { t: 'reject'; reason: string }
+  /** The host has to let you in first (asked on the host's phone). */
+  | { t: 'wait' }
   | {
       t: 'lobby';
       players: LobbyPlayer[];
@@ -231,8 +233,16 @@ export function unpackTrap(a: number[]): Trap {
   return { id: a[0], owner: a[1], x: a[2], y: a[3], life: a[4], ownerSafe: a[5] };
 }
 
+/** Digits of a room code (a million codes: hard to hit by guessing, and the host lets people in). */
+export const ROOM_CODE_LENGTH = 6;
+
 export function randomRoomCode(): string {
-  return String(Math.floor(1000 + Math.random() * 9000));
+  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 900000;
+  return String(100000 + n);
+}
+
+export function isRoomCode(code: string): boolean {
+  return new RegExp(`^\\d{${ROOM_CODE_LENGTH}}$`).test(code);
 }
 
 export function peerIdForCode(code: string): string {

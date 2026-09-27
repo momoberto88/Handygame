@@ -37,8 +37,11 @@ await tap(host, W / 2, 230);
 await until(host, () => !!window.chaosRoom?.code);
 const code = await host.evaluate(() => window.chaosRoom.code);
 const client = await phone('client', `${base}&raum=${code}`, 'Kumpel');
-await until(host, () => (window.chaosRoom?.players.length ?? 0) >= 2);
+await until(host, () => { window.chaosRoom?.requests[0]?.admit(true); return (window.chaosRoom?.players.length ?? 0) >= 2; });
 
+// the guest's lobby must be up before tapping
+await until(client, () => (window.chaosRoom?.mySeat ?? -1) >= 1);
+await client.waitForTimeout(800);
 // client: 💬 → first phrase
 await tap(client, W - 36, 34);
 await client.waitForTimeout(500);

@@ -85,7 +85,11 @@ export class HostSession implements RaceSession {
     const id = this.racerForSeat(seat);
     const rp = this.remotes.get(id);
     if (!rp) return;
-    if (msg.t === 'in') rp.queue.push({ s: msg.s, j: msg.j, d: msg.d });
+    if (msg.t === 'in') {
+      rp.queue.push({ s: msg.s, j: msg.j, d: msg.d });
+      // a flood of inputs (broken or changed game) must not pile up
+      if (rp.queue.length > 240) rp.queue.splice(0, rp.queue.length - 240);
+    }
     else if (msg.t === 'use') rp.use = msg.dir;
     else if (msg.t === 'ab') rp.ability = true;
     else if (msg.t === 'emote') this.emote(id, msg.e);

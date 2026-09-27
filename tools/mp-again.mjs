@@ -43,7 +43,7 @@ await host.screenshot({ path: `${shots}/1-host-lobby.png` });
 
 // the friend opens the invitation link
 const client = await phone('client', `${base}&raum=${code}`);
-const joined = await until(host, () => (window.chaosRoom?.players.length ?? 0) >= 2);
+const joined = await until(host, () => { window.chaosRoom?.requests[0]?.admit(true); return (window.chaosRoom?.players.length ?? 0) >= 2; });
 console.log('joined via link:', joined, '| client url cleaned:', !(await client.evaluate(() => location.search.includes('raum='))));
 await client.screenshot({ path: `${shots}/2-client-lobby.png` });
 

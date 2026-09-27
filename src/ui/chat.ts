@@ -3,6 +3,7 @@ import { sfx } from '../audio/sfx';
 import { CHAT_LINES, CHAT_MAX, chatChoices, cleanChat } from '../meta/chat';
 import type { ChatMessage, NetRoom } from '../net/room';
 import { walkieFor, type Walkie } from '../net/voice';
+import { Doorbell } from './doorbell';
 import { uiText } from '../scenes/HudScene';
 import { panel, textButton } from './widgets';
 import { VIEW_H, viewWidth } from '../layout';
@@ -23,6 +24,11 @@ export interface ChatOptions {
   wrap?: number;
   /** Side of the 💬 button the 🎙️ button sits on (default left). */
   micSide?: 1 | -1;
+  /**
+   * During the race nobody has a finger free: no 💬, and 🎙️ is an on/off switch ("Funk offen")
+   * instead of hold-to-talk. Messages from the others still show up (onMessage).
+   */
+  race?: boolean;
 }
 
 /** Distance between the 💬 and 🎙️ buttons. */
@@ -32,6 +38,7 @@ const MIC_GAP = 50;
  * Chat with the friends in the room: 💬 opens quick phrases and "✏️ own text" (a real text field,
  * so the phone keyboard works). Messages show up in a small feed that fades after a few seconds.
  * Next to it, 🎙️ is the walkie-talkie: hold to talk, "🎙️ Name spricht" shows who is talking.
+ * In the race only 🎙️ is there, as an on/off switch.
  */
 export class ChatUI {
   private button: Phaser.GameObjects.Text;
@@ -40,6 +47,7 @@ export class ChatUI {
   private talkLabel: Phaser.GameObjects.Text;
   private walkie: Walkie;
   private readonly micSide: 1 | -1;
+  private readonly race: boolean;
   /** Shows "Mikro nicht erlaubt" instead of the speakers until then. */
   private noticeUntil = 0;
   private picker?: Phaser.GameObjects.Container;
@@ -58,7 +66,9 @@ export class ChatUI {
   ) {
     this.depth = opts.depth ?? 60;
     this.wrap = opts.wrap ?? 320;
-    this.button = uiText(scene, opts.x, opts.y, '💬', 30).setOrigin(0.5).setDepth(this.depth).setInteractive({ useHandCursor: true });
+    this.race = !!opts.race;
+    this.button = uiText(scene, opts.x, opts.y, '💬', 30).setOrigin(0.5).setDepth(this.depth).setVisible(!this.race);
+    if (!this.race) this.button.setInteractive({ useHandCursor: true });
     this.button.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => {
       ev.stopPropagation();
       sfx.unlock();
@@ -66,6 +76,8 @@ export class ChatUI {
       if (this.picker) this.closePicker();
       else this.openPicker();
     });
+    // host: people knocking with the room code wait for a yes (not during the race)
+    if (!this.race && room.role === 'host') new Doorbell(scene, room, this.depth + 20);
     this.micSide = opts.micSide ?? -1;
     this.walkie = walkieFor(room);
     this.micButton = scene.add.circle(0, 0, 21, 0x1d1a2f, 0.75).setStrokeStyle(3, 0xffffff, 0.9).setDepth(this.depth);
@@ -83,7 +95,13 @@ export class ChatUI {
       micPointer = p.id;
       sfx.unlock();
       this.closePicker();
-      void this.walkie.start().then((ok) => {
+      // race: tap switches the radio on and off
+      if (this.race && this.walkie.on) {
+        this.walkie.stop();
+        this.renderTalk();
+        return;
+      }
+      void this.walkie.start(this.race ? 0 : undefined).then((ok) => {
         if (!ok && this.walkie.denied) {
           this.noticeUntil = Date.now() + 3500;
           scene.time.delayedCall(3600, () => this.renderTalk());
@@ -93,7 +111,7 @@ export class ChatUI {
       this.renderTalk();
     });
     const letGo = (p?: Phaser.Input.Pointer) => {
-      if (!this.walkie.on || (p && p.id !== micPointer)) return;
+      if (!this.walkie.on || (p && (this.race || p.id !== micPointer))) return;
       this.walkie.stop();
       this.renderTalk();
     };
@@ -134,8 +152,9 @@ export class ChatUI {
   /** Moves the 💬 and 🎙️ buttons (HUD layout on resize). */
   setPosition(x: number, y: number) {
     this.button.setPosition(x, y);
-    this.micButton.setPosition(x + this.micSide * MIC_GAP, y);
-    this.micIcon.setPosition(x + this.micSide * MIC_GAP, y);
+    const mx = this.race ? x : x + this.micSide * MIC_GAP;
+    this.micButton.setPosition(mx, y);
+    this.micIcon.setPosition(mx, y);
     // the label hangs below the buttons, growing away from the screen edge
     this.talkLabel.setPosition(x - this.micSide * 16, y + 24).setOrigin(this.micSide < 0 ? 1 : 0, 0);
   }
@@ -151,7 +170,7 @@ export class ChatUI {
       .setScale(on ? 1.15 : 1);
     let text = '';
     if (Date.now() < this.noticeUntil) text = '🎙️ Mikro nicht erlaubt';
-    else if (this.walkie.on) text = '🔴 Du sprichst …';
+    else if (this.walkie.on) text = this.race ? '🔴 Funk offen' : '🔴 Du sprichst …';
     else {
       const names = this.walkie.speakers();
       if (names.length) text = `🎙️ ${names.join(', ')} ${names.length > 1 ? 'sprechen' : 'spricht'} …`;

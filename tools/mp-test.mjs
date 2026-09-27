@@ -44,6 +44,13 @@ for (const digit of code) {
 }
 await client.screenshot({ path: `${shots}/client-code.png` });
 await tap(client, W * 0.3, 290); // Beitreten
+// the host lets the guest in (✅ on the doorbell)
+for (let i = 0; i < 40; i++) {
+  await host.waitForTimeout(250);
+  if (await host.evaluate(() => (window.chaosRoom?.requests.length ?? 0) > 0)) break;
+}
+await host.waitForTimeout(300);
+await tap(host, W / 2 - 104, 270 + 50);
 for (let i = 0; i < 40; i++) {
   await host.waitForTimeout(250);
   const n = await host.evaluate(() => window.chaosRoom?.players.length ?? 0);

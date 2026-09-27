@@ -161,7 +161,7 @@ export class HudScene extends Phaser.Scene {
     // online: chat with the others (their messages appear as speech bubbles over their runners)
     const room = currentRoom();
     if (session.online && room) {
-      this.chat = new ChatUI(this, room, { x: 0, y: 30, onMessage: (m) => this.raceScene.chatBubble(m.seat, m.text) });
+      this.chat = new ChatUI(this, room, { x: 0, y: 30, race: true, onMessage: (m) => this.raceScene.chatBubble(m.seat, m.text) });
     }
     this.layout();
     this.coach = session.tutorial

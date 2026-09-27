@@ -25,10 +25,25 @@ Leere Plätze füllen Bots. Kein Konto, kein App-Store: ein Link genügt.
 Beim ersten Start gibt es eine kurze **Übungsrunde** (🎓 im Menü, jederzeit wiederholbar, +100 Münzen).
 
 ## So spielst du mit Freunden
-1. Einer tippt **„Mit Freunden“ → „Raum erstellen“** und bekommt einen **Code aus 4 Zeichen**.
-2. Die anderen tippen **„Mit Freunden“ → „Raum beitreten“** und geben den Code ein.
-3. Der Gastgeber wählt Strecke oder Cup (oder lässt abstimmen), auf Wunsch **2 gegen 2** – dann **Start**.
-4. Freie Plätze übernehmen Bots.
+1. Einer tippt **„Mit Freunden“ → „Raum erstellen“** und bekommt einen **6-stelligen Code**
+   (oder schickt mit **„📨 Einladen“** gleich einen Link, z. B. per WhatsApp).
+2. Die anderen tippen **„Mit Freunden“ → „Raum beitreten“** und geben den Code ein (oder öffnen den Link).
+3. Beim Gastgeber klopft es: **„✅ Reinlassen“** – nur wer reingelassen wird, kommt in den Raum.
+4. Der Gastgeber wählt Strecke oder Cup (oder lässt abstimmen), auf Wunsch **2 gegen 2** – dann **Start**.
+5. Freie Plätze übernehmen Bots.
+
+Reden: **💬** für Sprüche und eigenen Text (Lobby, Ergebnis, Siegerehrung), **🎙️ gedrückt halten** = Walkie-Talkie.
+Im Rennen ist 🎙️ ein Schalter („Funk offen“). Das Mikrofon ist nur an, solange du sprichst.
+
+## Sicherheit & Datenschutz
+- Kein Konto, keine E-Mail, kein Passwort, keine Bezahldaten, kein eigener Server. Name, Münzen und Einstellungen
+  liegen nur auf deinem Handy.
+- Das Spiel läuft abgeschottet im Browser: kein Zugriff auf Fotos, Kontakte, Dateien oder Standort.
+  Das Mikrofon nur, wenn du es beim ersten 🎙️ erlaubst (jederzeit in den Browser-Einstellungen widerrufbar).
+- Sprache, Chat und Rennen laufen verschlüsselt direkt zwischen den Handys. Der kostenlose Vermittlungsdienst
+  (PeerJS) bringt die Handys nur zusammen und sieht keine Inhalte.
+- Wer im selben Raum ist, kann technisch die Internet-Adresse (IP) der anderen sehen – wie bei allen
+  Direktverbindungs-Spielen. Deshalb: nur Leute reinlassen, die du kennst.
 
 Tipps:
 - Alle brauchen Internet. Die Handys verbinden sich direkt miteinander (kein eigener Server nötig).

@@ -40,7 +40,14 @@ await host.mouse.click(...at(W / 2, 230));
 await until(host, () => !!window.chaosRoom?.code);
 const code = await host.evaluate(() => window.chaosRoom.code);
 const client = await phone('client', `${base}&raum=${code}`, 'Kumpel');
-await until(host, () => (window.chaosRoom?.players.length ?? 0) >= 2);
+// the host's phone asks "let them in?" – tap ✅
+await until(host, () => (window.chaosRoom?.requests.length ?? 0) >= 1);
+await host.waitForTimeout(400);
+await host.screenshot({ path: `${shots}/0-host-doorbell.png` });
+await client.screenshot({ path: `${shots}/0-client-waiting.png` });
+await host.mouse.click(...at(W / 2 - 104, 270 + 50));
+const admitted = await until(host, () => (window.chaosRoom?.players.length ?? 0) >= 2);
+console.log('let in with the ✅ button:', admitted);
 await until(client, () => (window.chaosRoom?.peers.length ?? 0) >= 2);
 
 // client holds 🎙️ (left of 💬)
@@ -71,15 +78,19 @@ await until(client, () => window.chaosRoom.racing, 10000);
 await client.waitForTimeout(6000);
 const before = await host.evaluate(() => window.chaosWalkie.bytesIn());
 const micOffBetween = await client.evaluate(() => !window.chaosWalkie.mic);
-await client.mouse.move(...at(W - 222 - 50, 30));
+// in the race 🎙️ sits where 💬 was, and it is a switch: tap on, tap off
+await client.mouse.move(...at(W - 222, 30));
 await client.mouse.down();
+await client.mouse.up();
 const raceHeard = await until(host, () => window.chaosRoom.talking.has(1));
 await host.waitForTimeout(2500);
 const after = await host.evaluate(() => window.chaosWalkie.bytesIn());
 console.log('mic fully off between presses:', micOffBetween, '· second press sends again:', after - before, 'bytes');
 await host.screenshot({ path: `${shots}/3-host-race.png` });
 await client.screenshot({ path: `${shots}/4-client-race.png` });
-await client.mouse.up();
-console.log('race: host sees client talking:', raceHeard);
-console.log('ok:', heard && bytes > 1000 && stopped && raceHeard && micOffBetween && after - before > 1000);
+const stillOn = await client.evaluate(() => window.chaosWalkie.on);
+await client.mouse.click(...at(W - 222, 30));
+const offAgain = await until(host, () => !window.chaosRoom.talking.has(1));
+console.log('race: host sees client talking:', raceHeard, '· stays on after lifting the finger:', stillOn, '· second tap off:', offAgain);
+console.log('ok:', admitted && heard && bytes > 1000 && stopped && raceHeard && micOffBetween && after - before > 1000 && stillOn && offAgain);
 await browser.close();

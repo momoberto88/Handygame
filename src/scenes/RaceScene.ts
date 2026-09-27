@@ -312,7 +312,8 @@ export class RaceScene extends Phaser.Scene {
     if (!local) this.lastBotTalk = now;
     this.bubbleCooldown.set(id, now + (local ? 5000 : 12000));
     sfx.speak(line.clip, (local ? 3 : 1) + (force ? 1 : 0), local ? 1 : 0.75);
-    this.showBubble(id, line.text);
+    // what you hear doesn't need to be read as well: the bubble only shows with the voices off
+    if (!sfx.voicesHeard) this.showBubble(id, line.text);
     return true;
   }
 
@@ -619,7 +620,7 @@ export class RaceScene extends Phaser.Scene {
           this.fx.celebrate(r.x + 60, r.y - 120);
           sfx.play(e.place === 1 ? 'finish' : e.place >= race.runners.length ? 'lose' : 'go');
           const line = finishLine(e.place);
-          this.hud?.toast(line.text, '#ffd84a', true);
+          if (!sfx.voicesHeard) this.hud?.toast(line.text, '#ffd84a', true);
           this.shout(line);
         }
         if (e.place === 1) this.say(e.r, 'win', true);
