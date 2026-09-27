@@ -1,0 +1,159 @@
+import { Tile } from '../types';
+import type { TrackBuilder } from './builder';
+import { GROUND, Land, free, island } from './freeform';
+
+/**
+ * Free-form landscapes for every world (the jungle ones live in freeform.ts). Each piece starts and
+ * ends on the ground at row GROUND and has at least two ways through: one on the ground and one up
+ * high or risky. The world's own tricks (conveyors, wind, water, lasers, cannons …) are placed in
+ * the landscape instead of on three storeys.
+ */
+
+const G = GROUND;
+
+/** Rock ceiling from the top of the level down to `row` (inclusive): caves, mines, tunnels. */
+function roof(b: TrackBuilder, c0: number, c1: number, row: number) {
+  b.fill(c0, c1, 0, row, Tile.Solid);
+}
+
+/** One-way plank (can be jumped through from below). */
+function plank(b: TrackBuilder, c0: number, c1: number, row: number) {
+  island(b, c0, c1, row, true);
+}
+
+/** The piece must end on the ground so the next one fits. */
+function done(L: Land, x: number): number {
+  if (L.g !== G) throw new Error(`landscape piece ends at row ${L.g}, not on the ground`);
+  return L.c - x;
+}
+
+// =============================================================================================
+// Zahnrad-Mine: underground. A rock roof, conveyor belts, crushers, lifts up to the galleries.
+
+// Rails: conveyors speed you up, crushers stamp on them; a double jump reaches the plank gallery.
+free('mine', 'mine-rails', 1, (b, x) => {
+  const L = new Land(b, x);
+  roof(b, x, x + 40, 8);
+  L.flat(4).flat(9, Tile.ConveyorFwd);
+  b.crusherAt(L.c - 3, G - 5);
+  b.coinsAt(x + 5, x + 11, G, 1);
+  L.flat(3);
+  const g0 = L.c;
+  plank(b, g0 + 1, g0 + 13, 17);
+  b.coinsAt(g0 + 2, g0 + 12, 17, 2);
+  b.boxAt(g0 + 8, 17);
+  L.flat(6).pit(3).flat(8, Tile.ConveyorFwd);
+  b.crusherAt(L.c - 4, G - 5);
+  b.boxAt(g0 + 3, G);
+  L.flat(4);
+  return done(L, x);
+});
+
+// The lift hall: a lift goes up to a fast conveyor gallery, the ground runs against a back belt
+// with a spike trap to jump.
+free('mine', 'mine-lift', 2, (b, x) => {
+  const L = new Land(b, x);
+  roof(b, x, x + 42, 8);
+  L.flat(5);
+  b.moverAt(L.c, 17, 3, 'y', 3, 3.2);
+  L.flat(4);
+  const g0 = L.c;
+  for (let c = g0; c <= g0 + 22; c++) b.set(c, 13, Tile.ConveyorFwd);
+  b.coinsAt(g0 + 2, g0 + 20, 13, 2);
+  b.boxAt(g0 + 12, 13);
+  L.flat(7, Tile.ConveyorBack).flat(2);
+  b.spikesAt(L.c - 1, L.c, G);
+  L.flat(6).flat(8, Tile.ConveyorBack);
+  b.coinsAt(g0 + 1, g0 + 6, G, 1);
+  b.boxAt(g0 + 12, G);
+  L.flat(9);
+  return done(L, x);
+});
+
+// A big cavern with a rock hill in the middle: jump its low face and run over the top (saws hang
+// from the roof), or slide through the tunnel underneath, where a belt pushes you along.
+free('mine', 'mine-cavern', 2, (b, x) => {
+  const L = new Land(b, x);
+  roof(b, x, x + 40, 7);
+  L.flat(5);
+  const m0 = L.c;
+  L.flat(22, Tile.ConveyorFwd);
+  // the hill rests on row G-2 (80 px up, one jump); row G-1 below it is the slide tunnel
+  const base = G - 2;
+  for (let i = 0; i < 22; i++) {
+    const c = m0 + i;
+    let surface = base;
+    if (i >= 1 && i <= 3) {
+      surface = base - i;
+      b.set(c, surface, Tile.SlopeUp);
+    } else if (i >= 18 && i <= 20) {
+      surface = base - (21 - i);
+      b.set(c, surface, Tile.SlopeDown);
+    } else {
+      if (i > 3 && i < 18) surface = base - 3;
+      b.set(c, surface, Tile.Solid);
+    }
+    for (let r = surface + 1; r <= base; r++) b.set(c, r, Tile.Solid);
+  }
+  const top = base - 3;
+  b.sawAt(m0 + 8, top, 3, 'vertical', 40);
+  b.sawAt(m0 + 14, top, 3, 'vertical', 40);
+  b.coinsAt(m0 + 4, m0 + 17, top, 1);
+  b.boxAt(m0 + 11, top);
+  b.coinsAt(m0 + 2, m0 + 19, G, 0.4);
+  L.flat(8);
+  return done(L, x);
+});
+
+// Wooden trestles over a chasm: a crumbling bridge low, rope planks high up.
+free('mine', 'mine-trestle', 2, (b, x) => {
+  const L = new Land(b, x);
+  roof(b, x, x + 42, 7);
+  L.flat(6);
+  const p0 = L.c;
+  L.pit(26);
+  // low bridge: solid posts with crumbling boards between them
+  for (let c = p0; c < p0 + 26; c++) b.set(c, G, c % 6 < 2 ? Tile.Solid : Tile.Crumble);
+  // rope planks up high (double jump), with gaps between them
+  plank(b, p0 + 1, p0 + 7, 17);
+  plank(b, p0 + 10, p0 + 16, 16);
+  plank(b, p0 + 19, p0 + 25, 17);
+  b.coinsAt(p0 + 1, p0 + 25, 16, 2, 0);
+  b.boxAt(p0 + 13, 16);
+  b.boxAt(p0 + 6, G);
+  L.flat(8);
+  return done(L, x);
+});
+
+// Down into the shaft and up the gear lifts; or stay up on the scaffold and jump its gaps.
+free('mine', 'mine-shaft', 3, (b, x) => {
+  const L = new Land(b, x);
+  roof(b, x, x + 46, 6);
+  L.flat(4).up(3).flat(4);
+  const s0 = L.c;
+  // the scaffold: planks at the old height over the shaft, with gaps
+  plank(b, s0, s0 + 7, L.g);
+  plank(b, s0 + 11, s0 + 18, L.g);
+  plank(b, s0 + 22, s0 + 28, L.g);
+  b.crusherAt(s0 + 14, L.g - 5);
+  b.coinsAt(s0, s0 + 28, L.g, 2);
+  // the shaft floor: down, a back belt, lifts to get out again
+  L.step(G + 2).flat(24, Tile.ConveyorBack);
+  b.moverAt(L.c - 5, G - 1, 3, 'y', 2, 2.6);
+  b.boxAt(s0 + 10, G + 2);
+  L.flat(5).step(G - 3).flat(4).down(3).flat(3);
+  return done(L, x);
+});
+
+// Out of the mine: a long ramp up to daylight, conveyors on the top, a jump down.
+free('mine', 'mine-exit', 1, (b, x) => {
+  const L = new Land(b, x);
+  roof(b, x, x + 12, 8);
+  L.flat(4).up(5).flat(10, Tile.ConveyorFwd);
+  b.coinsAt(x + 10, x + 19, G - 5, 2, 1);
+  b.boxAt(x + 16, G - 5);
+  L.flat(3).pit(3).flat(4).down(5).flat(6);
+  b.spikesAt(L.c - 4, L.c - 3, G);
+  L.flat(5);
+  return done(L, x);
+});

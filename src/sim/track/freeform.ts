@@ -9,10 +9,10 @@ import type { ModuleDef } from './modules';
  * starts and ends on the ground at the low storey's floor row, so they chain with each other and
  * with the start and finish areas.
  */
-const GROUND = 21;
+export const GROUND = 21;
 
 /** Draws the ground column by column, like a pen moving to the right. */
-class Land {
+export class Land {
   /** Top row of the ground at the pen. */
   g = GROUND;
 
@@ -62,7 +62,7 @@ class Land {
 }
 
 /** A floating chunk of rock (2 rows thick) or a one-way plank. */
-function island(b: TrackBuilder, c0: number, c1: number, row: number, plank = false) {
+export function island(b: TrackBuilder, c0: number, c1: number, row: number, plank = false) {
   for (let c = c0; c <= c1; c++) {
     b.set(c, row, plank ? Tile.Platform : Tile.Solid);
     if (!plank) b.set(c, row + 1, Tile.Solid);
@@ -71,7 +71,7 @@ function island(b: TrackBuilder, c0: number, c1: number, row: number, plank = fa
 
 export const FREE: ModuleDef[] = [];
 
-function free(world: WorldId, name: string, difficulty: 1 | 2 | 3, body: (b: TrackBuilder, x: number) => number) {
+export function free(world: WorldId, name: string, difficulty: 1 | 2 | 3, body: (b: TrackBuilder, x: number) => number) {
   FREE.push({
     name,
     world,

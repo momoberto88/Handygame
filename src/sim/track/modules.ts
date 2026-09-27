@@ -1,5 +1,6 @@
 import type { WorldId } from '../types';
 import { FREE } from './freeform';
+import './landscapes';
 import { LOW, MID, TOP, type TrackBuilder } from './builder';
 
 /**

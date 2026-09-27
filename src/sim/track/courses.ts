@@ -39,7 +39,8 @@ export const COURSES: CourseDef[] = [
     world: 'mine',
     difficulty: 1,
     seed: 201,
-    modules: ['rails', 'minecart', 'scaffold', 'rails', 'shaft', 'minecart', 'crusher-hall', 'rails', 'scaffold', 'minecart', 'shaft', 'rails', 'minecart', 'scaffold', 'minecart', 'rails'],
+    terrain: false,
+    modules: ['mine-rails', 'mine-exit', 'mine-cavern', 'mine-rails', 'mine-trestle', 'mine-lift', 'mine-rails', 'mine-cavern', 'mine-exit', 'mine-trestle', 'mine-rails', 'mine-lift'],
   },
   {
     id: 'tiefer-schacht',
@@ -47,7 +48,8 @@ export const COURSES: CourseDef[] = [
     world: 'mine',
     difficulty: 3,
     seed: 202,
-    modules: ['shaft', 'crusher-hall', 'gear-lift', 'collapse', 'scaffold', 'shaft', 'gear-lift', 'crusher-hall', 'collapse', 'minecart', 'gear-lift', 'shaft', 'shaft', 'gear-lift', 'minecart', 'shaft'],
+    terrain: false,
+    modules: ['mine-shaft', 'mine-lift', 'mine-trestle', 'mine-cavern', 'mine-shaft', 'mine-rails', 'mine-lift', 'mine-shaft', 'mine-trestle', 'mine-cavern', 'mine-shaft', 'mine-lift'],
   },
   {
     id: 'wolkenhuepfer',

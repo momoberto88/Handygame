@@ -314,6 +314,57 @@ export class TrackBuilder {
     this.saws.push({ x: this.cx(col), y: (surface - up) * TILE - TILE / 2, motion, range, phase: this.rng.next() * 6 });
   }
 
+  /** Spikes lying on the ground whose top tile row is `surface`. */
+  spikesAt(c0: number, c1: number, surface: number) {
+    for (let c = c0; c <= c1; c++) this.set(c, surface - 1, Tile.Spikes);
+  }
+
+  /** Crusher hanging from a small machine block in row `row` (3 tiles wide). */
+  crusherAt(col: number, row: number, phase = this.rng.next()) {
+    this.set(col, row, Tile.Solid);
+    this.set(col - 1, row, Tile.Solid);
+    this.set(col + 1, row, Tile.Solid);
+    this.crushers.push({ col, row, phase });
+  }
+
+  /** Pendulum saw hanging from a block in row `row`. */
+  pendulumAt(col: number, row: number, rope = 110) {
+    this.set(col, row, Tile.Solid);
+    this.saws.push({ x: this.cx(col), y: (row + 1) * TILE, motion: 'pendulum', range: rope, phase: this.rng.next() * 6 });
+  }
+
+  /** Laser beam from `height` rows above the ground (top row `surface`) down to it. */
+  laserAt(col: number, surface: number, height = 5, on = 1.1, off = 1.1, phase = this.rng.next()) {
+    this.lasers.push({ x: this.cx(col), y0: (surface - height) * TILE, y1: surface * TILE, on, off, phase });
+  }
+
+  /** Cannon block `up` rows above the ground (top row `surface`). */
+  cannonAt(col: number, surface: number, up: number, dir: -1 | 1, period = 2.2, range = 14) {
+    this.set(col, surface - up, Tile.Solid);
+    this.cannons.push({
+      x: this.cx(col),
+      y: (surface - up) * TILE + TILE / 2,
+      dir,
+      period,
+      phase: this.rng.next(),
+      speed: 420,
+      range: range * TILE,
+    });
+  }
+
+  /** Moving platform whose surface rests at row `row` (its top edge). */
+  moverAt(col: number, row: number, widthTiles: number, axis: 'x' | 'y', rangeTiles: number, period: number) {
+    this.movers.push({
+      x: col * TILE + (widthTiles * TILE) / 2,
+      y: row * TILE,
+      w: widthTiles * TILE,
+      axis,
+      range: rangeTiles * TILE,
+      period,
+      phase: this.rng.next(),
+    });
+  }
+
   mark(name: string, col: number, width: number) {
     this.parts.push({ name, col, width });
   }
