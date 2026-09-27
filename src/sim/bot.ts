@@ -119,7 +119,7 @@ export class BotBrain {
     readonly profile: BotProfile,
   ) {
     this.rng = new Rng(seed);
-    this.horizon = Math.round(40 + 40 * profile.skill);
+    this.horizon = Math.round(30 + 50 * profile.skill);
     this.plans = buildPlans(this.horizon);
   }
 
@@ -131,7 +131,8 @@ export class BotBrain {
       return IDLE;
     }
     const horizon = r.ink > 0 ? Math.round(this.horizon * 0.55) : this.horizon;
-    const checkEvery = Math.round(8 - 5 * this.profile.skill);
+    // clumsy bots react late
+    const checkEvery = Math.round(11 - 8 * this.profile.skill);
 
     this.sinceCheck++;
     this.sinceFull++;
@@ -183,9 +184,11 @@ export class BotBrain {
     }
     scored.sort((a, b) => b.s - a.s);
     let pick = scored[0];
-    // Clumsier bots sometimes take a worse option.
-    const mistake = (1 - this.profile.skill) * 0.12;
-    if (scored.length > 2 && this.rng.next() < mistake) pick = scored[1 + this.rng.int(2)];
+    // Clumsier bots sometimes take a worse option, and now and then they simply blunder
+    // (any plan at all, even one that ends in a saw) – like a human who taps at the wrong moment.
+    const clumsy = 1 - this.profile.skill;
+    if (scored.length > 2 && this.rng.next() < clumsy * 0.15) pick = scored[1 + this.rng.int(2)];
+    if (this.rng.next() < clumsy * clumsy * 0.6) pick = scored[1 + this.rng.int(scored.length - 1)];
     this.plan = pick.plan;
     this.planPos = 0;
   }
@@ -236,7 +239,9 @@ const PERSONALITIES: Pick<BotProfile, 'lanePref' | 'coinLover'>[] = [
   { lanePref: 0.5 },
 ];
 
-export function botProfile(level: 'easy' | 'normal' | 'hard', index: number): BotProfile {
-  const base = level === 'easy' ? 0.25 : level === 'normal' ? 0.55 : 0.85;
-  return { skill: Math.max(0, Math.min(1, base + (index - 1) * 0.07)), ...PERSONALITIES[index % PERSONALITIES.length] };
+export type BotLevel = 'easy' | 'normal' | 'hard';
+
+export function botProfile(level: BotLevel, index: number): BotProfile {
+  const base = level === 'easy' ? 0.1 : level === 'normal' ? 0.45 : 0.9;
+  return { skill: Math.max(0, Math.min(1, base + (index - 1) * 0.05)), ...PERSONALITIES[index % PERSONALITIES.length] };
 }

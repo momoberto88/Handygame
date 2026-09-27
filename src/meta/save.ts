@@ -10,6 +10,14 @@ export const CAMERA_DISTANCES: { id: CameraDistance; label: string; viewH: numbe
   { id: 'far', label: 'weit', viewH: 640 },
 ];
 
+export type BotSetting = 'auto' | 'easy' | 'normal' | 'hard';
+export const BOT_SETTINGS: { id: BotSetting; label: string }[] = [
+  { id: 'auto', label: 'Automatisch' },
+  { id: 'easy', label: 'Leicht' },
+  { id: 'normal', label: 'Normal' },
+  { id: 'hard', label: 'Schwer' },
+];
+
 export interface SaveData {
   name: string;
   coins: number;
@@ -20,7 +28,20 @@ export interface SaveData {
   equipped: { outfit: string | null };
   /** Worn skin per character id (missing = the normal look). */
   skins: Record<string, string>;
-  settings: { sound: boolean; music: boolean; leftHanded: boolean; vibration: boolean; camera: CameraDistance; rude: boolean };
+  settings: {
+    sound: boolean;
+    music: boolean;
+    leftHanded: boolean;
+    vibration: boolean;
+    camera: CameraDistance;
+    rude: boolean;
+    /** Volumes 0…1. */
+    volMusic: number;
+    volSfx: number;
+    volVoice: number;
+    /** Bot strength; "auto" gets harder the more you win. */
+    bots: BotSetting;
+  };
   stats: { races: number; wins: number };
   /** Best finishing time per course id (seconds). */
   best: Record<string, number>;
@@ -45,7 +66,7 @@ const DEFAULT: SaveData = {
   owned: [],
   equipped: { outfit: null },
   skins: {},
-  settings: { sound: true, music: true, leftHanded: false, vibration: true, camera: 'mid', rude: true },
+  settings: { sound: true, music: true, leftHanded: false, vibration: true, camera: 'mid', rude: true, volMusic: 0.8, volSfx: 0.7, volVoice: 1, bots: 'auto' },
   stats: { races: 0, wins: 0 },
   best: {},
   cups: {},

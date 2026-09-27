@@ -6,6 +6,7 @@
 // non-background pixels becomes one part; parts are ordered like the grid cells they sit in and
 // named in that order ("-" skips a cell). With --cells=0,1,2,… each name belongs to that fixed grid
 // cell instead (row by row from 0), so stray specks in empty cells cannot shift the names.
+// --hue also removes darker magenta shades (for sprites that contain no pink/purple at all).
 // Parts are trimmed, keyed out with soft edges and scaled so the longest side is at most --max pixels.
 import sharp from 'sharp';
 import { mkdirSync } from 'node:fs';
@@ -41,6 +42,8 @@ for (let i = 0; i < W * H; i++) {
   let a = 1;
   if (d < 90) a = 0;
   else if (d < 170 && magentaness > 60) a = (d - 90) / 80;
+  // --hue: any strongly magenta-tinted pixel is background too (also darker shades of it)
+  if (opt.hue && magentaness > 60) a = Math.min(a, Math.max(0, (110 - magentaness) / 50));
   alpha[i] = a;
   if (a > 0 && a < 1) {
     // despill: pull the colour away from magenta

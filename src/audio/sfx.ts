@@ -63,10 +63,11 @@ function variants(name: string): string[] {
 /** Per sound: loudness and the longest it may ring (long clips are faded out). */
 const MIX: Partial<Record<SfxName, { vol?: number; max?: number }>> = {
   coin: { vol: 0.35, max: 0.6 },
-  jump: { vol: 0.55, max: 0.5 },
-  doublejump: { vol: 0.6, max: 0.5 },
+  jump: { vol: 0.45, max: 0.5 },
+  doublejump: { vol: 0.5, max: 0.5 },
   land: { vol: 0.5, max: 0.4 },
-  slide: { vol: 0.8, max: 1.1 },
+  slide: { vol: 0.7, max: 1.1 },
+  box: { vol: 0.7 },
   roll: { vol: 0.5, max: 1.2 },
   swallow: { max: 2.2 },
   stunned: { vol: 0.7, max: 1.6 },
@@ -77,9 +78,42 @@ const MIX: Partial<Record<SfxName, { vol?: number; max?: number }>> = {
   finish: { max: 3 },
 };
 
+/**
+ * Crude recordings (farts, burps, grunts) are funny once, not every time: they play only now and
+ * then (chance, and never twice within `gap` seconds); otherwise a plain synth sound plays.
+ */
+const RARE: Partial<Record<SfxName, { chance: number; gap: number }>> = {
+  slide: { chance: 0.2, gap: 10 },
+  box: { chance: 0.3, gap: 8 },
+  jump: { chance: 0.15, gap: 4 },
+  doublejump: { chance: 0.25, gap: 4 },
+};
+
+export type Bus = 'sfx' | 'voice' | 'music';
+
+/** A short, soft room: every sound runs through the same space, so nothing sounds pasted on. */
+function roomImpulse(ctx: AudioContext): AudioBuffer {
+  const len = Math.floor(ctx.sampleRate * 0.9);
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      const t = i / ctx.sampleRate;
+      // a few early reflections, then a smooth tail
+      const early = [0.011, 0.019, 0.029, 0.041].some((e) => Math.abs(t - e - ch * 0.003) < 0.0006) ? 0.5 : 0;
+      d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 7) * 0.6 + early;
+    }
+  }
+  return buf;
+}
+
 class Synth {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  private buses: Record<Bus, GainNode> | null = null;
+  /** Volume of each bus (0…1), from the settings. */
+  private levels: Record<Bus, number> = { sfx: 0.7, voice: 1, music: 0.8 };
+  private lastRare = new Map<SfxName, number>();
   private noiseBuf: AudioBuffer | null = null;
   enabled = true;
   volume = 0.6;
@@ -141,7 +175,7 @@ class Synth {
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0.0001, t);
     gain.gain.linearRampToValueAtTime(vol, t + 1.2);
-    src.connect(gain).connect(this.master);
+    src.connect(gain).connect(this.bus('music'));
     src.start();
     this.music = { path, src, gain };
   }
@@ -173,7 +207,7 @@ class Synth {
   }
 
   /** Plays a loaded clip; returns its length in seconds (0 if it isn't loaded yet). */
-  playClip(path: string, vol = 1, maxDur = 0, rate = 1): number {
+  playClip(path: string, vol = 1, maxDur = 0, rate = 1, bus: Bus = 'sfx'): number {
     if (!this.enabled || !this.ctx || !this.master || this.ctx.state !== 'running') return 0;
     const buf = this.buffers.get(path);
     if (!(buf instanceof AudioBuffer)) {
@@ -192,7 +226,7 @@ class Synth {
       g.gain.setValueAtTime(vol, ctx.currentTime + dur - 0.15);
       g.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + dur);
     }
-    src.connect(g).connect(this.master);
+    src.connect(g).connect(this.bus(bus));
     src.start();
     src.stop(ctx.currentTime + dur + 0.02);
     return dur;
@@ -222,7 +256,7 @@ class Synth {
     src.buffer = buf;
     const g = this.ctx.createGain();
     g.gain.value = vol;
-    src.connect(g).connect(this.master!);
+    src.connect(g).connect(this.bus('voice'));
     src.start();
     this.voice = { src, priority, until: now + buf.duration };
     return true;
@@ -234,9 +268,7 @@ class Synth {
       const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!Ctor) return;
       this.ctx = new Ctor();
-      this.master = this.ctx.createGain();
-      this.master.gain.value = this.volume;
-      this.master.connect(this.ctx.destination);
+      this.buildMixer(this.ctx);
       const len = this.ctx.sampleRate;
       this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
       const data = this.noiseBuf.getChannelData(0);
@@ -244,6 +276,11 @@ class Synth {
       this.preloadEffects();
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume().then(() => this.refreshMusic());
+  }
+
+  /** Silences everything until the next unlock() (quit screen). */
+  pause() {
+    if (this.ctx && this.ctx.state === 'running') void this.ctx.suspend();
   }
 
   get context(): AudioContext | null {
@@ -259,6 +296,69 @@ class Synth {
     if (this.master) this.master.gain.value = v;
   }
 
+  /** Volume of the effects, voices or music (0…1). */
+  setLevel(bus: Bus, v: number) {
+    this.levels[bus] = v;
+    if (this.buses && this.ctx) this.buses[bus].gain.setTargetAtTime(v, this.ctx.currentTime, 0.05);
+  }
+
+  private bus(name: Bus): AudioNode {
+    return this.buses?.[name] ?? this.master!;
+  }
+
+  /**
+   * Mixer: effects, voices and music each have their own volume. Effects get their harsh top
+   * softened, effects and voices share a little room reverb, and a compressor glues it all together.
+   */
+  private buildMixer(ctx: AudioContext) {
+    this.master = ctx.createGain();
+    this.master.gain.value = this.volume;
+    const glue = ctx.createDynamicsCompressor();
+    glue.threshold.value = -18;
+    glue.knee.value = 12;
+    glue.ratio.value = 3;
+    glue.attack.value = 0.005;
+    glue.release.value = 0.2;
+    this.master.connect(glue).connect(ctx.destination);
+
+    const room = ctx.createConvolver();
+    room.buffer = roomImpulse(ctx);
+    const roomOut = ctx.createGain();
+    roomOut.gain.value = 0.22;
+    room.connect(roomOut).connect(this.master);
+
+    const make = (name: Bus) => {
+      const g = ctx.createGain();
+      g.gain.value = this.levels[name];
+      return g;
+    };
+    const sfxBus = make('sfx');
+    const soft = ctx.createBiquadFilter();
+    soft.type = 'highshelf';
+    soft.frequency.value = 5000;
+    soft.gain.value = -6;
+    const body = ctx.createBiquadFilter();
+    body.type = 'peaking';
+    body.frequency.value = 2800;
+    body.Q.value = 0.8;
+    body.gain.value = -2;
+    sfxBus.connect(soft).connect(body);
+    body.connect(this.master);
+    const sfxSend = ctx.createGain();
+    sfxSend.gain.value = 0.9;
+    body.connect(sfxSend).connect(room);
+
+    const voiceBus = make('voice');
+    voiceBus.connect(this.master);
+    const voiceSend = ctx.createGain();
+    voiceSend.gain.value = 0.35;
+    voiceBus.connect(voiceSend).connect(room);
+
+    const musicBus = make('music');
+    musicBus.connect(this.master);
+    this.buses = { sfx: sfxBus, voice: voiceBus, music: musicBus };
+  }
+
   private tone(type: OscillatorType, f0: number, f1: number, dur: number, vol = 0.3, delay = 0) {
     const ctx = this.ctx!;
     const t = ctx.currentTime + delay;
@@ -270,7 +370,7 @@ class Synth {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g).connect(this.master!);
+    osc.connect(g).connect(this.bus('sfx'));
     osc.start(t);
     osc.stop(t + dur + 0.02);
   }
@@ -288,7 +388,7 @@ class Synth {
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(f).connect(g).connect(this.master!);
+    src.connect(f).connect(g).connect(this.bus('sfx'));
     src.start(t, Math.random() * 0.5);
     src.stop(t + dur + 0.02);
   }
@@ -296,7 +396,11 @@ class Synth {
   play(name: SfxName, vol = 1) {
     if (!this.enabled || !this.ctx || !this.master || this.ctx.state !== 'running') return;
     const rec = variants(name);
-    if (rec.length) {
+    const rare = RARE[name];
+    const now = this.ctx.currentTime;
+    const rareOk = !rare || (Math.random() < rare.chance && now - (this.lastRare.get(name) ?? -99) > rare.gap);
+    if (rec.length && rareOk) {
+      if (rare) this.lastRare.set(name, now);
       const mix = MIX[name] ?? {};
       // slight pitch variation so repeated sounds don't get annoying
       const rate = 0.94 + Math.random() * 0.12;
@@ -304,7 +408,16 @@ class Synth {
     }
     switch (name) {
       case 'jump':
-        this.tone('square', 320, 720, 0.14, 0.12);
+        this.tone('triangle', 300, 620, 0.12, 0.09);
+        this.noise(0.08, 0.05, 1800, 1, 'bandpass', 0, 3500);
+        break;
+      case 'doublejump':
+        this.tone('triangle', 420, 880, 0.12, 0.08);
+        this.noise(0.1, 0.06, 2200, 1, 'bandpass', 0, 4500);
+        break;
+      case 'slide':
+        // a soft scrape over the ground
+        this.noise(0.32, 0.16, 900, 0.8, 'bandpass', 0, 350);
         break;
       case 'walljump':
         this.tone('square', 420, 900, 0.12, 0.12);

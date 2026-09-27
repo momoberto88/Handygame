@@ -1,4 +1,4 @@
-import { BotBrain, botProfile } from '../sim/bot';
+import { BotBrain, botProfile, type BotLevel } from '../sim/bot';
 import { DT } from '../sim/constants';
 import { Race } from '../sim/race';
 import type { RunnerInput, SimEvent, WorldId } from '../sim/types';
@@ -32,6 +32,8 @@ export interface HostSetup {
   watch?: number;
   /** Seats of knocked-out players who only watch (they get snapshots, send no inputs). */
   watchers?: number[];
+  /** How good the bots are (the host's setting). */
+  botLevel?: BotLevel;
 }
 
 /** The hosting phone: runs the authoritative race and streams snapshots to the others. */
@@ -42,6 +44,7 @@ export class HostSession implements RaceSession {
   readonly spectator: boolean;
   readonly online = true;
   private brains: (BotBrain | null)[];
+  private readonly botLevel: BotLevel;
   private remotes = new Map<number, RemotePlayer>();
   private watchers: number[];
   private clock = new TickClock();
@@ -58,9 +61,10 @@ export class HostSession implements RaceSession {
     this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers), teams: teamsOf(setup.racers) });
     this.racers = setup.racers.map((r) => ({ ...r }));
     this.spectator = setup.spectator ?? false;
+    this.botLevel = setup.botLevel ?? 'normal';
     this.watchers = setup.watchers ?? [];
     this.localId = this.spectator ? (setup.watch ?? 0) : 0;
-    this.brains = this.racers.map((r, i) => (r.isBot ? new BotBrain(setup.seed + i * 7919, botProfile('normal', i)) : null));
+    this.brains = this.racers.map((r, i) => (r.isBot ? new BotBrain(setup.seed + i * 7919, botProfile(this.botLevel, i)) : null));
     for (const [seat, id] of setup.seatToRacer) {
       this.remotes.set(id, { seat, queue: [], last: { j: 0, d: 0 }, ack: 0, use: 0, ability: false });
     }
@@ -91,7 +95,7 @@ export class HostSession implements RaceSession {
     const id = this.racerForSeat(seat);
     if (id < 0) return;
     this.remotes.delete(id);
-    this.brains[id] = new BotBrain(this.race.tick + id, botProfile('normal', id));
+    this.brains[id] = new BotBrain(this.race.tick + id, botProfile(this.botLevel, id));
     this.racers[id].isBot = true;
     this.notice = { text: `${name} ist weg – ein Bot übernimmt`, until: performance.now() + 4000 };
   }

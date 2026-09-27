@@ -9,6 +9,7 @@ import type { NetRoom, Profile } from '../net/room';
 import type { RaceSession, RacerInfo } from '../net/session';
 import { Rng, randomSeed } from '../sim/rng';
 import type { WorldId } from '../sim/types';
+import type { BotLevel } from '../sim/bot';
 import { WORLD_ORDER } from '../render/worlds';
 import { COURSES, courseById } from '../sim/track/courses';
 import { activeCup, isLastRace, newCup, randomCourses, setActiveCup, stillIn, type CupState } from '../meta/cup';
@@ -68,7 +69,7 @@ export function startLocalRace(
     world: world ?? randomWorld(seed),
     courseId,
     racers,
-    botLevel: save.stats.races < 2 ? 'easy' : save.stats.wins > save.stats.races * 0.5 ? 'hard' : 'normal',
+    botLevel: botLevel(),
     localId: 0,
     spectator: opts.spectator,
   });
@@ -121,10 +122,20 @@ export function startRace(scene: Phaser.Scene, session: RaceSession) {
 /** Leaves any race/result/lobby scenes and returns to the main menu. */
 export function goToMenu(scene: Phaser.Scene, message?: string) {
   const mgr = scene.game.scene;
-  for (const key of ['result', 'hud', 'race', 'lobby', 'wardrobe', 'courses', 'podium', 'editor']) {
+  for (const key of ['result', 'hud', 'race', 'lobby', 'wardrobe', 'courses', 'podium', 'editor', 'settings']) {
     if (mgr.isActive(key) || mgr.isPaused(key)) mgr.stop(key);
   }
   mgr.start('menu', { message });
+}
+
+/** Bot strength from the settings; "auto" starts easy and gets harder the more you win. */
+export function botLevel(): BotLevel {
+  const s = loadSave();
+  if (s.settings.bots !== 'auto') return s.settings.bots;
+  const { races, wins } = s.stats;
+  if (races < 3) return 'easy';
+  const rate = wins / races;
+  return rate > 0.5 ? 'hard' : rate > 0.25 ? 'normal' : 'easy';
 }
 
 /** What the player wears: the skin of the chosen character and the trail. */
@@ -237,5 +248,5 @@ export function hostStartRace(scene: Phaser.Scene, room: NetRoom, forcedCourse?:
   room.racing = true;
   room.broadcastLobby();
   const hostIn = racers.some((r) => !r.isBot && r.seat === 0);
-  startRace(scene, new HostSession(room, { seed, world, courseId, racers, seatToRacer, spectator: !hostIn, watch: 0, watchers }));
+  startRace(scene, new HostSession(room, { seed, world, courseId, racers, seatToRacer, spectator: !hostIn, watch: 0, watchers, botLevel: botLevel() }));
 }

@@ -24,7 +24,7 @@ export function* checkTrackSteps(courseId: string, ticksPerSlice = 600): Generat
   let stuckAt = -1;
   for (let who = 0; who < 4; who++) {
     const race = new Race({ seed: course.seed, world: course.world, runnerCount: 1, courseId, noWall: true });
-    const brain = new BotBrain(course.seed + who * 7919, botProfile('hard', who));
+    const brain = new BotBrain(course.seed + who * 7919, { ...botProfile('hard', who), skill: 1 });
     const r = race.runners[0];
     for (let t = 0; t < LIMIT && r.mode !== 'finished'; t++) {
       race.step([{ ...brain.think(race, 0), use: 0 }]);

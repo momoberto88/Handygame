@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { sfx } from '../audio/sfx';
 import { viewWidth, viewZoom, VIEW_H } from '../layout';
 import { ABILITIES, CHARACTERS, characterById } from '../meta/characters';
-import { CAMERA_DISTANCES, loadSave, writeSave } from '../meta/save';
+import { loadSave, writeSave } from '../meta/save';
+import { applyAudioSettings } from '../audio/applySettings';
 import { CHEST_COINS, chestReady, chestReward, claimTask, openChest, refreshDaily, taskDef } from '../meta/daily';
 import { createRunner } from '../sim/race';
 import { ART_RES } from '../render/art/canvas';
@@ -111,46 +112,18 @@ export class MenuScene extends Phaser.Scene {
     this.ui.add(this.coinLabel);
     this.ui.add(uiText(this, W - 74, 14, `🏆 ${save.trophies}`, 22, '#ffffff'));
 
-    // sound toggle
-    const snd = iconButton(this, 34, 30, 20, save.settings.sound ? '♪' : '✕', 0x9b7aff, () => {
-      writeSave((s) => (s.settings.sound = !s.settings.sound));
-      sfx.enabled = loadSave().settings.sound;
-      snd.label.setText(loadSave().settings.sound ? '♪' : '✕');
-      sfx.refreshMusic();
-    });
-    sfx.enabled = save.settings.sound;
-    sfx.musicOn = save.settings.music;
+    applyAudioSettings();
     // menu music: the tune of the world in the background, a bit quieter
     sfx.playMusic(`music/${world}`, 0.22);
-    this.ui.add(snd.container);
 
-    // camera distance: how much of the level you see while racing
-    const camLabel = () => `🎥 ${CAMERA_DISTANCES.find((c) => c.id === loadSave().settings.camera)?.label ?? 'mittel'}`;
-    const cam = textButton(this, 136, 30, 140, 40, camLabel(), 0x6b8cff, () => {
-      writeSave((s) => {
-        const i = CAMERA_DISTANCES.findIndex((c) => c.id === s.settings.camera);
-        s.settings.camera = CAMERA_DISTANCES[(i + 1) % CAMERA_DISTANCES.length].id;
-      });
-      cam.label.setText(camLabel());
-    }, 18);
-    this.ui.add(cam.container);
-
-    // rude trash talk on/off (off = family friendly texts)
-    const rudeLabel = () => (loadSave().settings.rude !== false ? '🤬 Derb: an' : '😇 Derb: aus');
-    const rudeBtn = textButton(this, 290, 30, 150, 40, rudeLabel(), 0xe0604a, () => {
-      writeSave((s) => (s.settings.rude = s.settings.rude === false));
-      rudeBtn.label.setText(rudeLabel());
-    }, 18);
-    this.ui.add(rudeBtn.container);
-
-    // daily chest and tasks
-    const gift = iconButton(this, 400, 30, 22, '🎁', 0xffa94a, () => this.openDaily());
+    // settings (sound, bots, camera, controls …), daily chest, quit
+    this.ui.add(textButton(this, 104, 30, 190, 42, '⚙️ Einstellungen', 0x9b7aff, () => this.scene.start('settings'), 17).container);
+    const gift = iconButton(this, 228, 30, 22, '🎁', 0xffa94a, () => this.openDaily());
     this.ui.add(gift.container);
-    this.giftBadge = this.add.circle(418, 12, 8, 0xff3a3a).setStrokeStyle(2, 0xffffff);
+    this.giftBadge = this.add.circle(246, 12, 8, 0xff3a3a).setStrokeStyle(2, 0xffffff);
     this.ui.add(this.giftBadge);
     this.refreshBadge();
-    // practice run
-    this.ui.add(iconButton(this, 452, 30, 22, '🎓', 0x5fd35a, () => startTutorial(this)).container);
+    this.ui.add(iconButton(this, 280, 30, 22, '⏻', 0xe0604a, () => this.quit()).container);
     // the menu camera scrolls: pin every button (also for tapping), not only the drawing
     this.ui.setScrollFactor(0, 0, true);
     // very first start: offer the practice run
@@ -158,6 +131,37 @@ export class MenuScene extends Phaser.Scene {
       this.registry.set('tutorialAsked', true);
       this.askTutorial();
     }
+  }
+
+  /**
+   * Browsers don't let a web page close itself, so "quit" stops all sound and says goodbye;
+   * the player closes the app by swiping it away.
+   */
+  private quit() {
+    sfx.stopMusic(0.3);
+    sfx.pause();
+    try {
+      window.close();
+    } catch {
+      // not allowed: fine
+    }
+    const W = viewWidth(this);
+    const ui = this.add.container(0, 0).setDepth(100);
+    ui.add(this.add.rectangle(0, 0, W, VIEW_H, 0x0d0a1a, 0.92).setOrigin(0, 0).setInteractive());
+    const rude = loadSave().settings.rude !== false;
+    ui.add(uiText(this, W / 2, VIEW_H / 2 - 70, rude ? 'Schon weg? Feigling! 👋' : 'Bis bald! 👋', 34, '#ffd84a').setOrigin(0.5));
+    ui.add(
+      uiText(this, W / 2, VIEW_H / 2, 'Der Ton ist aus.\nZum Schließen die App einfach wegwischen.', 18)
+        .setOrigin(0.5)
+        .setAlign('center'),
+    );
+    ui.add(textButton(this, W / 2, VIEW_H / 2 + 90, 260, 54, 'Doch weiterspielen', 0x5fd35a, () => {
+      ui.destroy();
+      sfx.unlock();
+      applyAudioSettings();
+      sfx.playMusic(`music/${this.registry.get('menuWorld') ?? 'jungle'}`, 0.22);
+    }, 20).container);
+    ui.setScrollFactor(0, 0, true);
   }
 
   private askTutorial() {
