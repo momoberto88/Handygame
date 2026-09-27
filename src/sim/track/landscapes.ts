@@ -748,3 +748,43 @@ free('shroom', 'shroom-maze', 3, (b, x) => {
   L.flat(4);
   return done(L, x);
 });
+
+// =============================================================================================
+// Dschungeltempel (more pieces next to the ones in freeform.ts): temple stairs, a river gorge.
+
+// Temple stairs: up the overgrown steps to the top where crushers stamp; vine planks above the
+// stairs hold the coins.
+free('jungle', 'jungle-stairs', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(4).up(3).flat(2).up(3);
+  const t0 = L.c;
+  L.flat(14);
+  b.crusherAt(t0 + 4, G - 11);
+  b.crusherAt(t0 + 10, G - 11);
+  b.coinsAt(t0 + 1, t0 + 13, G - 6, 0.4);
+  b.boxAt(t0 + 7, G - 6);
+  L.down(3).flat(2).down(3).flat(4);
+  plank(b, x + 3, x + 8, G - 5);
+  b.coinsAt(x + 3, x + 8, G - 5, 1);
+  b.spikesAt(L.c - 2, L.c - 1, G);
+  L.flat(3);
+  return done(L, x);
+});
+
+// River gorge: a vine bridge with crumbling boards and swinging saws, or drop into the river and
+// let the current carry you to the far bank.
+free('jungle', 'jungle-gorge', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(5);
+  const g0 = L.c;
+  L.step(G + 4).flat(16).up(4).flat(6);
+  b.zone('water', g0, g0 + 19, G + 1, 25);
+  b.zone('wind', g0, g0 + 15, G + 1, G + 3, 650, 0);
+  for (let c = g0; c <= g0 + 15; c++) b.set(c, G, (c - g0) % 5 === 0 ? Tile.Solid : Tile.Crumble);
+  b.pendulumAt(g0 + 5, G - 7, 110);
+  b.pendulumAt(g0 + 11, G - 7, 110);
+  b.coinsAt(g0 + 1, g0 + 14, G + 3, 1);
+  b.boxAt(g0 + 8, G);
+  b.coinsAt(g0 + 2, g0 + 13, G, 1);
+  return done(L, x);
+});

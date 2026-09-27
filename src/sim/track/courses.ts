@@ -23,7 +23,8 @@ export const COURSES: CourseDef[] = [
     world: 'jungle',
     difficulty: 1,
     seed: 101,
-    modules: ['canopy', 'pad-grove', 'ruins', 'vine-swing', 'canopy', 'waterfall', 'pad-grove', 'temple', 'ruins', 'vine-swing', 'canopy', 'pad-grove', 'waterfall', 'ruins', 'vine-swing', 'canopy'],
+    terrain: false,
+    modules: ['free-valley', 'jungle-gorge', 'free-islands', 'free-slide', 'jungle-stairs', 'free-fork', 'free-valley', 'jungle-gorge', 'free-tunnel', 'free-slide', 'jungle-stairs', 'free-valley'],
   },
   {
     id: 'stampfer-tempel',
@@ -31,7 +32,8 @@ export const COURSES: CourseDef[] = [
     world: 'jungle',
     difficulty: 2,
     seed: 102,
-    modules: ['temple', 'vine-swing', 'chimney', 'ruins', 'temple', 'waterfall', 'canopy', 'chimney', 'vine-swing', 'temple', 'pad-grove', 'ruins', 'waterfall', 'chimney', 'temple', 'temple'],
+    terrain: false,
+    modules: ['jungle-stairs', 'free-tunnel', 'free-cliff', 'jungle-gorge', 'jungle-stairs', 'free-fork', 'free-islands', 'jungle-stairs', 'free-cliff', 'free-tunnel', 'jungle-gorge', 'free-fork', 'jungle-stairs'],
   },
   {
     id: 'zahnrad-express',
