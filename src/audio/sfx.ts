@@ -306,11 +306,6 @@ class Synth {
     return this.buses?.[name] ?? this.master!;
   }
 
-  /** Where a custom sound source (e.g. the flute) plugs in; null before the first tap. */
-  input(name: Bus): AudioNode | null {
-    return this.ctx && this.enabled && this.ctx.state === 'running' ? this.bus(name) : null;
-  }
-
   /** Current volume of a bus from the settings (0…1). */
   level(name: Bus): number {
     return this.levels[name];
