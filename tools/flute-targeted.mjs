@@ -1,9 +1,10 @@
 // "Shitty flute", note by note: finds every note of a clean recorder/flute recording, then gives
-// each note one typical beginner mistake instead of random wobble:
-//  - the highest notes crack up an octave into a shriek (overblown), louder and harsher
-//  - long notes run out of breath and sag flat, with a nervous breath vibrato
-//  - some notes are simply sour (a steady bit off), mostly flat
-//  - notes are scooped into from below or overshoot for a moment
+// notes the mistakes a real beginner makes on a real recorder. A recorder can't slide or wobble:
+// its pitch jumps from note to note, so every mistake here is a steady note, never a bend.
+//  - the highest notes crack up an octave (overblown) for a moment
+//  - blown too hard: a note sits steadily sharp
+//  - wrong finger: a note is steadily off by a semitone or more
+//  - a short squeak when a note is tongued
 // plus a blown-too-hard tone and breath noise.
 // Usage: node tools/flute-targeted.mjs <in.mp3> <out.mp3> [strength 1..2] [seed] [--notes]
 // Needs ffmpeg with rubberband (FFMPEG=/path/to/ffmpeg).
@@ -95,11 +96,12 @@ for (const f of frames) {
   if (voiced && cur && Math.abs(cents(f.f0) - cur.c) < 70) {
     cur.end = f.t;
     cur.list.push(cents(f.f0));
+    cur.pts.push([f.t, cents(f.f0)]);
     cur.c = cur.list.slice(-6).sort((a, b) => a - b)[Math.floor(Math.min(6, cur.list.length) / 2)];
     continue;
   }
   if (cur && cur.end - cur.start > 0.06 * RATE) notes.push(cur);
-  cur = voiced ? { start: f.t, end: f.t, c: cents(f.f0), list: [cents(f.f0)] } : null;
+  cur = voiced ? { start: f.t, end: f.t, c: cents(f.f0), list: [cents(f.f0)], pts: [[f.t, cents(f.f0)]] } : null;
 }
 if (cur && cur.end - cur.start > 0.06 * RATE) notes.push(cur);
 for (const nt of notes) {
@@ -108,47 +110,63 @@ for (const nt of notes) {
   nt.len = (nt.end - nt.start) / RATE;
 }
 if (showNotes) {
+  for (const nt of notes) {
+    const dev = nt.list.map((c) => c - nt.c);
+    const sd = Math.sqrt(dev.reduce((a, d) => a + d * d, 0) / dev.length);
+    nt.sd = sd;
+  }
+  const avg = notes.reduce((a, nt) => a + nt.sd, 0) / notes.length;
+  console.log(`pitch wobble inside notes (source): ${avg.toFixed(1)} cents on average`);
+}
+if (showNotes) {
   for (const nt of notes) console.log(`${(nt.start / RATE).toFixed(2)}s  ${nt.len.toFixed(2)}s  ${(440 * 2 ** (nt.c / 1200)).toFixed(0)} Hz`);
 }
 
 // ---- 3. one mistake per note -------------------------------------------------------------------
 const byPitch = notes.filter((nt) => nt.len > 0.12).sort((a, b) => b.c - a.c);
 const high = new Set(byPitch.slice(0, Math.max(1, Math.round(byPitch.length * (0.14 + 0.08 * strength)))));
-const bend = new Float32Array(n); // cents, small continuous bends (read speed)
-const cracks = []; // [from, to] sample ranges that jump an octave up
+const bend = new Float32Array(n); // cents, held steady for a whole note (no slides, no vibrato)
+const cracks = []; // [from, to, gain] sample ranges that jump an octave up
 for (const nt of notes) {
   const s = nt.start - HOP * 2;
   const e = Math.min(n, nt.end + HOP * 2);
   const len = e - s;
   let steady = 0;
-  if (high.has(nt) && rnd() < 0.55 + 0.25 * strength) {
-    // overblown: part of the note flips into a shriek
-    const from = s + Math.floor(len * between(0.15, 0.45));
-    const to = Math.min(e, from + Math.floor(between(0.12, 0.28) * RATE));
-    cracks.push([from, to]);
-  } else if (rnd() < 0.3 + 0.15 * strength) {
-    // sour note: held a steady bit off, mostly flat
-    steady = (rnd() < 0.75 ? -1 : 1) * between(60, 110) * (0.8 + 0.3 * strength);
+  const roll = rnd();
+  if (high.has(nt) && roll < 0.55 + 0.25 * strength) {
+    // overblown: part of the note flips an octave up
+    const from = s + Math.floor(len * between(0.1, 0.4));
+    const to = Math.min(e, from + Math.floor(between(0.12, 0.26) * RATE));
+    cracks.push([from, to, 0.75]);
+  } else if (roll < 0.2 + 0.08 * strength) {
+    // wrong finger: a clearly wrong, but steady note
+    steady = (rnd() < 0.5 ? -1 : 1) * (rnd() < 0.7 ? 100 : 200) + between(-15, 15);
+  } else if (roll < 0.42 + 0.06 * strength) {
+    // blown too hard: steadily sharp
+    steady = between(35, 60);
   }
-  const attack = rnd();
-  for (let i = Math.max(0, s); i < e; i++) {
-    const p = (i - s) / len;
-    const ms = ((i - s) / RATE) * 1000;
-    let c = steady;
-    // into the note: scoop up from below, or overshoot and fall back
-    if (attack < 0.45) c += -170 * Math.max(0, 1 - ms / 80);
-    else if (attack < 0.7) c += 130 * Math.max(0, 1 - ms / 45);
-    if (nt.len > 0.33) {
-      // out of breath: sags flat towards the end, nervous vibrato on the way
-      c -= Math.max(0, (p - 0.4) / 0.6) * between(55, 70) * strength;
-      c += Math.min(1, ms / 150) * 18 * strength * Math.sin((2 * Math.PI * 5.6 * (i - s)) / RATE + Math.sin(ms / 170) * 1.5);
+  // tonguing squeak: a tiny flip up at the very start of a note
+  if (!cracks.length || cracks[cracks.length - 1][0] < s) {
+    if (rnd() < 0.12 + 0.08 * strength) {
+      const from = nt.start;
+      cracks.push([from, Math.min(e, from + Math.floor(between(0.03, 0.05) * RATE)), 0.5]);
     }
-    bend[i] = c;
+  }
+  for (let i = Math.max(0, s); i < e; i++) bend[i] = steady;
+  // a recorder holds its pitch: straighten the source's vibrato to the note's own pitch
+  const pts = nt.pts;
+  for (let k = 0; k + 1 < pts.length; k++) {
+    const [t0, c0] = pts[k];
+    const [t1, c1] = pts[k + 1];
+    for (let i = t0; i < t1 && i < n; i++) {
+      const c = c0 + ((c1 - c0) * (i - t0)) / (t1 - t0);
+      bend[i] += Math.max(-60, Math.min(60, nt.c - c));
+    }
   }
 }
 // smooth the joins a little so bends don't click
 {
-  const k = 64;
+  const k = 96;
   let acc = 0;
   const copy = Float32Array.from(bend);
   for (let i = 0; i < n; i++) {
@@ -160,21 +178,22 @@ for (const nt of notes) {
 // ---- 4. octave cracks (time kept, rubberband) --------------------------------------------------
 const work = Float32Array.from(src);
 const shriek = new Float32Array(n);
-for (const [from, to] of cracks) {
+for (const [from, to, loud] of cracks) {
   const pad = 2048;
   const a = Math.max(0, from - pad);
   const b = Math.min(n, to + pad);
-  const up = pcmFilter(src.slice(a, b), 'rubberband=pitch=2:transients=smooth');
-  const fade = Math.floor(0.012 * RATE);
+  // octave up, and the painful top taken off
+  const up = pcmFilter(src.slice(a, b), 'rubberband=pitch=2:transients=smooth,lowpass=f=4200');
+  const fade = Math.floor(0.008 * RATE);
   for (let i = from; i < to; i++) {
     const w = Math.min(1, (i - from) / fade, (to - i) / fade);
     const v = up[i - a] ?? 0;
-    work[i] = work[i] * (1 - w) + v * 1.35 * w;
+    work[i] = work[i] * (1 - w) + v * loud * w;
     shriek[i] = w;
   }
 }
 
-// ---- 5. bends (variable read speed; ±2 semitones changes the timing only a little) --------------
+// ---- 5. steady detune per note (read speed; a semitone changes the timing only a little) --------
 const out = [];
 const outShriek = [];
 let pos = 0;
@@ -197,11 +216,11 @@ for (let i = 0; i < out.length; i++) {
   const bright = x + 0.6 * (x - last);
   last = x;
   env = Math.max(Math.abs(x), env * 0.9995);
-  const d = drive * (1 + 1.2 * outShriek[i]);
+  const d = drive * (1 + 0.3 * outShriek[i]);
   const noise = rnd() * 2 - 1;
   const hiss = (noise - lastNoise) * 0.5;
   lastNoise = noise;
-  y[i] = Math.tanh(d * bright) / Math.tanh(d) + hiss * env * (0.22 + 0.25 * outShriek[i]);
+  y[i] = Math.tanh(d * bright) / Math.tanh(d) + hiss * env * (0.22 + 0.1 * outShriek[i]);
 }
 let peak = 0;
 let sum = 0;
