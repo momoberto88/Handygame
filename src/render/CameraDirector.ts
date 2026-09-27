@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BOOST_SPEED, LEVEL_BOTTOM, RUN_MAX } from '../sim/constants';
+import { BOOST_SPEED, LEVEL_BOTTOM, RUN_MAX, RUNNER_H } from '../sim/constants';
 import type { RunnerState } from '../sim/types';
 
 /**
@@ -14,6 +14,8 @@ export class CameraDirector {
   x = 0;
   y = 0;
   private anchorY = 0;
+  /** Feet height at the last moment the runner stood on the ground. */
+  private groundY = 0;
   private zoomMul = 1.12;
   private shakeAmount = 0;
   private kickX = 0;
@@ -49,11 +51,19 @@ export class CameraDirector {
     // --- vertical anchor (ground-based with dead zone) -------------------------------
     if (!this.started) {
       this.anchorY = ry;
+      this.groundY = ry;
     } else if (r.mode === 'run' && r.grounded) {
+      this.groundY = ry;
       this.anchorY += (ry - this.anchorY) * (1 - Math.exp(-dt * 6));
     } else if (r.mode === 'run') {
+      // hopping up a hill touches the ground only for a moment: keep following the last ground
+      // contact while in the air (not the jump itself), so the runner never ends up under the HUD
+      if (this.groundY < this.anchorY) this.anchorY += (this.groundY - this.anchorY) * (1 - Math.exp(-dt * 6));
       const above = this.anchorY - ry;
-      if (above > vh * 0.36) this.anchorY = ry + vh * 0.36; // climbing very high
+      // a single jump (about a quarter of the picture) keeps the camera calm, anything higher
+      // (double jumps, pads, updrafts) is followed
+      if (above > vh * 0.26) this.anchorY += (ry + vh * 0.26 - this.anchorY) * (1 - Math.exp(-dt * 6));
+      if (above > vh * 0.3) this.anchorY = ry + vh * 0.3; // climbing very high
       const below = ry - this.anchorY;
       if (below > 40) this.anchorY += (ry - 40 - this.anchorY) * (1 - Math.exp(-dt * 9)); // falling down
     }
@@ -77,7 +87,9 @@ export class CameraDirector {
       const rate = r.mode === 'dead' ? 3.5 : Math.abs(dx) > vw * 0.5 ? 6 : 9;
       this.x += dx * (1 - Math.exp(-dt * rate));
     }
-    this.y += (targetY - this.y) * (1 - Math.exp(-dt * 5));
+    // catch up quickly when the head gets close to the top edge (under the HUD), e.g. after a pad
+    const headInView = (ry - RUNNER_H - (this.y - vh / 2)) / vh;
+    this.y += (targetY - this.y) * (1 - Math.exp(-dt * (headInView < 0.22 ? 14 : 5)));
 
     // --- shake & kick ---------------------------------------------------------------
     this.shakeAmount = Math.max(0, this.shakeAmount - dt * 2.8);
