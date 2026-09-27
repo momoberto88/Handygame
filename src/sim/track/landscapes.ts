@@ -560,3 +560,93 @@ free('pirates', 'pirate-island', 2, (b, x) => {
   L.step(G).flat(4).pit(3).flat(5);
   return done(L, x);
 });
+
+// =============================================================================================
+// Wüstenruinen: dunes, a stepped pyramid, quicksand valleys, an oasis, a canyon in the sandstorm.
+
+// Rolling dunes with cacti in the dips; the last dip is quicksand.
+free('desert', 'desert-dunes', 1, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(4).up(2).flat(2).down(3).flat(3);
+  b.spikesAt(L.c - 2, L.c - 2, G + 1);
+  L.up(4).flat(3);
+  b.coinsAt(L.c - 3, L.c - 1, G - 3, 2, 1);
+  L.down(4).flat(5, Tile.Mud);
+  L.up(3).flat(2).down(2).flat(4);
+  b.spikesAt(L.c - 3, L.c - 3, G);
+  b.boxAt(L.c - 1, G);
+  L.flat(3);
+  return done(L, x);
+});
+
+// A stepped pyramid: climb over the top, or run through the burial hall inside where crushers
+// stamp down.
+free('desert', 'desert-pyramid', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(5);
+  const p0 = L.c;
+  L.flat(30);
+  // steps of the pyramid, 1 row up every 2 columns, top at G-9
+  for (let i = 0; i < 30; i++) {
+    const h = Math.min(Math.floor(i / 2) + 1, Math.floor((29 - i) / 2) + 1, 9);
+    for (let r = G - h; r <= G - 5; r++) b.set(p0 + i, r, Tile.Solid);
+  }
+  // the hall inside (rows G-4..G-1) with its door on both sides
+  b.crusherAt(p0 + 10, G - 5);
+  b.crusherAt(p0 + 20, G - 5);
+  b.coinsAt(p0 + 12, p0 + 18, G, 0.4);
+  b.boxAt(p0 + 15, G);
+  b.coinsAt(p0 + 9, p0 + 20, G - 9, 1);
+  b.boxAt(p0 + 17, G - 9);
+  L.flat(5);
+  return done(L, x);
+});
+
+// Quicksand valley: the floor slows you right down; old column tops stick out of it as stepping
+// stones, a boost pad waits at the far side.
+free('desert', 'desert-quicksand', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(4).down(2).flat(22, Tile.Mud).up(2).flat(3);
+  const v0 = x + 6;
+  for (const d of [3, 9, 15]) b.fill(v0 + d, v0 + d + 2, G - 2, G + 1, Tile.Solid);
+  b.coinsAt(v0 + 3, v0 + 17, G - 2, 2, 1);
+  b.boxAt(v0 + 10, G - 2);
+  b.coinsAt(v0 + 1, v0 + 20, G + 2, 1);
+  b.padAt(L.c - 2, G, 'boost');
+  L.flat(3);
+  return done(L, x);
+});
+
+// An oasis: palm-leaf planks over a pond (swim across or hop the palms), dates as coins.
+free('desert', 'desert-oasis', 1, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(5);
+  const o0 = L.c;
+  L.down(3).flat(10).up(3).flat(5);
+  b.zone('water', o0, o0 + 15, G, 25);
+  plank(b, o0 + 1, o0 + 4, G - 3);
+  plank(b, o0 + 7, o0 + 10, G - 4);
+  plank(b, o0 + 13, o0 + 16, G - 3);
+  b.coinsAt(o0 + 1, o0 + 16, G - 4, 2, 1);
+  b.boxAt(o0 + 9, G + 3);
+  b.coinsAt(o0 + 4, o0 + 12, G + 3, 1);
+  return done(L, x);
+});
+
+// Canyon in the sandstorm: the rope bridge up top has headwind; the canyon floor has quicksand and
+// cacti, but a boost pad.
+free('desert', 'desert-canyon', 3, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(4).up(4).flat(4);
+  const c0 = L.c;
+  L.down(4).flat(4, Tile.Mud).flat(4);
+  b.spikesAt(L.c - 2, L.c - 1, G);
+  b.padAt(L.c + 1, G, 'boost');
+  L.flat(6).pit(3).flat(4, Tile.Mud).flat(4).up(4).flat(4);
+  plank(b, c0, L.c - 5, G - 4);
+  b.zone('wind', c0, L.c - 5, G - 9, G - 5, -480, 0);
+  b.coinsAt(c0 + 2, L.c - 7, G - 4, 1);
+  b.boxAt(c0 + 14, G - 4);
+  L.down(4).flat(4);
+  return done(L, x);
+});

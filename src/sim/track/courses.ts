@@ -111,7 +111,8 @@ export const COURSES: CourseDef[] = [
     world: 'desert',
     difficulty: 2,
     seed: 701,
-    modules: ['dunes', 'cactus-field', 'pyramid', 'quicksand', 'sandstorm', 'dunes', 'obelisks', 'pyramid', 'cactus-field', 'sandstorm', 'quicksand', 'dunes', 'dunes', 'pyramid', 'sandstorm', 'dunes'],
+    terrain: false,
+    modules: ['desert-dunes', 'desert-pyramid', 'desert-quicksand', 'desert-oasis', 'desert-canyon', 'desert-dunes', 'desert-pyramid', 'desert-oasis', 'desert-quicksand', 'desert-canyon', 'desert-dunes', 'desert-pyramid'],
   },
   {
     id: 'testgelaende',
