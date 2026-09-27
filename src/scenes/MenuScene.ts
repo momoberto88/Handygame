@@ -126,6 +126,16 @@ export class MenuScene extends Phaser.Scene {
     this.ui.add(iconButton(this, 280, 30, 22, '⏻', 0xe0604a, () => this.quit()).container);
     // the menu camera scrolls: pin every button (also for tapping), not only the drawing
     this.ui.setScrollFactor(0, 0, true);
+    // opened through an invitation link (?raum=1234): straight into that room, once
+    const invite = new URLSearchParams(location.search).get('raum');
+    if (invite && !this.registry.get('inviteUsed')) {
+      this.registry.set('inviteUsed', true);
+      const url = new URL(location.href);
+      url.searchParams.delete('raum');
+      history.replaceState(null, '', url.toString());
+      this.scene.start('lobby', { join: invite });
+      return;
+    }
     // very first start: offer the practice run
     if (!save.tutorialDone && save.stats.races === 0 && !this.registry.get('tutorialAsked') && !location.search.includes('autoplay')) {
       this.registry.set('tutorialAsked', true);

@@ -74,11 +74,14 @@ export const COUNTDOWN_TIME = 3;
 export const FINISH_GRACE = 8;
 
 export const WALL_START_OFFSET = 900;
-export const WALL_BASE_SPEED = 170;
-export const WALL_RAMP = 4;
-export const WALL_MAX_SPEED = 320;
-/** The chaos wall is never further than this behind the leader. */
+export const WALL_BASE_SPEED = 160;
+export const WALL_RAMP = 3;
+/** Below the uphill running speed: the wall only catches runners who stumble, die or dawdle. */
+export const WALL_MAX_SPEED = 260;
+/** The chaos wall is never further than this behind the last human (or the leader, bots only). */
 export const WALL_LEASH = 1500;
+/** After a respawn the wall stays this far behind the runner while it is still blinking. */
+export const WALL_GRACE_GAP = 160;
 export const SWALLOW_JUMP_AHEAD = 380;
 
 export const BOX_RADIUS = 21;

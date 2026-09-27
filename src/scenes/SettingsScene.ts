@@ -3,7 +3,7 @@ import { applyAudioSettings } from '../audio/applySettings';
 import { sfx } from '../audio/sfx';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
 import { announce } from '../meta/lines';
-import { BOT_SETTINGS, CAMERA_DISTANCES, loadSave, writeSave, type SaveData } from '../meta/save';
+import { BOT_SETTINGS, CAMERA_DISTANCES, OPPONENT_SETTINGS, loadSave, writeSave, type SaveData } from '../meta/save';
 import { iconButton, panel, textButton } from '../ui/widgets';
 import { goToMenu, startTutorial } from './flow';
 import { uiText } from './HudScene';
@@ -59,17 +59,19 @@ export class SettingsScene extends Phaser.Scene {
       const i = BOT_SETTINGS.findIndex((b) => b.id === st.bots);
       st.bots = BOT_SETTINGS[(i + 1) % BOT_SETTINGS.length].id;
     });
+    const oppLabel = OPPONENT_SETTINGS.find((o) => o.id === s.opponents)?.label ?? 'Automatisch';
+    this.choice(right, colW, 226, 'Gegner', oppLabel, (st) => {
+      const i = OPPONENT_SETTINGS.findIndex((o) => o.id === st.opponents);
+      st.opponents = OPPONENT_SETTINGS[(i + 1) % OPPONENT_SETTINGS.length].id;
+    });
     const camLabel = CAMERA_DISTANCES.find((c) => c.id === s.camera)?.label ?? 'mittel';
-    this.choice(right, colW, 240, 'Kamera', camLabel, (st) => {
+    this.choice(right, colW, 282, 'Kamera', camLabel, (st) => {
       const i = CAMERA_DISTANCES.findIndex((c) => c.id === st.camera);
       st.camera = CAMERA_DISTANCES[(i + 1) % CAMERA_DISTANCES.length].id;
     });
-    this.toggle(right, colW, 310, 'Vibration', s.vibration, (v) => (v ? 'an' : 'aus'), (st) => (st.vibration = !st.vibration));
-    this.toggle(right, colW, 380, 'Steuerung', s.leftHanded, (v) => (v ? 'Linkshänder' : 'Rechtshänder'), (st) => (st.leftHanded = !st.leftHanded));
-    this.ui.add(textButton(this, right, 450, colW - 60, 46, '🎓 Übungsrunde starten', 0x5fd35a, () => startTutorial(this), 18).container);
-    if (s.bots === 'auto') {
-      this.ui.add(uiText(this, right, 196, 'wird stärker, je öfter du gewinnst', 12, '#3a3228').setOrigin(0.5, 0).setStroke('#fff8e6', 3));
-    }
+    this.toggle(right, colW, 338, 'Vibration', s.vibration, (v) => (v ? 'an' : 'aus'), (st) => (st.vibration = !st.vibration));
+    this.toggle(right, colW, 394, 'Steuerung', s.leftHanded, (v) => (v ? 'Linkshänder' : 'Rechtshänder'), (st) => (st.leftHanded = !st.leftHanded));
+    this.ui.add(textButton(this, right, 454, colW - 60, 44, '🎓 Übungsrunde starten', 0x5fd35a, () => startTutorial(this), 18).container);
   }
 
   private label(x: number, colW: number, y: number, text: string) {

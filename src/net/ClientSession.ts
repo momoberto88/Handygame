@@ -45,7 +45,7 @@ export class ClientSession implements RaceSession {
     private room: NetRoom,
     start: Extract<HostMsg, { t: 'start' }>,
   ) {
-    this.race = new Race({ seed: start.seed, world: start.world, runnerCount: start.racers.length, courseId: start.courseId, abilities: abilitiesOf(start.racers), teams: teamsOf(start.racers) });
+    this.race = new Race({ seed: start.seed, world: start.world, runnerCount: start.racers.length, courseId: start.courseId, abilities: abilitiesOf(start.racers), teams: teamsOf(start.racers), humans: start.racers.map((r) => !r.isBot) });
     this.racers = start.racers;
     this.localId = start.you;
     this.spectator = start.spectator ?? false;

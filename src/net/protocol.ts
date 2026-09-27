@@ -14,7 +14,7 @@ import type { CupState } from '../meta/cup';
 import type { RacerInfo } from './session';
 
 /** Bump when the messages change so old and new app versions don't try to play together. */
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 export const MAX_PLAYERS = 4;
 /** Host sends a world snapshot every this many ticks (60 / 3 = 20 per second). */
 export const SNAPSHOT_EVERY = 3;
@@ -50,6 +50,11 @@ export interface VoteState {
 
 export const VOTE_SECONDS = 8;
 
+/** Answers after a race or cup: one more, a new cup (back to the lobby), wait a moment, or leave. */
+export type AgainAnswer = 'again' | 'cup' | 'wait' | 'leave';
+/** Seconds between "everybody said yes" and the next start. */
+export const AGAIN_COUNTDOWN = 5;
+
 export type ClientMsg =
   | { t: 'hello'; v: number; name: string; character: string; cosmetics?: RacerInfo['cosmetics'] }
   | { t: 'in'; s: number; j: 0 | 1; d: 0 | 1 }
@@ -57,6 +62,7 @@ export type ClientMsg =
   | { t: 'ab' }
   | { t: 'emote'; e: number }
   | { t: 'vote'; i: number }
+  | { t: 'again'; a: AgainAnswer }
   | { t: 'profile'; name: string; character: string; cosmetics?: RacerInfo['cosmetics'] };
 
 export interface SnapshotMsg {
@@ -83,7 +89,17 @@ export interface SnapshotMsg {
 export type HostMsg =
   | { t: 'welcome'; seat: number }
   | { t: 'reject'; reason: string }
-  | { t: 'lobby'; players: LobbyPlayer[]; playlist: Playlist; racing: boolean; vote?: VoteState }
+  | {
+      t: 'lobby';
+      players: LobbyPlayer[];
+      playlist: Playlist;
+      racing: boolean;
+      vote?: VoteState;
+      /** "Again?" answers [seat, answer] and, once everybody said yes, seconds to the next start. */
+      again?: [number, AgainAnswer][];
+      againLeft?: number;
+    }
+  | { t: 'toLobby' }
   | { t: 'start'; seed: number; world: WorldId; courseId?: string; racers: RacerInfo[]; you: number; cup?: CupState; spectator?: boolean }
   | { t: 'emote'; r: number; e: number }
   | SnapshotMsg;

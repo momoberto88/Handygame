@@ -48,7 +48,8 @@ export type SfxName =
   | 'ab-quake'
   | 'ab-mask'
   | 'ab-bash'
-  | 'ab-fireworks';
+  | 'ab-fireworks'
+  | 'warn';
 
 const CLIPS = new Set(clipList as string[]);
 
@@ -510,6 +511,11 @@ class Synth {
         break;
       case 'ink':
         this.noise(0.25, 0.4, 700, 3, 'bandpass', 0, 200);
+        break;
+      case 'warn':
+        // low double beep: the wall is close
+        this.tone('square', 220, 200, 0.08, 0.1 * vol);
+        this.tone('square', 220, 200, 0.08, 0.1 * vol, 0.12);
         break;
       case 'trap':
         this.noise(0.08, 0.5, 4000, 2, 'highpass');

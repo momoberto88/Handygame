@@ -36,6 +36,7 @@ import {
   WALL_MAX_SPEED,
   WALL_RAMP,
   WALL_START_OFFSET,
+  WALL_GRACE_GAP,
   CRUMBLE_DELAY,
   CRUMBLE_RESPAWN,
   TILE,
@@ -74,6 +75,10 @@ export interface RaceSetup {
   abilities?: (AbilityKind | null)[];
   /** 2 vs 2: team (0/1) of each runner; items and abilities spare teammates. */
   teams?: number[];
+  /** Which runners are people (the wall follows the last of them, not the leading bot). */
+  humans?: boolean[];
+  /** Chaos wall speed factor (easy bots: a slower wall). */
+  wallSpeed?: number;
 }
 
 export const SAW_PROJECTILE_RADIUS = 18;
@@ -166,7 +171,13 @@ export class Race {
     this.noWall = setup.noWall ?? false;
     this.abilities = this.runners.map((_, i) => setup.abilities?.[i] ?? null);
     this.teams = this.runners.map((_, i) => setup.teams?.[i] ?? -1);
+    this.humans = this.runners.map((_, i) => setup.humans?.[i] ?? false);
+    this.wallSpeed = setup.wallSpeed ?? 1;
   }
+
+  /** Which runners are people. */
+  readonly humans: boolean[];
+  private readonly wallSpeed: number;
 
   /** Team of each runner (-1 = every runner for themselves). */
   readonly teams: number[];
@@ -245,11 +256,19 @@ export class Race {
       this.wallX = -1e9;
       return;
     }
-    const speed = Math.min(WALL_MAX_SPEED, WALL_BASE_SPEED + WALL_RAMP * time);
+    const speed = Math.min(WALL_MAX_SPEED, WALL_BASE_SPEED + WALL_RAMP * time) * this.wallSpeed;
     this.wallX += speed * DT;
-    let leader = -Infinity;
-    for (const r of this.runners) if (r.mode !== 'finished') leader = Math.max(leader, r.x);
-    if (leader > -Infinity) this.wallX = Math.max(this.wallX, leader - WALL_LEASH);
+    // the leash: never too far behind the last person still running (or the leader in a bots-only
+    // race), so the wall stays a threat – but a fast bot in front no longer drags it along
+    const people = this.runners.filter((r, i) => this.humans[i] && r.mode !== 'finished');
+    let anchor = -Infinity;
+    if (people.length) anchor = Math.min(...people.map((r) => r.x));
+    else for (const r of this.runners) if (r.mode !== 'finished') anchor = Math.max(anchor, r.x);
+    if (anchor > -Infinity) this.wallX = Math.max(this.wallX, anchor - WALL_LEASH);
+    // grace after a respawn: the wall waits while the runner is still blinking
+    for (const r of this.runners) {
+      if (r.mode === 'run' && r.ghost > 0) this.wallX = Math.min(this.wallX, r.x - WALL_GRACE_GAP);
+    }
     this.wallX = Math.min(this.wallX, this.track.finishX - 700);
   }
 

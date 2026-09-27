@@ -7,6 +7,7 @@ import {
   type ClientMsg,
   type HostMsg,
   type LobbyPlayer,
+  type AgainAnswer,
   type Playlist,
   type VoteState,
 } from './protocol';
@@ -95,6 +96,10 @@ export class NetRoom {
   /** Running course vote (both sides); `endsAt` is this phone's clock. */
   vote: (VoteState & { endsAt: number }) | null = null;
   racing = false;
+  /** "Again?" answers after a race or cup ([seat, answer]); the host counts them. */
+  again: [number, AgainAnswer][] = [];
+  /** Everybody said yes: the next race starts at this time (this phone's clock). */
+  againEndsAt: number | null = null;
 
   // client side
   private hostConn: DataConnection | null = null;
@@ -109,6 +114,8 @@ export class NetRoom {
   onClosed: ((reason: string) => void) | null = null;
   /** Client: the host opened a course vote. */
   onVoteStart: (() => void) | null = null;
+  /** Client: somebody wants a new cup, everybody goes to the lobby. */
+  onToLobby: (() => void) | null = null;
 
   private constructor(role: 'host' | 'client', code: string, peer: Peer) {
     this.role = role;
@@ -216,6 +223,10 @@ export class NetRoom {
         this.castVote(seat, msg.i);
         return;
       }
+      if (msg.t === 'again') {
+        this.setAgain(seat, msg.a);
+        return;
+      }
       if (msg.t === 'profile') {
         const p = this.players.find((x) => x.seat === seat);
         if (p) Object.assign(p, { name: msg.name, character: msg.character, cosmetics: msg.cosmetics });
@@ -230,6 +241,7 @@ export class NetRoom {
       const name = this.seats.get(seat)!.player.name;
       this.seats.delete(seat);
       this.players = this.players.filter((p) => p.seat !== seat);
+      this.again = this.again.filter(([s]) => s !== seat);
       this.onSeatLeft?.(seat, name);
       this.broadcastLobby();
     };
@@ -261,8 +273,27 @@ export class NetRoom {
 
   broadcastLobby() {
     const vote = this.vote ? { options: this.vote.options, votes: this.vote.votes, left: Math.max(0, (this.vote.endsAt - Date.now()) / 1000) } : undefined;
-    this.broadcast({ t: 'lobby', players: this.players, playlist: this.playlist, racing: this.racing, vote });
+    const againLeft = this.againEndsAt !== null ? Math.max(0, (this.againEndsAt - Date.now()) / 1000) : undefined;
+    this.broadcast({ t: 'lobby', players: this.players, playlist: this.playlist, racing: this.racing, vote, again: this.again, againLeft });
     this.onLobby?.();
+  }
+
+  /** Host: record an "again?" answer (the latest one per seat counts). */
+  setAgain(seat: number, answer: AgainAnswer) {
+    this.again = [...this.again.filter(([s]) => s !== seat), [seat, answer]];
+    this.broadcastLobby();
+  }
+
+  /** Answer "again?" (the host records its own, a client sends it). */
+  sendAgain(answer: AgainAnswer) {
+    if (this.role === 'host') this.setAgain(0, answer);
+    else this.send({ t: 'again', a: answer });
+  }
+
+  /** Host: forget the answers (a race starts). */
+  clearAgain() {
+    this.again = [];
+    this.againEndsAt = null;
   }
 
   /** Host: record a vote (one per seat, the latest counts). */
@@ -299,6 +330,8 @@ export class NetRoom {
         this.players = msg.players;
         this.playlist = msg.playlist;
         this.racing = msg.racing;
+        this.again = msg.again ?? [];
+        this.againEndsAt = msg.againLeft !== undefined ? Date.now() + msg.againLeft * 1000 : null;
         {
           const started = !this.vote && !!msg.vote;
           this.vote = msg.vote ? { ...msg.vote, endsAt: Date.now() + msg.vote.left * 1000 } : null;
@@ -308,7 +341,14 @@ export class NetRoom {
         break;
       case 'start':
         this.racing = true;
+        this.again = [];
+        this.againEndsAt = null;
         this.onStart?.(msg);
+        break;
+      case 'toLobby':
+        this.again = [];
+        this.againEndsAt = null;
+        this.onToLobby?.();
         break;
       default:
         this.onHostMessage?.(msg);

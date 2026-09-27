@@ -68,6 +68,7 @@ export class HudScene extends Phaser.Scene {
   private edgeMarkers: { root: Phaser.GameObjects.Container; arrow: Phaser.GameObjects.Triangle; dist: Phaser.GameObjects.Text }[] = [];
   private wallMarker!: Phaser.GameObjects.Arc;
   private danger!: Phaser.GameObjects.Image;
+  private warnTimer = 0;
   private inkLayer!: Phaser.GameObjects.Container;
   private quitBtn!: Phaser.GameObjects.Text;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -492,9 +493,18 @@ export class HudScene extends Phaser.Scene {
     const rocketIncoming = race.projectiles.some((p) => p.kind === 'rocket' && p.target === me.id);
     this.warnText.setVisible(rocketIncoming && Math.floor(race.clock * 6) % 2 === 0);
 
-    // chaos wall danger
+    // chaos wall danger: the left edge glows red and pulses, a warning beeps faster the closer it gets
     const gap = me.x - race.wallX;
-    this.danger.setAlpha(me.mode === 'run' ? Phaser.Math.Clamp(1 - (gap - 80) / 380, 0, 0.9) : 0);
+    const near = me.mode === 'run' && !session.spectator ? Phaser.Math.Clamp(1 - (gap - 80) / 420, 0, 1) : 0;
+    const pulse = 0.75 + 0.25 * Math.sin(this.time.now / (near > 0.6 ? 70 : 120));
+    this.danger.setAlpha(near * 0.9 * pulse);
+    if (near > 0.15) {
+      this.warnTimer -= this.game.loop.delta / 1000;
+      if (this.warnTimer <= 0) {
+        sfx.play('warn', 0.4 + near * 0.5);
+        this.warnTimer = 0.75 - near * 0.5;
+      }
+    } else this.warnTimer = 0;
 
     // ink fades out
     const inkAlpha = Phaser.Math.Clamp(me.ink / 0.8, 0, 1);

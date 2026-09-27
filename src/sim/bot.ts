@@ -198,7 +198,8 @@ export class BotBrain {
       this.itemTimer = -1;
       return 0;
     }
-    if (this.itemTimer < 0) this.itemTimer = 0.3 + this.rng.next() * (2.2 - this.profile.skill * 1.4);
+    // clumsy bots hold on to their items longer (fewer hits flying around for beginners)
+    if (this.itemTimer < 0) this.itemTimer = 0.3 + this.rng.next() * (2.2 - this.profile.skill * 1.4) + (1 - this.profile.skill) * 3;
     this.itemTimer -= DT;
     if (this.itemTimer > 0) return 0;
 

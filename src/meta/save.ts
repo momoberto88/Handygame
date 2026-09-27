@@ -18,6 +18,14 @@ export const BOT_SETTINGS: { id: BotSetting; label: string }[] = [
   { id: 'hard', label: 'Schwer' },
 ];
 
+export type OpponentSetting = 'auto' | 1 | 2 | 3;
+export const OPPONENT_SETTINGS: { id: OpponentSetting; label: string }[] = [
+  { id: 'auto', label: 'Automatisch' },
+  { id: 1, label: '1 Gegner' },
+  { id: 2, label: '2 Gegner' },
+  { id: 3, label: '3 Gegner' },
+];
+
 export interface SaveData {
   name: string;
   coins: number;
@@ -41,6 +49,8 @@ export interface SaveData {
     volVoice: number;
     /** Bot strength; "auto" gets harder the more you win. */
     bots: BotSetting;
+    /** Number of opponents in quick races ("auto": 1 at first, then 2, then 3). */
+    opponents: OpponentSetting;
   };
   stats: { races: number; wins: number };
   /** Best finishing time per course id (seconds). */
@@ -66,7 +76,7 @@ const DEFAULT: SaveData = {
   owned: [],
   equipped: { outfit: null },
   skins: {},
-  settings: { sound: true, music: true, leftHanded: false, vibration: true, camera: 'mid', rude: true, volMusic: 0.8, volSfx: 0.7, volVoice: 1, bots: 'auto' },
+  settings: { sound: true, music: true, leftHanded: false, vibration: true, camera: 'mid', rude: true, volMusic: 0.8, volSfx: 0.7, volVoice: 1, bots: 'auto', opponents: 'auto' },
   stats: { races: 0, wins: 0 },
   best: {},
   cups: {},

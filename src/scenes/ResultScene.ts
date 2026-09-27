@@ -7,6 +7,7 @@ import { writeSave } from '../meta/save';
 import type { RaceSession } from '../net/session';
 import { headIcon } from '../render/art/skins';
 import { panel, textButton } from '../ui/widgets';
+import { AgainPanel } from '../ui/againPanel';
 import { currentRoom } from '../net/room';
 import { hostStartRace, startCupRace, startLocalRace } from './flow';
 import { activeCup, addRaceResult, cupRanking, isLastRace, lastOut, racerKey, setActiveCup } from '../meta/cup';
@@ -73,9 +74,14 @@ export class ResultScene extends Phaser.Scene {
     this.time.delayedCall(shout ? 2200 : 1300, () => fluteShort());
 
     this.add.rectangle(0, 0, W, H, 0x0d0a1a, 0.55).setOrigin(0, 0);
-    const pw = Math.min(560, W - 40);
+    // online (not the last cup race): room on the right for the "again?" panel
+    const room = currentRoom();
+    const online = session.online && room;
+    const withAgain = !!online && !(cup && isLastRace(cup));
+    const side = withAgain ? 270 : 0;
+    const pw = Math.min(560, W - 40 - side);
     const ph = 420;
-    const cx = W / 2;
+    const cx = (W - side) / 2;
     const cy = H / 2 - 10;
     const g = panel(this, cx, cy, pw, ph);
     g.setScale(0.6);
@@ -119,8 +125,6 @@ export class ResultScene extends Phaser.Scene {
       uiText(this, cx, cy + ph / 2 - 92, watching ? '👀 Du hast zugeschaut' : `+${coins} Münzen${teamWin ? ' (inkl. Teambonus)' : ''}    +${trophies} Pokale`, 22, '#ffe68a').setOrigin(0.5),
     );
 
-    const room = currentRoom();
-    const online = session.online && room;
     const isHost = online && room.role === 'host';
     const cupDone = cup && isLastRace(cup);
     const leader = cup ? cupRanking(cup)[0] : null;
@@ -181,5 +185,17 @@ export class ResultScene extends Phaser.Scene {
       22,
     );
     content.add([again.container, menu.container]);
+    if (withAgain) {
+      // the "again?" vote replaces the buttons
+      again.container.setVisible(false);
+      menu.container.setVisible(false);
+      this.againPanel = new AgainPanel(this, room!, W - side / 2 - 6, cy, side - 20);
+    }
+  }
+
+  private againPanel?: AgainPanel;
+
+  update() {
+    this.againPanel?.update();
   }
 }

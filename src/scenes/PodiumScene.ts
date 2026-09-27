@@ -7,6 +7,8 @@ import { cupRanking, setActiveCup, type CupEntry, type CupState } from '../meta/
 import { writeSave } from '../meta/save';
 import { RunnerView } from '../render/RunnerView';
 import { createRunner } from '../sim/race';
+import { AgainPanel } from '../ui/againPanel';
+import { currentRoom } from '../net/room';
 import { panel, textButton } from '../ui/widgets';
 import { goToMenu } from './flow';
 import { uiText } from './HudScene';
@@ -131,6 +133,12 @@ export class PodiumScene extends Phaser.Scene {
       } else goToMenu(this);
     }, 22);
     done.container.setDepth(10);
+    // online: the "again?" vote on the left instead of the lobby button
+    const room = currentRoom();
+    if (data.online && room) {
+      done.container.setVisible(false);
+      this.againPanel = new AgainPanel(this, room, 150, H / 2 + 20, 250);
+    }
     this.pose.vx = 0;
     this.pose.grounded = true;
     this.pose.mode = 'finished';
@@ -156,7 +164,10 @@ export class PodiumScene extends Phaser.Scene {
     }
   }
 
+  private againPanel?: AgainPanel;
+
   update(_t: number, delta: number) {
+    this.againPanel?.update();
     const dt = delta / 1000;
     for (const v of this.views) {
       v.view.update(this.pose, v.x, v.y, dt, this.time.now / 1000);

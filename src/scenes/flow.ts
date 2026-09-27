@@ -5,7 +5,7 @@ import { loadSave } from '../meta/save';
 import { ClientSession } from '../net/ClientSession';
 import { HostSession } from '../net/HostSession';
 import { LocalSession } from '../net/LocalSession';
-import type { NetRoom, Profile } from '../net/room';
+import { setCurrentRoom, type NetRoom, type Profile } from '../net/room';
 import type { RaceSession, RacerInfo } from '../net/session';
 import { Rng, randomSeed } from '../sim/rng';
 import type { WorldId } from '../sim/types';
@@ -13,7 +13,7 @@ import type { BotLevel } from '../sim/bot';
 import { WORLD_ORDER } from '../render/worlds';
 import { COURSES, courseById } from '../sim/track/courses';
 import { activeCup, isLastRace, newCup, randomCourses, setActiveCup, stillIn, type CupState } from '../meta/cup';
-import { VOTE_SECONDS } from '../net/protocol';
+import { AGAIN_COUNTDOWN, VOTE_SECONDS } from '../net/protocol';
 import { assignTeams } from '../meta/teams';
 
 export function playerName(): string {
@@ -61,7 +61,8 @@ export function startLocalRace(
   if (courseId) world = courseById(courseId).world;
   const autoplay = debugParam('autoplay') !== null;
   const me: RacerInfo = { id: 0, seat: 0, name: playerName(), character: save.character, isBot: autoplay, cosmetics: myLook() };
-  let racers = opts.racers ?? fillWithBots([me], 4, seed);
+  // beginners start against fewer bots (2 vs 2 always needs four)
+  let racers = opts.racers ?? fillWithBots([me], save.teamMode ? 4 : 1 + opponentCount(), seed);
   // 2 vs 2 offline: you and one bot against two bots
   if (!opts.racers && save.teamMode) racers = assignTeams(racers);
   const session = new LocalSession({
@@ -128,6 +129,13 @@ export function goToMenu(scene: Phaser.Scene, message?: string) {
   mgr.start('menu', { message });
 }
 
+/** Opponents in a quick race: the setting, or with "auto" 1 at first, then 2, then 3. */
+export function opponentCount(): number {
+  const s = loadSave();
+  if (s.settings.opponents !== 'auto') return s.settings.opponents;
+  return s.stats.races < 2 ? 1 : s.stats.races < 5 ? 2 : 3;
+}
+
 /** Bot strength from the settings; "auto" starts easy and gets harder the more you win. */
 export function botLevel(): BotLevel {
   const s = loadSave();
@@ -161,6 +169,52 @@ export function wireClientRoom(game: Phaser.Game, room: NetRoom) {
     const active = game.scene.getScenes(true)[0];
     if (active) startRace(active, new ClientSession(room, msg));
   };
+  // somebody wants a new cup: everybody into the lobby
+  room.onToLobby = () => {
+    setActiveCup(null);
+    const active = game.scene.getScenes(true)[0];
+    if (active) showLobby(active);
+  };
+}
+
+/**
+ * Host, every frame on the result / ceremony screen: counts the "again?" answers.
+ * Everybody 👍 → countdown, then the next race; anybody 🏆 → new cup, all go to the lobby.
+ */
+export function hostTickAgain(scene: Phaser.Scene, room: NetRoom) {
+  if (room.role !== 'host' || room.isClosed) return;
+  const answers = new Map(room.again);
+  if (room.players.some((p) => answers.get(p.seat) === 'cup')) {
+    room.clearAgain();
+    setActiveCup(null);
+    room.broadcast({ t: 'toLobby' });
+    room.broadcastLobby();
+    // switch scenes outside of this frame (the calling scene is still updating)
+    window.setTimeout(() => showLobby(scene), 0);
+    return;
+  }
+  const all = room.players.length > 0 && room.players.every((p) => answers.get(p.seat) === 'again');
+  if (all && room.againEndsAt === null) {
+    room.againEndsAt = Date.now() + AGAIN_COUNTDOWN * 1000;
+    room.broadcastLobby();
+  } else if (!all && room.againEndsAt !== null) {
+    room.againEndsAt = null;
+    room.broadcastLobby();
+  } else if (all && room.againEndsAt !== null && Date.now() >= room.againEndsAt) {
+    room.clearAgain();
+    window.setTimeout(() => hostStartRace(scene, room), 0);
+  }
+}
+
+/** Leaves the room for good ("I'm out") and goes back to the menu. */
+export function leaveRoom(scene: Phaser.Scene, room: NetRoom) {
+  if (room.role === 'client') room.sendAgain('leave');
+  // give the goodbye a moment to go out before the connection closes
+  window.setTimeout(() => {
+    setCurrentRoom(null);
+    setActiveCup(null);
+    goToMenu(scene);
+  }, room.role === 'client' ? 250 : 0);
 }
 
 /** Leaves race / result screens and opens the lobby. */
@@ -195,6 +249,7 @@ export function hostStartVote(scene: Phaser.Scene, room: NetRoom) {
 
 /** Host: start a race with everyone currently in the room (empty seats become bots). */
 export function hostStartRace(scene: Phaser.Scene, room: NetRoom, forcedCourse?: string) {
+  room.clearAgain();
   if (room.playlist.vote && !forcedCourse) return hostStartVote(scene, room);
   const seed = randomSeed();
   const list = room.playlist.courses;

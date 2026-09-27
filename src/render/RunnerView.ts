@@ -206,6 +206,20 @@ export class RunnerView {
     this.applyPose();
   }
 
+  /** Your own runner: a glowing ring at the feet and a bobbing "DU" above the head. */
+  markAsYou() {
+    const scene = this.root.scene;
+    const glow = scene.add.ellipse(0, 1, 58, 14, 0xffe45a, 0.45).setStrokeStyle(3, 0xfff4b0, 0.9);
+    this.root.addAt(glow, 0);
+    scene.tweens.add({ targets: glow, alpha: { from: 0.9, to: 0.45 }, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    const tag = scene.add
+      .text(0, -84, '▼ DU', { fontFamily: 'system-ui, sans-serif', fontSize: '26px', fontStyle: 'bold', color: '#ffe45a', stroke: '#1d1a2f', strokeThickness: 7 })
+      .setOrigin(0.5, 1)
+      .setScale(0.5);
+    this.root.add(tag);
+    scene.tweens.add({ targets: tag, y: -90, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+  }
+
   /** 2 vs 2: a ring in the team colour at the feet and a tinted name tag. */
   setTeam(color: number, css: string) {
     const ring = this.root.scene.add.ellipse(0, 1, 50, 12, color, 0.35).setStrokeStyle(3, color, 0.95);

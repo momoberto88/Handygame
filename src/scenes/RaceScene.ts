@@ -54,6 +54,7 @@ export class RaceScene extends Phaser.Scene {
   /** Trash-talk speech bubbles over the runners. */
   private bubbles: { id: number; bubble: Phaser.GameObjects.Container; h: number; until: number }[] = [];
   private lastBubble = 0;
+  private lastBotTalk = 0;
   private bubbleCooldown = new Map<number, number>();
   /** For overtake talk and "new leader" calls. */
   private lastPlace = 0;
@@ -95,6 +96,7 @@ export class RaceScene extends Phaser.Scene {
       const isLocal = info.id === this.session.localId;
       const view = new RunnerView(this, characterById(info.character), isLocal, isLocal ? undefined : info.name, info.cosmetics?.skin);
       view.setDepth(isLocal ? 36 : 32 + info.id * 0.1);
+      if (isLocal && !this.session.spectator) view.markAsYou();
       if (info.team !== undefined) view.setTeam(TEAMS[info.team].color, TEAMS[info.team].css);
       this.views.push(view);
     }
@@ -224,6 +226,12 @@ export class RaceScene extends Phaser.Scene {
   }
 
   /** Interpolated on-screen position of a runner (between sim ticks, plus network smoothing). */
+  /** Within a short distance of your own runner. */
+  private nearMe(x: number, y: number): boolean {
+    const me = this.session.race.runners[this.session.localId];
+    return Math.abs(me.x - x) < 360 && Math.abs(me.y - y) < 260;
+  }
+
   renderPos(id: number): { x: number; y: number } {
     const r = this.session.race.runners[id];
     const alpha = this.session.alpha;
@@ -292,8 +300,11 @@ export class RaceScene extends Phaser.Scene {
     // only runners you can actually see talk
     if (!line || r.x < v.x + 40 || r.x > v.right - 40 || r.y < v.y + 40 || r.y > v.bottom) return false;
     if (!force && (now - this.lastBubble < 1500 || (this.bubbleCooldown.get(id) ?? 0) > now)) return false;
+    // bots keep it down: one at a time, now and then, so you keep the overview
+    if (!local && (now - this.lastBotTalk < 4500 || (this.bubbleCooldown.get(id) ?? 0) > now)) return false;
     this.lastBubble = now;
-    this.bubbleCooldown.set(id, now + 5000);
+    if (!local) this.lastBotTalk = now;
+    this.bubbleCooldown.set(id, now + (local ? 5000 : 12000));
     sfx.speak(line.clip, (local ? 3 : 1) + (force ? 1 : 0), local ? 1 : 0.75);
     this.showBubble(id, line.text);
     return true;
@@ -462,7 +473,8 @@ export class RaceScene extends Phaser.Scene {
         break;
       }
       case 'death': {
-        this.fx.death(e.kind, e.x, e.y);
+        // comic words only where it matters to you: your own deaths, your hits, right next to you
+        this.fx.death(e.kind, e.x, e.y, this.isLocal(e.r) || (e.by !== undefined && this.isLocal(e.by)) || this.nearMe(e.x, e.y));
         if (this.nearCamera(e.x)) {
           const snd = { squash: 'squash', boom: 'boom', zap: 'zap', trap: 'trap', slice: 'slice', fall: 'fall', spike: 'death' } as const;
           sfx.play(snd[e.kind] ?? 'death');
@@ -548,10 +560,8 @@ export class RaceScene extends Phaser.Scene {
       case 'shieldBlock': {
         const r = race.runners[e.r];
         this.fx.shatter(r.x, r.y - 24);
-        if (this.nearCamera(r.x)) {
-          sfx.play('shieldblock');
-          this.fx.word('PLONK!', r.x, r.y - 80, '#9fdcff');
-        }
+        if (this.nearCamera(r.x)) sfx.play('shieldblock');
+        if (this.isLocal(e.r)) this.fx.word('PLONK!', r.x, r.y - 80, '#9fdcff');
         if (this.isLocal(e.r)) this.hud?.toast(shieldLine(), '#7fd0ff');
         break;
       }
@@ -573,7 +583,7 @@ export class RaceScene extends Phaser.Scene {
         // healing quartz: a crystal shell around the runner while it lasts
         if (e.kind === 'mask') this.fx.attach('ice', () => this.renderPos(e.r), MASK_TIME * 1000, 78);
         if (this.isLocal(e.r)) this.stats.abilities++;
-        this.say(e.r, 'ability', true);
+        this.say(e.r, 'ability', this.isLocal(e.r));
         if (this.nearCamera(e.x)) sfx.play(`ab-${e.kind}`);
         if (this.isLocal(e.r)) {
           this.camera.shake(e.kind === 'quake' ? 0.6 : 0.25);
@@ -587,7 +597,7 @@ export class RaceScene extends Phaser.Scene {
       case 'stunned': {
         const r = race.runners[e.r];
         this.fx.dizzy(r.x, r.y);
-        if (this.nearCamera(r.x)) this.fx.word(Math.random() < 0.5 ? 'BONK!' : 'DOING!', r.x, r.y - 80, '#ffd84a');
+        if (this.isLocal(e.r) || this.nearMe(r.x, r.y)) this.fx.word(Math.random() < 0.5 ? 'BONK!' : 'DOING!', r.x, r.y - 80, '#ffd84a');
         if (this.nearCamera(r.x)) sfx.play('stunned', 0.7);
         if (e.by !== undefined && e.by !== e.r && Math.random() < 0.4) this.say(e.by, 'hit');
         if (this.isLocal(e.r)) {

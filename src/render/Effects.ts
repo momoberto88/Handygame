@@ -248,10 +248,10 @@ export class Effects {
     this.scene.tweens.add({ targets: ring, scale: 4, alpha: 0, duration: 380, onComplete: () => ring.destroy() });
   }
 
-  death(kind: DeathKind, x: number, y: number) {
+  death(kind: DeathKind, x: number, y: number, withWord = true) {
     const cy = y - 22;
     const w = DEATH_WORDS[kind];
-    if (w) this.word(w.text[Math.floor(Math.random() * w.text.length)], x + 10, y - 78, w.color);
+    if (w && withWord) this.word(w.text[Math.floor(Math.random() * w.text.length)], x + 10, y - 78, w.color);
     switch (kind) {
       case 'slice':
         this.sparks.explode(16, x, cy);
@@ -376,7 +376,9 @@ export class Effects {
     this.confetti.explode(60, x, y);
   }
 
-  lightning(x: number, top: number, bottom: number) {
+  lightning(x: number, top: number, bottomY: number) {
+    // struck runner above the view: still strike down to it (at least one tile)
+    const bottom = Math.max(bottomY, top + 40);
     // a golden column of light from the sky, then the bolt inside it
     const h = bottom - top;
     const column = this.scene.add.rectangle(x, top + h / 2, 70, h, 0xffc93a, 0.55).setDepth(42).setBlendMode('ADD');

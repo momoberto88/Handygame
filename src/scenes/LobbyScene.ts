@@ -41,7 +41,7 @@ export class LobbyScene extends Phaser.Scene {
     super('lobby');
   }
 
-  create() {
+  create(data?: { join?: string }) {
     setupUiCamera(this);
     this.W = viewWidth(this);
     this.add.rectangle(0, 0, this.W, VIEW_H, 0x241d3d).setOrigin(0, 0);
@@ -64,6 +64,33 @@ export class LobbyScene extends Phaser.Scene {
     this.view = room ? 'room' : 'choose';
     if (room) this.attach(room);
     this.render();
+    // opened through an invitation link: straight into the room
+    if (!room && data?.join && /^\d{4}$/.test(data.join)) {
+      this.code = data.join;
+      void this.joinRoom();
+    }
+  }
+
+  /** Shares a link that opens the game right in this room (WhatsApp & Co.), or copies it. */
+  private async invite(room: NetRoom) {
+    const url = `${window.location.origin}${window.location.pathname}?raum=${room.code}`;
+    const text = `Komm in mein Runaway-Rivals-Rennen! Raum ${room.code}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Runaway Rivals', text, url });
+        return;
+      }
+      await navigator.clipboard.writeText(`${text}: ${url}`);
+      this.flash('Link kopiert – schick ihn deinen Freunden!');
+    } catch {
+      // share sheet closed or clipboard blocked: show the link instead
+      this.flash(url);
+    }
+  }
+
+  private flash(text: string) {
+    const t = uiText(this, this.W / 2, VIEW_H - 60, text, 18, '#9fff9a').setOrigin(0.5).setDepth(50);
+    this.tweens.add({ targets: t, alpha: 0, delay: 2600, duration: 400, onComplete: () => t.destroy() });
   }
 
   private onResize() {
@@ -243,6 +270,7 @@ export class LobbyScene extends Phaser.Scene {
     this.ui.add(panel(this, W / 2, 128, 340, 76));
     this.ui.add(uiText(this, W / 2, 106, 'Raum-Code', 16, '#3a3228').setOrigin(0.5).setStroke('#a39c8c', 0));
     this.ui.add(uiText(this, W / 2, 138, room.code.split('').join(' '), 40, '#ffffff').setOrigin(0.5));
+    this.ui.add(textButton(this, W / 2 + 280, 128, 190, 50, '📨 Einladen', 0x5fd35a, () => void this.invite(room), 19).container);
 
     const slotW = Math.min(170, (W - 80) / 4);
     const teams = room.playlist.teams !== undefined && !room.playlist.ko;

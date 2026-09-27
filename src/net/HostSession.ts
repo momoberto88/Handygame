@@ -58,7 +58,7 @@ export class HostSession implements RaceSession {
     private room: NetRoom,
     setup: HostSetup,
   ) {
-    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers), teams: teamsOf(setup.racers) });
+    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers), teams: teamsOf(setup.racers), humans: setup.racers.map((r) => !r.isBot), wallSpeed: setup.botLevel === 'easy' ? 0.85 : 1 });
     this.racers = setup.racers.map((r) => ({ ...r }));
     this.spectator = setup.spectator ?? false;
     this.botLevel = setup.botLevel ?? 'normal';
