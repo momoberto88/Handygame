@@ -11,6 +11,20 @@ import {
   SPRINT_TIME,
   STEAL_RANGE,
   STUN_TIME,
+  BOT_CATCH_PACE,
+  BOT_CATCH_FULL,
+  BOT_CATCH_START,
+  BOT_EASE_PACE,
+  BOT_EASE_FULL,
+  BOT_EASE_START,
+  CATCHUP_BONUS,
+  CATCHUP_FULL,
+  CATCHUP_START,
+  DRAFT_BONUS,
+  DRAFT_DY,
+  DRAFT_MAX,
+  DRAFT_MIN,
+  PACE_RATE,
   BOX_RADIUS,
   BOX_RESPAWN,
   COIN_RADIUS,
@@ -169,6 +183,7 @@ export class Race {
       this.runners.push(createRunner(i, this.track.startX - i * 4, this.track.startY));
       this.runners[i].pace = setup.pace?.[i] ?? 1;
     }
+    this.basePace = this.runners.map((r) => r.pace);
     this.boxCooldown = this.track.boxes.map(() => 0);
     this.coinTaken = this.runners.map(() => new Uint8Array(this.track.coins.length));
     this.wallX = this.track.startX - WALL_START_OFFSET;
@@ -181,6 +196,20 @@ export class Race {
 
   /** Which runners are people. */
   readonly humans: boolean[];
+  /** Speed factor of each runner before the catch-up rules (bots by level, people 1). */
+  readonly basePace: number[];
+
+  /**
+   * Per runner: how far a bot is behind every person (up to 1) minus how far it is ahead of every
+   * person (up to 1). Bots play sharper when behind and sloppier when ahead. 0 for people.
+   */
+  readonly touch: number[] = [];
+
+  /** A person left: a bot runs on in their place. */
+  botTakesOver(id: number, pace: number) {
+    this.humans[id] = false;
+    this.basePace[id] = pace;
+  }
   private readonly wallSpeed: number;
 
   /** Team of each runner (-1 = every runner for themselves). */
@@ -219,6 +248,13 @@ export class Race {
     });
   }
 
+  /** How far behind the leader (still in the race) a runner is, in pixels. */
+  gapToLeader(r: RunnerState): number {
+    let lead = r.x;
+    for (const o of this.runners) if (o.mode !== 'finished') lead = Math.max(lead, o.x);
+    return lead - r.x;
+  }
+
   placeOf(id: number): number {
     return this.standings().findIndex((r) => r.id === id) + 1;
   }
@@ -237,6 +273,7 @@ export class Race {
     if (prevTime < 0) events.push({ t: 'go' });
 
     this.updateWall(time);
+    this.updatePace();
     for (const r of this.runners) this.stepRunner(r, inputs[r.id] ?? NO_INPUT, time, events);
     this.updateProjectiles(events);
     this.updateTraps(events);
@@ -276,6 +313,41 @@ export class Race {
     this.wallX = Math.min(this.wallX, this.track.finishX - 700);
   }
 
+  /**
+   * Keeps races open, so a good or bad start doesn't decide them: slipstream behind others and
+   * tailwind far behind the leader for people; bots keep in touch with the people instead.
+   */
+  private updatePace() {
+    const running = this.runners.filter((r) => r.mode !== 'finished');
+    if (!running.length) return;
+    const leadX = Math.max(...running.map((r) => r.x));
+    const people = running.filter((r) => this.humans[r.id]);
+    const bestPerson = people.length ? Math.max(...people.map((r) => r.x)) : null;
+    const lastPerson = people.length ? Math.min(...people.map((r) => r.x)) : null;
+    const ramp = (v: number, from: number, to: number) => Math.max(0, Math.min(1, (v - from) / (to - from)));
+    const step = PACE_RATE * DT;
+    for (const r of running) {
+      let bonus = ramp(leadX - r.x, CATCHUP_START, CATCHUP_FULL) * CATCHUP_BONUS;
+      if (r.mode === 'run') {
+        const drafting = running.some((o) => {
+          const dx = o.x - r.x;
+          return o !== r && o.mode === 'run' && dx > DRAFT_MIN && dx < DRAFT_MAX && Math.abs(o.y - r.y) < DRAFT_DY;
+        });
+        if (drafting) bonus = Math.max(bonus, DRAFT_BONUS);
+      }
+      let target = this.basePace[r.id] * (1 + bonus);
+      if (!this.humans[r.id] && bestPerson !== null && lastPerson !== null) {
+        // bots stay in the race with the people: no running away, no falling hopelessly behind
+        const base = this.basePace[r.id];
+        const behind = ramp(lastPerson - r.x, BOT_CATCH_START, BOT_CATCH_FULL);
+        const ahead = ramp(r.x - bestPerson, BOT_EASE_START, BOT_EASE_FULL);
+        target = base + Math.max(0, BOT_CATCH_PACE - base) * behind - Math.max(0, base - BOT_EASE_PACE) * ahead;
+        this.touch[r.id] = behind - ahead;
+      }
+      r.pace += Math.max(-step, Math.min(step, target - r.pace));
+    }
+  }
+
   private stepRunner(r: RunnerState, input: RunnerInput, time: number, events: SimEvent[]) {
     r.ghost = Math.max(0, r.ghost - DT);
     r.shield = Math.max(0, r.shield - DT);
@@ -293,7 +365,7 @@ export class Race {
       r.rolling -= DT;
       if (r.rolling <= 0) {
         r.rolling = 0;
-        r.item = rollItem(this.rng, this.placeOf(r.id), this.runners.length);
+        r.item = rollItem(this.rng, this.placeOf(r.id), this.runners.length, this.gapToLeader(r));
         events.push({ t: 'item', r: r.id, item: r.item });
       }
     }

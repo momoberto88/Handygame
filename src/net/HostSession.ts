@@ -100,7 +100,7 @@ export class HostSession implements RaceSession {
     if (id < 0) return;
     this.remotes.delete(id);
     this.brains[id] = new BotBrain(this.race.tick + id, botProfile(this.botLevel, id));
-    this.race.runners[id].pace = BOT_PACE[this.botLevel];
+    this.race.botTakesOver(id, BOT_PACE[this.botLevel]);
     this.racers[id].isBot = true;
     this.notice = { text: `${name} ist weg – ein Bot übernimmt`, until: performance.now() + 4000 };
   }

@@ -86,6 +86,30 @@ export const WALL_LEASH = 1500;
 export const WALL_GRACE_GAP = 160;
 export const SWALLOW_JUMP_AHEAD = 380;
 
+// Keeping races open: a good or bad start must not decide the race.
+/** Slipstream: running close behind someone makes you this much faster. */
+export const DRAFT_BONUS = 0.06;
+export const DRAFT_MIN = 40;
+export const DRAFT_MAX = 320;
+export const DRAFT_DY = 140;
+/** Tailwind for runners far behind the leader: from nothing at START to the full bonus at FULL. */
+export const CATCHUP_START = 400;
+export const CATCHUP_FULL = 1600;
+export const CATCHUP_BONUS = 0.08;
+/**
+ * Bots keep in touch with the people, whatever their level (that stays in their mistakes and
+ * items): far ahead of every person they slow down towards EASE_PACE, far behind every person they
+ * speed up towards CATCH_PACE.
+ */
+export const BOT_EASE_START = 150;
+export const BOT_EASE_FULL = 1200;
+export const BOT_EASE_PACE = 0.8;
+export const BOT_CATCH_START = 150;
+export const BOT_CATCH_FULL = 900;
+export const BOT_CATCH_PACE = 1.06;
+/** How fast the speed factor follows these rules (per second), so nobody jerks. */
+export const PACE_RATE = 0.25;
+
 export const BOX_RADIUS = 21;
 export const BOX_RESPAWN = 2.5;
 export const COIN_RADIUS = 14;

@@ -12,9 +12,11 @@ const ODDS: Record<number, Partial<Record<ItemKind, number>>> = {
   4: { turbo: 30, rocket: 25, lightning: 15, ink: 15, saw: 10, shield: 5 },
 };
 
-export function rollItem(rng: Rng, place: number, runnerCount: number): ItemKind {
+export function rollItem(rng: Rng, place: number, runnerCount: number, gapToLeader = 0): ItemKind {
   // Map the place onto the 4-slot table so smaller races still get sensible odds.
-  const slot = runnerCount <= 1 ? 2 : Math.round(1 + ((place - 1) * 3) / (runnerCount - 1));
+  let slot = runnerCount <= 1 ? 2 : Math.round(1 + ((place - 1) * 3) / (runnerCount - 1));
+  // far behind counts more than the place: a close 4th is in the race, a distant 2nd is not
+  if (runnerCount > 1 && place > 1) slot = Math.max(slot, gapToLeader > 1400 ? 4 : gapToLeader > 700 ? 3 : 1);
   return rng.weighted<ItemKind>(ODDS[Math.min(4, Math.max(1, slot))]);
 }
 

@@ -14,7 +14,7 @@ import type { CupState } from '../meta/cup';
 import type { RacerInfo } from './session';
 
 /** Bump when the messages change so old and new app versions don't try to play together. */
-export const PROTOCOL_VERSION = 5;
+export const PROTOCOL_VERSION = 6;
 export const MAX_PLAYERS = 4;
 /** Host sends a world snapshot every this many ticks (60 / 3 = 20 per second). */
 export const SNAPSHOT_EVERY = 3;
@@ -163,6 +163,7 @@ export function packRunner(r: RunnerState): number[] {
     r2(r.finishTime),
     r.place,
     r.deaths,
+    Math.round(r.pace * 1000) / 1000,
   ];
 }
 
@@ -203,6 +204,7 @@ export function unpackRunner(a: number[], into: RunnerState): RunnerState {
   into.finishTime = a[i++];
   into.place = a[i++];
   into.deaths = a[i++];
+  into.pace = a[i++] ?? 1;
   return into;
 }
 

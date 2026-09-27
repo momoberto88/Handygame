@@ -113,12 +113,15 @@ export class BotBrain {
   private itemTimer = -1;
   private readonly horizon: number;
   private readonly plans: Plan[];
+  /** Skill right now (the profile's, adjusted to keep in touch with the people). */
+  private skill: number;
 
   constructor(
     seed: number,
     readonly profile: BotProfile,
   ) {
     this.rng = new Rng(seed);
+    this.skill = profile.skill;
     this.horizon = Math.round(30 + 50 * profile.skill);
     this.plans = buildPlans(this.horizon);
   }
@@ -131,8 +134,11 @@ export class BotBrain {
       return IDLE;
     }
     const horizon = r.ink > 0 ? Math.round(this.horizon * 0.55) : this.horizon;
+    // far behind the people a bot plays sharper, far ahead sloppier: races stay open
+    const touch = race.touch[id] ?? 0;
+    this.skill = Math.max(0, Math.min(1, this.profile.skill + (touch > 0 ? 0.5 : 0.4) * touch));
     // clumsy bots react late
-    const checkEvery = Math.round(11 - 8 * this.profile.skill);
+    const checkEvery = Math.round(11 - 8 * this.skill);
 
     this.sinceCheck++;
     this.sinceFull++;
@@ -186,7 +192,7 @@ export class BotBrain {
     let pick = scored[0];
     // Clumsier bots sometimes take a worse option, and now and then they simply blunder
     // (any plan at all, even one that ends in a saw) – like a human who taps at the wrong moment.
-    const clumsy = 1 - this.profile.skill;
+    const clumsy = 1 - this.skill;
     if (scored.length > 2 && this.rng.next() < clumsy * 0.15) pick = scored[1 + this.rng.int(2)];
     if (this.rng.next() < clumsy * clumsy * 0.6) pick = scored[1 + this.rng.int(scored.length - 1)];
     this.plan = pick.plan;
