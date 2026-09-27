@@ -7,9 +7,9 @@
 //   node tools/flute-play.mjs bank <clean.mp3>...          cut the note bank into tools/flute-bank/
 //   node tools/flute-play.mjs play <tune> <out.mp3> [seed]  render a tune from tools/flute-tunes.mjs
 //   node tools/flute-play.mjs list
-// Needs ffmpeg with rubberband (FFMPEG=/path/to/ffmpeg).
+// Needs ffmpeg (FFMPEG=/path/to/ffmpeg).
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TUNES } from './flute-tunes.mjs';
@@ -86,7 +86,7 @@ function findNotes(src) {
   const notes = [];
   let cur = null;
   const close = () => {
-    if (cur && cur.end - cur.start > 0.25 * RATE) {
+    if (cur && cur.end - cur.start > MIN_NOTE * RATE) {
       const sorted = cur.frames.map((f) => f.midi).sort((a, b) => a - b);
       cur.midi = sorted[Math.floor(sorted.length / 2)];
       notes.push(cur);
@@ -107,17 +107,22 @@ function findNotes(src) {
 }
 
 // ---- bank ----------------------------------------------------------------------------------------
+/** Shortest note worth keeping, and how many takes of each pitch (variety: no two notes alike). */
+const MIN_NOTE = 0.14;
+const TAKES = 4;
 function makeBank(files) {
   mkdirSync(BANK_DIR, { recursive: true });
-  const best = new Map(); // semitone -> {len, samples, midi}
+  for (const f of readdirSync(BANK_DIR)) rmSync(join(BANK_DIR, f));
+  const best = new Map(); // semitone -> [{score, samples, midi, len, wobble}]
   for (const file of files) {
     const src = decode(file);
     for (const nt of findNotes(src)) {
       const semi = Math.round(nt.midi);
       const len = nt.end - nt.start;
       const wobble = Math.sqrt(nt.frames.reduce((a, f) => a + (f.midi - nt.midi) ** 2, 0) / nt.frames.length) * 100;
-      const score = len / RATE - wobble / 40;
-      if ((best.get(semi)?.score ?? -Infinity) >= score) continue;
+      const score = Math.min(len / RATE, 0.6) - wobble / 40;
+      const takes = best.get(semi) ?? [];
+      if (takes.length >= TAKES && takes[takes.length - 1].score >= score) continue;
       // straighten the note to its own pitch (a recorder holds steady), keep the natural attack
       const a = Math.max(0, nt.start - Math.floor(0.03 * RATE));
       const b = Math.min(src.length, nt.end + Math.floor(0.05 * RATE));
@@ -138,17 +143,22 @@ function makeBank(files) {
         out.push(src[a + i] * (1 - fr) + src[a + i + 1] * fr);
         pos += 2 ** (corr[i] / 12);
       }
-      best.set(semi, { score, midi: nt.midi, samples: Float32Array.from(out), len: out.length / RATE, wobble });
+      takes.push({ score, midi: nt.midi, samples: Float32Array.from(out), len: out.length / RATE, wobble });
+      takes.sort((x, y) => y.score - x.score);
+      best.set(semi, takes.slice(0, TAKES));
     }
   }
   const index = [];
-  for (const [semi, b] of [...best.entries()].sort((x, y) => x[0] - y[0])) {
-    const file = `note-${semi}.wav`;
-    execFileSync(FF, ['-v', 'error', '-y', '-f', 'f32le', '-ar', String(RATE), '-ac', '1', '-i', '-', '-c:a', 'pcm_s16le', join(BANK_DIR, file)], {
-      input: Buffer.from(b.samples.buffer),
+  for (const [semi, takes] of [...best.entries()].sort((x, y) => x[0] - y[0])) {
+    takes.forEach((b, k) => {
+      const file = `note-${semi}-${k}.flac`;
+      execFileSync(FF, ['-v', 'error', '-y', '-f', 'f32le', '-ar', String(RATE), '-ac', '1', '-i', '-', '-c:a', 'flac', '-sample_fmt', 's16', join(BANK_DIR, file)], {
+        input: Buffer.from(b.samples.buffer),
+      });
+      index.push({ file, midi: Number(b.midi.toFixed(3)), len: Number(b.len.toFixed(3)) });
     });
-    index.push({ file, midi: Number(b.midi.toFixed(3)), len: Number(b.len.toFixed(3)) });
-    console.log(`bank: midi ${b.midi.toFixed(2)} (${(440 * 2 ** ((b.midi - 69) / 12)).toFixed(0)} Hz), ${b.len.toFixed(2)} s, wobble ${b.wobble.toFixed(1)} c`);
+    const hz = (440 * 2 ** ((semi - 69) / 12)).toFixed(0);
+    console.log(`bank: ${hz} Hz × ${takes.length} (${takes.map((b) => b.len.toFixed(2)).join(', ')} s)`);
   }
   writeFileSync(join(BANK_DIR, 'bank.json'), JSON.stringify(index, null, 1));
 }
@@ -197,18 +207,58 @@ function render(tuneId, out, seedArg) {
   const highest = Math.max(...notes.filter((n) => n.midi !== null).map((n) => n.midi));
   const cache = new Map();
 
-  /** One bank note at `ratio`, `secs` long (time-stretched only when it has to be longer). */
-  const voice = (midi, secs, soft = false) => {
-    const b = bank.reduce((best, x) => (Math.abs(x.midi - midi) < Math.abs(best.midi - midi) ? x : best));
+  /**
+   * One bank note played at `midi`, `secs` long. The pitch is moved by plain resampling (a recorder
+   * note shifted a semitone or two still sounds like a recorder, unlike a phase vocoder); a note
+   * that must last longer loops its steady middle with crossfades. Different takes of the same
+   * pitch are used in turn, so repeated notes aren't identical.
+   */
+  const voice = (midi, secs, soft = false, take = rnd()) => {
+    const nearest = Math.min(...bank.map((x) => Math.abs(x.midi - midi)));
+    const cands = bank.filter((x) => Math.abs(x.midi - midi) <= nearest + 0.6);
+    const b = cands[Math.floor(take * cands.length) % cands.length];
     const ratio = 2 ** ((midi - b.midi) / 12);
-    const stretch = secs > b.len * 0.95 ? b.len / (secs + 0.05) : 1;
-    const key = `${b.file}|${ratio.toFixed(4)}|${stretch.toFixed(3)}|${soft}`;
-    if (!cache.has(key)) {
-      let af = `rubberband=pitch=${ratio.toFixed(5)}:tempo=${stretch.toFixed(4)}:transients=smooth`;
-      if (soft) af += ',lowpass=f=3200,lowpass=f=3200';
-      cache.set(key, filter(b.samples, af));
+    const key = `${b.file}|${ratio.toFixed(4)}|${secs.toFixed(3)}|${soft}`;
+    if (cache.has(key)) return cache.get(key);
+    const need = Math.ceil((secs + 0.04) * RATE * ratio) + 2;
+    let src = b.samples;
+    if (src.length < need) {
+      // loop the steady middle (40–85 %) with 25 ms crossfades until it is long enough
+      const a0 = Math.floor(src.length * 0.4);
+      const a1 = Math.floor(src.length * 0.85);
+      const fade = Math.min(Math.floor(0.025 * RATE), Math.floor((a1 - a0) / 3));
+      const parts = [src.slice(0, a1)];
+      let len = a1;
+      while (len < need) {
+        parts.push(src.slice(a0, a1));
+        len += a1 - a0 - fade;
+      }
+      const out = new Float32Array(len + src.length - a1);
+      out.set(parts[0], 0);
+      let at = a1;
+      for (let k = 1; k < parts.length; k++) {
+        const seg = parts[k];
+        const from = at - fade;
+        for (let i = 0; i < seg.length; i++) {
+          const w = i < fade ? i / fade : 1;
+          out[from + i] = i < fade ? out[from + i] * (1 - w) + seg[i] * w : seg[i];
+        }
+        at = from + seg.length;
+      }
+      out.set(src.slice(a1), at);
+      src = out.slice(0, at + src.length - a1);
     }
-    return cache.get(key);
+    const n = Math.floor(secs * RATE);
+    let res = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const pos = i * ratio;
+      const j = Math.floor(pos);
+      const f = pos - j;
+      res[i] = j + 1 < src.length ? src[j] * (1 - f) + src[j + 1] * f : 0;
+    }
+    if (soft) res = filter(res, 'lowpass=f=3200,lowpass=f=3200');
+    cache.set(key, res);
+    return res;
   };
   const rmsCache = new Map();
   const phoneRms = (samples) => {

@@ -1,37 +1,252 @@
 [
  {
-  "file": "note-72.wav",
+  "file": "note-72-0.flac",
   "midi": 72.058,
   "len": 0.375
  },
  {
-  "file": "note-84.wav",
-  "midi": 84.475,
-  "len": 1.703
+  "file": "note-72-1.flac",
+  "midi": 72.058,
+  "len": 0.375
  },
  {
-  "file": "note-88.wav",
+  "file": "note-76-0.flac",
+  "midi": 76.233,
+  "len": 0.237
+ },
+ {
+  "file": "note-76-1.flac",
+  "midi": 75.973,
+  "len": 0.231
+ },
+ {
+  "file": "note-76-2.flac",
+  "midi": 75.973,
+  "len": 0.23
+ },
+ {
+  "file": "note-77-0.flac",
+  "midi": 77.038,
+  "len": 0.283
+ },
+ {
+  "file": "note-77-1.flac",
+  "midi": 77.038,
+  "len": 0.237
+ },
+ {
+  "file": "note-77-2.flac",
+  "midi": 77.038,
+  "len": 0.225
+ },
+ {
+  "file": "note-77-3.flac",
+  "midi": 77.038,
+  "len": 0.225
+ },
+ {
+  "file": "note-79-0.flac",
+  "midi": 79.077,
+  "len": 0.225
+ },
+ {
+  "file": "note-79-1.flac",
+  "midi": 79.077,
+  "len": 0.23
+ },
+ {
+  "file": "note-79-2.flac",
+  "midi": 79.077,
+  "len": 0.236
+ },
+ {
+  "file": "note-80-0.flac",
+  "midi": 80.031,
+  "len": 0.358
+ },
+ {
+  "file": "note-81-0.flac",
+  "midi": 81.039,
+  "len": 1.697
+ },
+ {
+  "file": "note-81-1.flac",
+  "midi": 81.039,
+  "len": 2.05
+ },
+ {
+  "file": "note-81-2.flac",
+  "midi": 81.039,
+  "len": 0.411
+ },
+ {
+  "file": "note-81-3.flac",
+  "midi": 81.039,
+  "len": 0.711
+ },
+ {
+  "file": "note-83-0.flac",
+  "midi": 83.252,
+  "len": 0.231
+ },
+ {
+  "file": "note-83-1.flac",
+  "midi": 82.863,
+  "len": 0.231
+ },
+ {
+  "file": "note-83-2.flac",
+  "midi": 82.863,
+  "len": 0.389
+ },
+ {
+  "file": "note-83-3.flac",
+  "midi": 82.863,
+  "len": 0.226
+ },
+ {
+  "file": "note-84-0.flac",
+  "midi": 84.475,
+  "len": 0.69
+ },
+ {
+  "file": "note-84-1.flac",
+  "midi": 84.475,
+  "len": 0.668
+ },
+ {
+  "file": "note-84-2.flac",
+  "midi": 84.058,
+  "len": 0.248
+ },
+ {
+  "file": "note-84-3.flac",
+  "midi": 84.058,
+  "len": 0.33
+ },
+ {
+  "file": "note-85-0.flac",
+  "midi": 84.902,
+  "len": 0.23
+ },
+ {
+  "file": "note-85-1.flac",
+  "midi": 84.902,
+  "len": 0.238
+ },
+ {
+  "file": "note-86-0.flac",
+  "midi": 86.252,
+  "len": 0.87
+ },
+ {
+  "file": "note-86-1.flac",
+  "midi": 86.252,
+  "len": 0.593
+ },
+ {
+  "file": "note-86-2.flac",
+  "midi": 86.252,
+  "len": 0.752
+ },
+ {
+  "file": "note-86-3.flac",
+  "midi": 86.252,
+  "len": 0.706
+ },
+ {
+  "file": "note-88-0.flac",
   "midi": 88.233,
   "len": 0.695
  },
  {
-  "file": "note-89.wav",
+  "file": "note-88-1.flac",
+  "midi": 88.233,
+  "len": 0.591
+ },
+ {
+  "file": "note-88-2.flac",
+  "midi": 88.233,
+  "len": 0.515
+ },
+ {
+  "file": "note-88-3.flac",
+  "midi": 88.233,
+  "len": 0.562
+ },
+ {
+  "file": "note-89-0.flac",
   "midi": 89.315,
   "len": 0.353
  },
  {
-  "file": "note-91.wav",
+  "file": "note-89-1.flac",
+  "midi": 88.766,
+  "len": 0.489
+ },
+ {
+  "file": "note-89-2.flac",
+  "midi": 89.315,
+  "len": 0.283
+ },
+ {
+  "file": "note-89-3.flac",
+  "midi": 88.766,
+  "len": 0.231
+ },
+ {
+  "file": "note-91-0.flac",
   "midi": 91.077,
   "len": 0.457
  },
  {
-  "file": "note-95.wav",
+  "file": "note-91-1.flac",
+  "midi": 91.077,
+  "len": 0.434
+ },
+ {
+  "file": "note-91-2.flac",
+  "midi": 91.077,
+  "len": 0.376
+ },
+ {
+  "file": "note-91-3.flac",
+  "midi": 91.077,
+  "len": 0.306
+ },
+ {
+  "file": "note-93-0.flac",
+  "midi": 93.039,
+  "len": 0.225
+ },
+ {
+  "file": "note-95-0.flac",
   "midi": 95.252,
   "len": 0.405
  },
  {
-  "file": "note-96.wav",
+  "file": "note-95-1.flac",
+  "midi": 95.252,
+  "len": 0.243
+ },
+ {
+  "file": "note-96-0.flac",
   "midi": 96.058,
   "len": 1.531
+ },
+ {
+  "file": "note-96-1.flac",
+  "midi": 96.058,
+  "len": 0.283
+ },
+ {
+  "file": "note-96-2.flac",
+  "midi": 96.058,
+  "len": 0.248
+ },
+ {
+  "file": "note-99-0.flac",
+  "midi": 98.726,
+  "len": 0.277
  }
 ]
