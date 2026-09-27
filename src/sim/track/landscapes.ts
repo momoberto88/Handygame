@@ -277,3 +277,98 @@ free('sky', 'sky-launch', 1, (b, x) => {
   L.flat(8);
   return done(L, x);
 });
+
+// =============================================================================================
+// Neon-Stadt: rooftops of different heights, an elevator tower, laser alleys, a boost highway.
+
+// Rooftops: jump from roof to roof over the alleys, slide under or jump over the billboards.
+free('neon', 'neon-roofs', 1, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(7);
+  b.padAt(x + 3, G, 'boost');
+  L.pit(3).step(G - 2).flat(8);
+  const r1 = L.c - 8;
+  b.fill(r1 + 4, r1 + 5, G - 4, G - 4, Tile.Solid);
+  b.coinsAt(r1 + 1, r1 + 7, G - 2, 0.4);
+  L.pit(3).step(G - 4).flat(7);
+  b.laserAt(L.c - 3, G - 4, 4, 1.2, 1.0);
+  b.boxAt(L.c - 6, G - 4);
+  L.pit(3).step(G - 1).flat(6).pit(2).step(G).flat(6);
+  plank(b, r1 + 10, r1 + 26, G - 9);
+  b.coinsAt(r1 + 11, r1 + 25, G - 9, 2, 1);
+  return done(L, x);
+});
+
+// A tower block over the street: the elevator (or a wall jump) takes you onto its roof with boost
+// pads; the street below has laser gates.
+free('neon', 'neon-tower', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(4);
+  b.moverAt(L.c, 16, 3, 'y', 4.25, 4.2);
+  L.flat(4);
+  const b0 = L.c;
+  L.flat(24);
+  b.fill(b0, b0 + 18, G - 9, G - 5, Tile.Solid);
+  b.padAt(b0 + 3, G - 9, 'boost');
+  b.padAt(b0 + 12, G - 9, 'boost');
+  b.coinsAt(b0 + 1, b0 + 17, G - 9, 1);
+  b.boxAt(b0 + 8, G - 9);
+  b.laserAt(b0 + 5, G, 4, 1.0, 1.2, 0);
+  b.laserAt(b0 + 11, G, 4, 1.0, 1.2, 0.35);
+  b.laserAt(b0 + 17, G, 4, 1.0, 1.2, 0.7);
+  b.coinsAt(b0 + 1, b0 + 22, G, 0.4);
+  b.boxAt(b0 + 14, G);
+  return done(L, x);
+});
+
+// Laser alley: four gates in a rolling rhythm on the street; a catwalk above them has saws.
+free('neon', 'neon-lasers', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(4);
+  const a = L.c;
+  L.flat(28);
+  [4, 10, 16, 22].forEach((d, i) => b.laserAt(a + d, G, 4, 1.0, 1.0, i * 0.25));
+  plank(b, a + 2, a + 26, G - 5);
+  b.sawAt(a + 9, G - 5, 1, 'horizontal', 70);
+  b.sawAt(a + 19, G - 5, 1, 'horizontal', 70);
+  b.coinsAt(a + 3, a + 25, G - 5, 2);
+  b.boxAt(a + 13, G);
+  L.flat(4);
+  return done(L, x);
+});
+
+// The highway: up the ramp, race down with boost pads, jump the broken lanes; an overpass above.
+free('neon', 'neon-highway', 3, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(3).up(5).flat(3);
+  b.padAt(L.c - 2, L.g, 'boost');
+  L.down(5).flat(4);
+  b.padAt(L.c - 2, G, 'boost');
+  const o0 = L.c;
+  L.pit(4).flat(5);
+  b.laserAt(L.c - 3, G, 4, 0.9, 1.3);
+  L.pit(4).flat(5);
+  b.padAt(L.c - 2, G, 'boost');
+  plank(b, o0 - 2, o0 + 18, G - 6);
+  b.coinsAt(o0, o0 + 16, G - 6, 2);
+  b.boxAt(o0 + 8, G - 6);
+  L.up(3).flat(4).down(3).flat(4);
+  return done(L, x);
+});
+
+// Hover pads over a gap in the city floor; lasers flicker between the high neon signs.
+free('neon', 'neon-hover', 3, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(5);
+  const p0 = L.c;
+  L.pit(24);
+  [2, 8, 14, 20].forEach((d, i) => b.moverAt(p0 + d, G, 3, 'x', 1.5, 2.6 + i * 0.3));
+  island(b, p0 + 3, p0 + 7, G - 5);
+  island(b, p0 + 12, p0 + 16, G - 6);
+  b.laserAt(p0 + 10, G - 5, 5, 1.0, 1.2);
+  b.coinsAt(p0 + 3, p0 + 16, G - 6, 2, 1);
+  b.boxAt(p0 + 14, G - 6);
+  b.coinsAt(p0 + 2, p0 + 22, G, 1);
+  L.flat(6);
+  return done(L, x);
+});

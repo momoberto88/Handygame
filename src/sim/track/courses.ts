@@ -75,7 +75,8 @@ export const COURSES: CourseDef[] = [
     world: 'neon',
     difficulty: 2,
     seed: 401,
-    modules: ['rooftops', 'billboard', 'laser-hall', 'elevators', 'rooftops', 'monorail', 'billboard', 'laser-hall', 'elevators', 'rooftops', 'monorail', 'boost-highway', 'monorail', 'laser-hall', 'rooftops', 'rooftops'],
+    terrain: false,
+    modules: ['neon-roofs', 'neon-lasers', 'neon-tower', 'neon-roofs', 'neon-highway', 'neon-lasers', 'neon-tower', 'neon-roofs', 'neon-hover', 'neon-roofs', 'neon-lasers', 'neon-highway'],
   },
   {
     id: 'laser-highway',
@@ -83,7 +84,8 @@ export const COURSES: CourseDef[] = [
     world: 'neon',
     difficulty: 3,
     seed: 402,
-    modules: ['boost-highway', 'laser-hall', 'hover-pads', 'monorail', 'boost-highway', 'elevators', 'laser-hall', 'hover-pads', 'rooftops', 'boost-highway', 'laser-hall', 'hover-pads', 'elevators', 'hover-pads', 'boost-highway', 'boost-highway'],
+    terrain: false,
+    modules: ['neon-highway', 'neon-lasers', 'neon-hover', 'neon-tower', 'neon-highway', 'neon-lasers', 'neon-hover', 'neon-highway', 'neon-tower', 'neon-lasers', 'neon-roofs', 'neon-hover'],
   },
   {
     id: 'versunkener-tempel',
