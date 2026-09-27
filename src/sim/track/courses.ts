@@ -93,7 +93,8 @@ export const COURSES: CourseDef[] = [
     world: 'water',
     difficulty: 2,
     seed: 501,
-    modules: ['flooded-hall', 'bubble-lift', 'current', 'sunken-columns', 'air-pocket', 'reef', 'flooded-hall', 'current', 'bubble-lift', 'sunken-columns', 'air-pocket', 'reef', 'reef', 'current', 'sunken-columns', 'flooded-hall'],
+    terrain: false,
+    modules: ['water-reef', 'water-current', 'water-bubbles', 'water-columns', 'water-trench', 'water-reef', 'water-current', 'water-columns', 'water-bubbles', 'water-trench', 'water-reef', 'water-columns'],
   },
   {
     id: 'kanonen-kurs',

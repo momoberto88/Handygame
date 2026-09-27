@@ -372,3 +372,102 @@ free('neon', 'neon-hover', 3, (b, x) => {
   L.flat(6);
   return done(L, x);
 });
+
+// =============================================================================================
+// Versunkener Tempel: flooded up to the surface row S (swim strokes any time below it). Rocks and
+// temple walls stick out of the water, caves and arches lead through them under water.
+
+const S = G - 6;
+
+function flood(b: TrackBuilder, x: number, w: number) {
+  b.zone('water', x, x + w - 1, S, 25);
+}
+
+// Reef: coral bumps with sea urchins, then a big rock: swim over the top at the surface (and run
+// across it in the air) or dive through the cave at its foot.
+free('water', 'water-reef', 1, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(4).up(2).flat(2).down(2).flat(3);
+  b.spikesAt(L.c - 2, L.c - 1, G);
+  const r0 = L.c;
+  L.flat(12);
+  b.fill(r0 + 2, r0 + 10, S, G - 3, Tile.Solid);
+  b.coinsAt(r0 + 2, r0 + 10, G, 0.4);
+  b.boxAt(r0 + 6, S);
+  b.coinsAt(r0 + 3, r0 + 9, S, 1);
+  L.up(2).flat(3).down(2).flat(3);
+  b.spikesAt(L.c - 2, L.c - 1, G);
+  L.flat(4);
+  flood(b, x, L.c - x);
+  return done(L, x);
+});
+
+// A deep trench: dive in and the current on its floor shoots you along, or stay at the surface
+// past the drifting saws.
+free('water', 'water-trench', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(5);
+  const t0 = L.c;
+  L.down(4).flat(16);
+  b.zone('wind', t0 + 4, t0 + 19, G + 1, G + 3, 900, 0);
+  b.coinsAt(t0 + 5, t0 + 18, G + 4, 1);
+  L.up(4).flat(5);
+  b.sawAt(t0 + 8, G, 6, 'horizontal', 60);
+  b.sawAt(t0 + 16, G, 6, 'horizontal', 60);
+  b.coinsAt(t0 + 2, t0 + 22, S + 1, 0, 1);
+  b.boxAt(t0 + 12, G - 2);
+  flood(b, x, L.c - x);
+  return done(L, x);
+});
+
+// Current channel: down low the water flows your way; above the ledge it flows against you, but
+// the box and coins are up there.
+free('water', 'water-current', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(4);
+  const c0 = L.c;
+  L.down(2).flat(24).up(2).flat(4);
+  b.zone('wind', c0 + 2, c0 + 25, G - 1, G + 1, 700, 0);
+  b.zone('wind', c0 + 2, c0 + 25, S - 2, G - 4, -350, 0);
+  island(b, c0 + 4, c0 + 24, G - 3);
+  b.coinsAt(c0 + 5, c0 + 23, G - 3, 1);
+  b.boxAt(c0 + 14, G - 3);
+  b.spikesAt(c0 + 12, c0 + 13, G + 2);
+  flood(b, x, L.c - x);
+  return done(L, x);
+});
+
+// Bubble lift: a temple wall rises out of the water; the bubble column in front of it carries you
+// up, then down the stairs on the other side back into the water.
+free('water', 'water-bubbles', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(7);
+  b.zone('wind', L.c - 4, L.c - 1, 9, G - 1, 0, -2600);
+  b.coinsAt(L.c - 3, L.c - 3, 12, 0);
+  b.coinsAt(L.c - 3, L.c - 3, 16, 0);
+  L.step(G - 8).flat(6);
+  b.boxAt(L.c - 3, G - 8);
+  b.coinsAt(L.c - 6, L.c - 1, G - 8, 1);
+  L.down(2).flat(2).down(2).flat(2).down(4).flat(6);
+  b.spikesAt(L.c - 3, L.c - 2, G);
+  L.flat(3);
+  flood(b, x, L.c - x);
+  return done(L, x);
+});
+
+// Column hall: temple columns stick out of the water, dive through the arches at their feet;
+// a saw drifts between them.
+free('water', 'water-columns', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(4);
+  const h0 = L.c;
+  L.flat(30);
+  for (const d of [4, 12, 20]) b.fill(h0 + d, h0 + d + 1, S - 3, G - 3, Tile.Solid);
+  b.fill(h0 + 16, h0 + 17, G - 2, G - 1, Tile.Solid);
+  b.sawAt(h0 + 8, G, 3, 'vertical', 50);
+  b.coinsAt(h0 + 4, h0 + 21, G, 0.4);
+  b.boxAt(h0 + 24, G);
+  L.flat(4);
+  flood(b, x, L.c - x);
+  return done(L, x);
+});
