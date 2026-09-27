@@ -119,9 +119,89 @@ def speech_islands(src, n):
     return None
 
 
+def syllables(text):
+    """Rough syllable count (vowel groups) of a line, for expected lengths."""
+    groups, prev = 0, False
+    for ch in text.lower():
+        v = ch in 'aeiouyäöü'
+        if v and not prev:
+            groups += 1
+        prev = v
+    letters = sum(c.isalpha() for c in text)
+    # "WTF" and the like: spelled out, one syllable per letter
+    return max(groups, 1) if groups > 0 else max(letters, 1)
+
+
+def syllable_islands(src, texts):
+    """Start/end (s) of each line: cuts in quiet spots so the pieces match the lines' syllables."""
+    import math
+    raw = subprocess.run([FFMPEG, '-v', 'error', '-i', src, '-ac', '1', '-ar', '8000', '-f', 's16le', '-'],
+                         capture_output=True).stdout
+    s = memoryview(raw).cast('h')
+    win = 80  # 10 ms
+    env = [(sum(v * v for v in s[i:i + win]) / win) ** 0.5 for i in range(0, len(s) - win, win)]
+    peak = max(env) or 1
+    db = [20 * math.log10(max(e, 1) / peak) for e in env]
+    loud = [i for i, v in enumerate(db) if v > -32]
+    if not loud:
+        return None
+    first, last = loud[0], loud[-1]
+    gaps, k, n = [], 0, len(db)
+    while k < n:
+        if db[k] < -32:
+            j = k
+            while j < n and db[j] < -32:
+                j += 1
+            if j - k >= 3 and first < k and j < last:
+                gaps.append((k, j))
+            k = j
+        else:
+            k += 1
+    syl = [syllables(t) for t in texts]
+    cuts = len(texts) - 1
+    if len(gaps) < cuts:
+        return None
+    unit = (last - first) / sum(syl)
+
+    def cost(a, b, i):
+        d = (b - a) - syl[i] * unit
+        return d * d / unit ** 2
+
+    G = len(gaps)
+    INF = float('inf')
+    dp = [[INF] * G for _ in range(cuts)]
+    pr = [[-1] * G for _ in range(cuts)]
+    for j in range(G):
+        dp[0][j] = cost(first, gaps[j][0], 0) - 0.15 * (gaps[j][1] - gaps[j][0])
+    for c in range(1, cuts):
+        for j in range(G):
+            for q in range(j):
+                v = dp[c - 1][q] + cost(gaps[q][1], gaps[j][0], c) - 0.15 * (gaps[j][1] - gaps[j][0])
+                if v < dp[c][j]:
+                    dp[c][j], pr[c][j] = v, q
+    end = min(range(G), key=lambda j: dp[cuts - 1][j] + cost(gaps[j][1], last, cuts))
+    if dp[cuts - 1][end] == INF:
+        return None
+    idx = [end]
+    for c in range(cuts - 1, 0, -1):
+        idx.append(pr[c][idx[-1]])
+    idx.reverse()
+    bounds = [first] + [x for j in idx for x in gaps[j]] + [last]
+    return [(bounds[2 * i] / 100, bounds[2 * i + 1] / 100) for i in range(len(texts))]
+
+
+def plausible(islands, texts):
+    """Do the pieces' lengths roughly follow the lines' syllables?"""
+    per = [(e - s_) / syllables(t) for (s_, e), t in zip(islands, texts)]
+    mid = sorted(per)[len(per) // 2]
+    return all(mid / 2.3 < p < mid * 2.3 for p in per)
+
+
 def split_batch(src, files, texts):
     """Cuts one recording with len(files) lines into its spoken lines."""
     islands = speech_islands(src, len(files))
+    if texts and any(texts) and (not islands or not plausible(islands, texts)):
+        islands = syllable_islands(src, texts) or islands
     if islands:
         for i, f in enumerate(files):
             start = max(0.0, islands[i][0] - 0.06)

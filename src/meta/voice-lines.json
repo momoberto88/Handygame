@@ -1,8 +1,8 @@
 {
  "voices": {
   "hase": {
-   "voice": "yPe6Dv97ilaDXuBmdaa6",
-   "tag": "[laughs]"
+   "voice": "Rxw57cdHE4lbWq5Tfksp",
+   "tag": ""
   },
   "katze": {
    "voice": "JRIj9I6iNUE54uwAYd1w",
@@ -44,39 +44,51 @@
  "talk": {
   "hase": {
    "ability": [
-    "Hoch wie ich, Baby!",
-    "Chill mal, Digga.",
-    "Das Kraut gibt Flügel."
+    "Hoch wie isch, Baby!",
+    "Nu mach ma halblang, Diggor.",
+    "Des Graud gibd Fliechel."
    ],
    "death": [
-    "Sorry, war high.",
-    "Scheiße, wo bin ich?",
-    "Mein Königreich für ’nen Snack."
+    "Endschuldschung, isch war breed.",
+    "Scheiße, wo bin isch denn?",
+    "Mei Geenischreisch fier ä Bämme!",
+    "Autsch, voll uff de Glocken!"
    ],
    "win": [
-    "Ganz entspannt. Hab ich doch gesagt.",
-    "Der König hat gesprochen. Oder gelallt."
+    "Ganz endspannd. Hab isch doch gesachd.",
+    "Dor Geenisch had gesbrochn. Odor gelalld.",
+    "Leefd bei mir, nu glar!",
+    "Sheesch!"
    ],
    "hit": [
-    "Ups. War keine Absicht. Doch.",
-    "Nimm das, du Spießer!"
+    "Ubs. War geene Absichd. Doch.",
+    "Nimm des, du Schbießor!",
+    "Hedschodd, Diggor!",
+    "Du Oddo!",
+    "Gotscha!",
+    "Du Obbfor!"
    ],
    "pass": [
-    "Tschüssi, du Lahmarsch!",
-    "Überholt. Im Halbschlaf."
+    "Dschüssi, du Lahmoarsch!",
+    "Übbrholld. Im Halbschlaf.",
+    "Yolo, nu glar!"
    ],
    "passed": [
-    "Hey, ich war zuerst da, Mann!",
-    "Voll unchillig, Alter."
-   ],
-   "swallowed": [
-    "Boah, was war das für ein Trip?"
+    "Ey, isch war zuerschd da, Mann!",
+    "Voll unschillisch, Aldor.",
+    "Aldor …",
+    "Du Labbn!"
    ],
    "stunned": [
-    "Alles dreht sich … geil."
+    "Alles drehd sisch … geil.",
+    "Ei verbibbsch!",
+    "WTF?!"
+   ],
+   "swallowed": [
+    "Boah, was war'n das für ä Drip?"
    ],
    "start": [
-    "Gleich bin ich vorne. Nach ’nem Nickerchen."
+    "Gleisch bin isch vorne. Nach ä Nickorschen."
    ]
   },
   "katze": {

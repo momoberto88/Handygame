@@ -486,5 +486,87 @@
    "Läuft bei dir? Nee, bei MIR!",
    "Yolo!"
   ]
+ },
+ "hase-sachsen-a": {
+  "voice": "Rxw57cdHE4lbWq5Tfksp",
+  "prompt": "Hoch wie isch, Baby!\n\nNu mach ma halblang, Diggor.\n\nDes Graud gibd Fliechel.\n\nEndschuldschung, isch war breed.\n\nScheiße, wo bin isch denn?\n\nMei Geenischreisch fier ä Bämme!\n\nAutsch, voll uff de Glocken!\n\nGanz endspannd. Hab isch doch gesachd.\n\nDor Geenisch had gesbrochn. Odor gelalld.\n\nLeefd bei mir, nu glar!",
+  "files": [
+   "voice/hase/ability-0.mp3",
+   "voice/hase/ability-1.mp3",
+   "voice/hase/ability-2.mp3",
+   "voice/hase/death-0.mp3",
+   "voice/hase/death-1.mp3",
+   "voice/hase/death-2.mp3",
+   "voice/hase/death-3.mp3",
+   "voice/hase/win-0.mp3",
+   "voice/hase/win-1.mp3",
+   "voice/hase/win-2.mp3"
+  ],
+  "texts": [
+   "Hoch wie isch, Baby!",
+   "Nu mach ma halblang, Diggor.",
+   "Des Graud gibd Fliechel.",
+   "Endschuldschung, isch war breed.",
+   "Scheiße, wo bin isch denn?",
+   "Mei Geenischreisch fier ä Bämme!",
+   "Autsch, voll uff de Glocken!",
+   "Ganz endspannd. Hab isch doch gesachd.",
+   "Dor Geenisch had gesbrochn. Odor gelalld.",
+   "Leefd bei mir, nu glar!"
+  ]
+ },
+ "hase-sachsen-b": {
+  "voice": "Rxw57cdHE4lbWq5Tfksp",
+  "prompt": "Sheesch!\n\nUbs. War geene Absichd. Doch.\n\nNimm des, du Schbießor!\n\nHedschodd, Diggor!\n\nDu Oddo!\n\nGotscha!\n\nDu Obbfor!\n\nDschüssi, du Lahmoarsch!\n\nÜbbrholld. Im Halbschlaf.\n\nYolo, nu glar!",
+  "files": [
+   "voice/hase/win-3.mp3",
+   "voice/hase/hit-0.mp3",
+   "voice/hase/hit-1.mp3",
+   "voice/hase/hit-2.mp3",
+   "voice/hase/hit-3.mp3",
+   "voice/hase/hit-4.mp3",
+   "voice/hase/hit-5.mp3",
+   "voice/hase/pass-0.mp3",
+   "voice/hase/pass-1.mp3",
+   "voice/hase/pass-2.mp3"
+  ],
+  "texts": [
+   "Sheesch!",
+   "Ubs. War geene Absichd. Doch.",
+   "Nimm des, du Schbießor!",
+   "Hedschodd, Diggor!",
+   "Du Oddo!",
+   "Gotscha!",
+   "Du Obbfor!",
+   "Dschüssi, du Lahmoarsch!",
+   "Übbrholld. Im Halbschlaf.",
+   "Yolo, nu glar!"
+  ]
+ },
+ "hase-sachsen-c": {
+  "voice": "Rxw57cdHE4lbWq5Tfksp",
+  "prompt": "Ey, isch war zuerschd da, Mann!\n\nVoll unschillisch, Aldor.\n\nAldor …\n\nDu Labbn!\n\nAlles drehd sisch … geil.\n\nEi verbibbsch!\n\nWTF?!\n\nBoah, was war'n das für ä Drip?\n\nGleisch bin isch vorne. Nach ä Nickorschen.",
+  "files": [
+   "voice/hase/passed-0.mp3",
+   "voice/hase/passed-1.mp3",
+   "voice/hase/passed-2.mp3",
+   "voice/hase/passed-3.mp3",
+   "voice/hase/stunned-0.mp3",
+   "voice/hase/stunned-1.mp3",
+   "voice/hase/stunned-2.mp3",
+   "voice/hase/swallowed-0.mp3",
+   "voice/hase/start-0.mp3"
+  ],
+  "texts": [
+   "Ey, isch war zuerschd da, Mann!",
+   "Voll unschillisch, Aldor.",
+   "Aldor …",
+   "Du Labbn!",
+   "Alles drehd sisch … geil.",
+   "Ei verbibbsch!",
+   "WTF?!",
+   "Boah, was war'n das für ä Drip?",
+   "Gleisch bin isch vorne. Nach ä Nickorschen."
+  ]
  }
 }
