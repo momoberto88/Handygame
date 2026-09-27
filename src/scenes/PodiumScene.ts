@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ChatUI } from '../ui/chat';
 import { fluteLong } from '../audio/flute';
 import { sfx } from '../audio/sfx';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
@@ -138,6 +139,7 @@ export class PodiumScene extends Phaser.Scene {
     if (data.online && room) {
       done.container.setVisible(false);
       this.againPanel = new AgainPanel(this, room, 150, H / 2 + 20, 250);
+      new ChatUI(this, room, { x: 36, y: 34, feed: { x: 26, y: H / 2 + 190 }, wrap: 250 });
     }
     this.pose.vx = 0;
     this.pose.grounded = true;

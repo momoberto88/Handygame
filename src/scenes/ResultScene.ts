@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ChatUI } from '../ui/chat';
 import { fluteShort } from '../audio/flute';
 import { sfx } from '../audio/sfx';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
@@ -190,6 +191,7 @@ export class ResultScene extends Phaser.Scene {
       again.container.setVisible(false);
       menu.container.setVisible(false);
       this.againPanel = new AgainPanel(this, room!, W - side / 2 - 6, cy, side - 20);
+      new ChatUI(this, room!, { x: W - 30, y: 26, feed: { x: W - side + 8, y: cy + 172 }, wrap: side - 24 });
     }
   }
 

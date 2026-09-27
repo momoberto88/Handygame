@@ -226,6 +226,12 @@ export class RaceScene extends Phaser.Scene {
   }
 
   /** Interpolated on-screen position of a runner (between sim ticks, plus network smoothing). */
+  /** A chat message from the room: a speech bubble over the sender's runner (if racing). */
+  chatBubble(seat: number, text: string) {
+    const racer = this.session.racers.find((r) => r.seat === seat && !r.isBot);
+    if (racer) this.showBubble(racer.id, text);
+  }
+
   /** Within a short distance of your own runner. */
   private nearMe(x: number, y: number): boolean {
     const me = this.session.race.runners[this.session.localId];

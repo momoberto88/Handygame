@@ -12,6 +12,15 @@ import {
   type VoteState,
 } from './protocol';
 import type { RacerInfo } from './session';
+import { chatText } from '../meta/chat';
+
+export interface ChatMessage {
+  seat: number;
+  name: string;
+  text: string;
+  /** Date.now() when it arrived. */
+  at: number;
+}
 
 export interface Profile {
   name: string;
@@ -116,6 +125,10 @@ export class NetRoom {
   onVoteStart: (() => void) | null = null;
   /** Client: somebody wants a new cup, everybody goes to the lobby. */
   onToLobby: (() => void) | null = null;
+  /** Recent chat messages (newest last). */
+  chat: ChatMessage[] = [];
+  /** Everyone who shows chat messages (lobby, results, race HUD …). */
+  readonly chatListeners = new Set<(m: ChatMessage) => void>();
 
   private constructor(role: 'host' | 'client', code: string, peer: Peer) {
     this.role = role;
@@ -227,6 +240,10 @@ export class NetRoom {
         this.setAgain(seat, msg.a);
         return;
       }
+      if (msg.t === 'chat') {
+        this.relayChat(seat, msg.q, msg.x);
+        return;
+      }
       if (msg.t === 'profile') {
         const p = this.players.find((x) => x.seat === seat);
         if (p) Object.assign(p, { name: msg.name, character: msg.character, cosmetics: msg.cosmetics });
@@ -290,6 +307,29 @@ export class NetRoom {
     else this.send({ t: 'again', a: answer });
   }
 
+  /** Send a chat message: a phrase id or free text. */
+  sendChat(q?: number, x?: string) {
+    const text = chatText(q, x);
+    if (!text) return;
+    if (this.role === 'host') this.relayChat(0, q, x);
+    else this.send(q !== undefined ? { t: 'chat', q } : { t: 'chat', x: text });
+  }
+
+  /** Host: pass a chat message on to everybody (and show it here). */
+  private relayChat(seat: number, q?: number, x?: string) {
+    const text = chatText(q, x);
+    if (!text) return;
+    this.broadcast(q !== undefined ? { t: 'chat', s: seat, q } : { t: 'chat', s: seat, x: text });
+    this.receiveChat(seat, text);
+  }
+
+  private receiveChat(seat: number, text: string) {
+    const name = this.players.find((p) => p.seat === seat)?.name ?? `Spieler ${seat + 1}`;
+    const m: ChatMessage = { seat, name, text, at: Date.now() };
+    this.chat = [...this.chat.slice(-5), m];
+    for (const l of this.chatListeners) l(m);
+  }
+
   /** Host: forget the answers (a race starts). */
   clearAgain() {
     this.again = [];
@@ -349,6 +389,9 @@ export class NetRoom {
         this.again = [];
         this.againEndsAt = null;
         this.onToLobby?.();
+        break;
+      case 'chat':
+        this.receiveChat(msg.s, chatText(msg.q, msg.x));
         break;
       default:
         this.onHostMessage?.(msg);

@@ -63,6 +63,7 @@ export type ClientMsg =
   | { t: 'emote'; e: number }
   | { t: 'vote'; i: number }
   | { t: 'again'; a: AgainAnswer }
+  | { t: 'chat'; q?: number; x?: string }
   | { t: 'profile'; name: string; character: string; cosmetics?: RacerInfo['cosmetics'] };
 
 export interface SnapshotMsg {
@@ -100,6 +101,8 @@ export type HostMsg =
       againLeft?: number;
     }
   | { t: 'toLobby' }
+  /** A chat message from seat `s`: phrase id `q` or free text `x`. */
+  | { t: 'chat'; s: number; q?: number; x?: string }
   | { t: 'start'; seed: number; world: WorldId; courseId?: string; racers: RacerInfo[]; you: number; cup?: CupState; spectator?: boolean }
   | { t: 'emote'; r: number; e: number }
   | SnapshotMsg;

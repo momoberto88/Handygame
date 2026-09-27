@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ChatUI } from '../ui/chat';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
 import { characterById } from '../meta/characters';
 import { MAX_PLAYERS, type Playlist } from '../net/protocol';
@@ -97,7 +98,10 @@ export class LobbyScene extends Phaser.Scene {
     this.scene.restart();
   }
 
+  private chat?: ChatUI;
+
   private attach(room: NetRoom) {
+    this.chat ??= new ChatUI(this, room, { x: this.W - 36, y: 34, feed: { x: 16, y: 70 }, wrap: 200 });
     room.onLobby = () => this.render();
     room.onClosed = (reason) => {
       setCurrentRoom(null);

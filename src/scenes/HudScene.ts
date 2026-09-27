@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { currentRoom } from '../net/room';
+import { ChatUI } from '../ui/chat';
 import { TEAMS, scoreLine, teamScores } from '../meta/teams';
 import { EMOTES, emoteChoices } from '../meta/emotes';
 import { TutorialCoach } from './TutorialCoach';
@@ -156,6 +158,11 @@ export class HudScene extends Phaser.Scene {
     });
 
     if (!session.spectator && session.sendEmote && !session.tutorial) this.makeEmotes();
+    // online: chat with the others (their messages appear as speech bubbles over their runners)
+    const room = currentRoom();
+    if (session.online && room) {
+      this.chat = new ChatUI(this, room, { x: 0, y: 30, onMessage: (m) => this.raceScene.chatBubble(m.seat, m.text) });
+    }
     this.layout();
     this.coach = session.tutorial
       ? new TutorialCoach(this, session, { jump: this.jumpBtn.bg, slide: this.slideBtn.bg, item: this.itemBtn.bg, ability: this.abilityBtn.bg }, this.W)
@@ -203,6 +210,7 @@ export class HudScene extends Phaser.Scene {
 
   private coach?: TutorialCoach;
   private emoteBtn?: Phaser.GameObjects.Text;
+  private chat?: ChatUI;
   private emoteBar?: Phaser.GameObjects.Container;
   private lastEmote = 0;
 
@@ -297,6 +305,7 @@ export class HudScene extends Phaser.Scene {
     this.quitBtn.setPosition(W - 16, 14);
     this.coach?.layout(W);
     this.emoteBtn?.setPosition(W - 172, 10);
+    this.chat?.setPosition(W - 222, 30);
     this.emoteBar?.setPosition(W - 196, 0);
     this.bigText.setX(W / 2);
     this.toastText.setX(W / 2);
@@ -322,6 +331,8 @@ export class HudScene extends Phaser.Scene {
 
   readInput(): LocalInput {
     if (this.raceScene.session.spectator) return { jump: false, slide: false, use: 0 };
+    // choosing a chat phrase must not make you jump or throw
+    if (this.chat?.isOpen) return { jump: false, slide: false, use: 0 };
     let jump = false;
     let slide = false;
     for (const p of this.input.manager.pointers) {
