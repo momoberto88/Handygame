@@ -137,7 +137,7 @@ for (const nt of notes) {
     // overblown: part of the note flips an octave up
     const from = s + Math.floor(len * between(0.1, 0.4));
     const to = Math.min(e, from + Math.floor(between(0.12, 0.26) * RATE));
-    cracks.push([from, to, 0.75]);
+    cracks.push([from, to, 0.5]);
   } else if (roll < 0.2 + 0.08 * strength) {
     // wrong finger: a clearly wrong, but steady note
     steady = (rnd() < 0.5 ? -1 : 1) * (rnd() < 0.7 ? 100 : 200) + between(-15, 15);
@@ -231,7 +231,8 @@ for (const v of y) {
 const gain = Math.min(0.95 / peak, 0.12 / Math.sqrt(sum / y.length));
 for (let i = 0; i < y.length; i++) y[i] *= gain;
 
-execFileSync(FF, ['-v', 'error', '-y', '-f', 'f32le', '-ar', String(RATE), '-ac', '1', '-i', '-', '-b:a', '128k', output], {
+// soft top end and a limiter, so nothing clips on phone speakers
+execFileSync(FF, ['-v', 'error', '-y', '-f', 'f32le', '-ar', String(RATE), '-ac', '1', '-i', '-', '-af', 'equalizer=f=3200:t=q:w=1.2:g=-4,alimiter=limit=0.6:attack=3:release=60:level=false', '-b:a', '128k', output], {
   input: Buffer.from(y.buffer),
 });
 console.log(`${output}: ${notes.length} notes, ${cracks.length} cracks, strength ${strength}, ${(y.length / RATE).toFixed(1)} s`);
