@@ -129,7 +129,8 @@ export const COURSES: CourseDef[] = [
     world: 'shroom',
     difficulty: 1,
     seed: 801,
-    modules: ['bounce-garden', 'pendulums', 'spore-lift', 'shroom-bridges', 'bounce-garden', 'crystal-cave', 'spore-lift', 'glow-maze', 'bounce-garden', 'pendulums', 'shroom-bridges', 'crystal-cave', 'crystal-cave', 'spore-lift', 'pendulums', 'bounce-garden'],
+    terrain: false,
+    modules: ['shroom-bounce', 'shroom-crystal', 'shroom-spores', 'shroom-caps', 'shroom-bounce', 'shroom-maze', 'shroom-spores', 'shroom-crystal', 'shroom-caps', 'shroom-bounce', 'shroom-spores', 'shroom-crystal', 'shroom-maze', 'shroom-caps'],
   },
 ];
 

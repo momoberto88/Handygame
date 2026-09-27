@@ -650,3 +650,101 @@ free('desert', 'desert-canyon', 3, (b, x) => {
   L.down(4).flat(4);
   return done(L, x);
 });
+
+// =============================================================================================
+// Pilz-Kristallhöhle: bouncy mushroom caps, crystal spikes, spore updrafts, a glowing maze.
+
+// Bounce hills: mushroom pads in the dips throw you onto the caps up high.
+free('shroom', 'shroom-bounce', 1, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(4).down(2).flat(3);
+  b.padAt(L.c - 2, L.g, 'jump');
+  L.up(4).flat(3).down(2).flat(3);
+  b.padAt(L.c - 2, L.g, 'jump');
+  L.up(2).flat(2).down(2).flat(6);
+  plank(b, x + 7, x + 12, G - 7);
+  plank(b, x + 17, x + 24, G - 8);
+  b.coinsAt(x + 7, x + 24, G - 8, 2, 1);
+  b.boxAt(x + 20, G - 8);
+  b.spikesAt(L.c - 3, L.c - 2, G);
+  L.flat(3);
+  return done(L, x);
+});
+
+// Crystal cave: crystal spikes on the floor, a crystal beam to slide under, and a crumbling crystal
+// bridge over a crack.
+free('shroom', 'shroom-crystal', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(8);
+  b.spikesAt(x + 4, x + 5, G);
+  b.fill(x + 7, x + 12, G - 3, G - 2, Tile.Solid);
+  L.flat(6);
+  const p0 = L.c;
+  L.pit(8);
+  for (let c = p0; c < p0 + 8; c++) b.set(c, G, Tile.Crumble);
+  L.flat(4).up(2).flat(4).down(2).flat(4);
+  b.spikesAt(L.c - 6, L.c - 5, G);
+  b.coinsAt(x + 7, x + 12, G, 0.4);
+  plank(b, p0 - 2, p0 + 10, G - 5);
+  b.coinsAt(p0 - 1, p0 + 9, G - 5, 1);
+  b.boxAt(p0 + 4, G - 5);
+  return done(L, x);
+});
+
+// Spore lift: a crack in the floor blows spores upwards; ride them onto the high mushroom ledge and
+// bounce down the other side.
+free('shroom', 'shroom-spores', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(5);
+  const p0 = L.c;
+  L.pit(4);
+  b.zone('wind', p0, p0 + 3, 9, 25, 0, -3000);
+  b.coinsAt(p0 + 1, p0 + 2, 13, 0);
+  b.coinsAt(p0 + 1, p0 + 2, 16, 0);
+  L.step(G - 6).flat(8);
+  b.boxAt(L.c - 4, G - 6);
+  b.coinsAt(L.c - 7, L.c - 1, G - 6, 1);
+  L.down(3).flat(2).down(3).flat(3);
+  b.padAt(L.c - 2, G, 'jump');
+  L.flat(4);
+  return done(L, x);
+});
+
+// Cap platforms over a swampy floor: mushroom caps with pads on them, a mega mushroom at the start.
+free('shroom', 'shroom-caps', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(5);
+  b.padAt(x + 3, G, 'mega');
+  L.flat(26, Tile.Mud);
+  const c0 = x + 5;
+  const caps: [number, number, number][] = [[2, 5, G - 3], [8, 11, G - 5], [14, 17, G - 4], [20, 23, G - 6]];
+  for (const [a, e, row] of caps) {
+    island(b, c0 + a, c0 + e, row);
+    b.coinsAt(c0 + a, c0 + e, row, 1);
+  }
+  b.padAt(c0 + 15, G - 4, 'jump');
+  b.boxAt(c0 + 21, G - 6);
+  b.boxAt(c0 + 13, G);
+  L.flat(5);
+  return done(L, x);
+});
+
+// Glow maze: two levels of crystal passages, a slide gap, pendulum spores swinging through.
+free('shroom', 'shroom-maze', 3, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(4);
+  const m0 = L.c;
+  L.flat(28);
+  b.fill(m0 + 2, m0 + 25, G - 5, G - 5, Tile.Solid);
+  b.fill(m0 + 8, m0 + 11, G - 4, G - 2, Tile.Solid);
+  b.fill(m0 + 17, m0 + 20, G - 4, G - 2, Tile.Solid);
+  b.fill(m0 + 12, m0 + 13, G - 9, G - 6, Tile.Solid);
+  b.pendulumAt(m0 + 22, G - 11, 120);
+  b.coinsAt(m0 + 8, m0 + 11, G, 0.4);
+  b.coinsAt(m0 + 17, m0 + 20, G, 0.4);
+  b.coinsAt(m0 + 3, m0 + 24, G - 5, 1);
+  b.boxAt(m0 + 15, G);
+  b.boxAt(m0 + 18, G - 5);
+  L.flat(4);
+  return done(L, x);
+});
