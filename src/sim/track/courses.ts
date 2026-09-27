@@ -57,7 +57,8 @@ export const COURSES: CourseDef[] = [
     world: 'sky',
     difficulty: 1,
     seed: 301,
-    modules: ['islands', 'mega-bounce', 'arches', 'islands', 'updraft', 'crumble-bridge', 'mega-bounce', 'islands', 'windy-ridge', 'arches', 'updraft', 'islands', 'crumble-bridge', 'arches', 'arches', 'islands'],
+    terrain: false,
+    modules: ['sky-hop', 'sky-launch', 'sky-updraft', 'sky-hop', 'sky-bridge', 'sky-stairs', 'sky-launch', 'sky-hop', 'sky-updraft', 'sky-bridge'],
   },
   {
     id: 'sturm-inseln',
@@ -65,7 +66,8 @@ export const COURSES: CourseDef[] = [
     world: 'sky',
     difficulty: 3,
     seed: 302,
-    modules: ['windy-ridge', 'cloud-hop', 'updraft', 'crumble-bridge', 'islands', 'cloud-hop', 'windy-ridge', 'arches', 'updraft', 'cloud-hop', 'crumble-bridge', 'islands', 'cloud-hop', 'updraft', 'cloud-hop', 'windy-ridge'],
+    terrain: false,
+    modules: ['sky-ridge', 'sky-stairs', 'sky-updraft', 'sky-bridge', 'sky-ridge', 'sky-hop', 'sky-stairs', 'sky-updraft', 'sky-ridge', 'sky-bridge'],
   },
   {
     id: 'neon-naechte',

@@ -157,3 +157,123 @@ free('mine', 'mine-exit', 1, (b, x) => {
   L.flat(5);
   return done(L, x);
 });
+
+// =============================================================================================
+// Himmelsinseln: the sky below is deadly. Island chains, updrafts, crumbling bridges, headwind.
+
+// A chain of rock islands going up and down over the abyss; planks high above for double jumps.
+free('sky', 'sky-hop', 1, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(5);
+  const p0 = L.c;
+  L.pit(40);
+  const rocks: [number, number, number][] = [[1, 6, G], [10, 14, G - 1], [18, 22, G - 2], [26, 30, G - 1], [34, 38, G]];
+  for (const [a, e, row] of rocks) {
+    island(b, p0 + a, p0 + e, row);
+    b.coinsAt(p0 + a + 1, p0 + e - 1, row, 1);
+  }
+  plank(b, p0 + 8, p0 + 16, G - 5);
+  plank(b, p0 + 20, p0 + 32, G - 6);
+  b.coinsAt(p0 + 21, p0 + 31, G - 6, 2, 1);
+  b.boxAt(p0 + 26, G - 6);
+  b.boxAt(p0 + 20, G - 2);
+  L.flat(6);
+  return done(L, x);
+});
+
+// A canyon with an updraft: jump in and the wind carries you across. Ride it up high to reach the
+// cloud island with the box, or stay low and go straight over.
+free('sky', 'sky-updraft', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(5);
+  const p0 = L.c;
+  L.pit(18);
+  b.zone('wind', p0 + 1, p0 + 17, 8, 25, 0, -3300);
+  b.coinsAt(p0 + 6, p0 + 6, 12, 0);
+  b.coinsAt(p0 + 6, p0 + 6, 14, 0);
+  b.coinsAt(p0 + 6, p0 + 6, 16, 0);
+  b.coinsAt(p0 + 3, p0 + 15, 10, 0, 1);
+  island(b, p0 + 20, p0 + 25, 14);
+  b.boxAt(p0 + 22, 14);
+  b.coinsAt(p0 + 20, p0 + 25, 14, 1);
+  L.flat(10);
+  b.spikesAt(L.c - 5, L.c - 4, G);
+  L.flat(4);
+  return done(L, x);
+});
+
+// A long crumbling bridge over the abyss (keep running!), with an arch of islands above it.
+free('sky', 'sky-bridge', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(6);
+  const p0 = L.c;
+  L.pit(28);
+  for (let i = 0; i < 28; i++) b.set(p0 + i, G, i % 7 === 0 ? Tile.Solid : Tile.Crumble);
+  b.coinsAt(p0 + 1, p0 + 26, G, 1);
+  island(b, p0 + 2, p0 + 7, G - 4);
+  island(b, p0 + 11, p0 + 16, G - 6);
+  island(b, p0 + 20, p0 + 25, G - 4);
+  b.coinsAt(p0 + 11, p0 + 16, G - 6, 2);
+  b.boxAt(p0 + 13, G - 6);
+  b.sawAt(p0 + 18, G, 3, 'vertical', 30);
+  L.flat(6);
+  return done(L, x);
+});
+
+// Cloud stairs: one-way clouds climb high over a gorge and down again; underneath, moving clouds
+// carry the brave straight across.
+free('sky', 'sky-stairs', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(5);
+  const p0 = L.c;
+  L.pit(30);
+  const steps: [number, number, number][] = [[0, 3, G - 2], [4, 7, G - 4], [8, 11, G - 6], [13, 17, G - 7], [19, 22, G - 5], [23, 26, G - 3], [27, 29, G - 1]];
+  for (const [a, e, row] of steps) plank(b, p0 + a, p0 + e, row);
+  b.coinsAt(p0 + 8, p0 + 22, G - 7, 2, 1);
+  b.boxAt(p0 + 15, G - 7);
+  b.moverAt(p0 + 5, G, 3, 'x', 2.5, 3.0);
+  b.moverAt(p0 + 17, G, 3, 'x', 2.5, 3.4);
+  b.coinsAt(p0 + 2, p0 + 28, G, 1);
+  L.flat(6);
+  return done(L, x);
+});
+
+// Storm ridge: a mountain with headwind on the crest; the valley path next to it is faster but
+// has a gap and spikes.
+free('sky', 'sky-ridge', 3, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(4);
+  const r0 = L.c;
+  L.up(4).flat(12);
+  b.zone('wind', r0 + 4, r0 + 15, G - 10, G - 5, -520, 0);
+  b.coinsAt(r0 + 4, r0 + 15, G - 4, 2);
+  b.boxAt(r0 + 10, G - 4);
+  L.down(4).flat(3);
+  const v0 = L.c;
+  L.down(3).flat(3);
+  b.padAt(L.c - 2, G + 3, 'boost');
+  L.pit(3).flat(4);
+  b.spikesAt(L.c - 2, L.c - 1, G + 3);
+  L.flat(3).up(3).flat(5);
+  // the high path: a plank bridge from the ridge across the valley
+  plank(b, v0 - 3, v0 + 15, G - 4);
+  b.coinsAt(v0, v0 + 14, G - 4, 2, 1);
+  return done(L, x);
+});
+
+// A mega mushroom-cloud throws you over the abyss onto a far island; or hop the small rocks.
+free('sky', 'sky-launch', 1, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(6);
+  b.padAt(x + 3, G, 'mega');
+  const p0 = L.c;
+  L.pit(34);
+  island(b, p0 + 4, p0 + 7, G);
+  island(b, p0 + 12, p0 + 15, G - 1);
+  island(b, p0 + 20, p0 + 23, G);
+  island(b, p0 + 28, p0 + 31, G - 1);
+  b.coinsAt(p0 + 8, p0 + 26, 10, 2, 2);
+  b.boxAt(p0 + 13, G - 1);
+  L.flat(8);
+  return done(L, x);
+});
