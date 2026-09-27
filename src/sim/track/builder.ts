@@ -338,6 +338,16 @@ export class TrackBuilder {
     this.lasers.push({ x: this.cx(col), y0: (surface - height) * TILE, y1: surface * TILE, on, off, phase });
   }
 
+  /** Low laser on the ground (top row `surface`): about knee high, jump over it. */
+  laserLow(col: number, surface: number, on = 1.4, off = 0.8, phase = this.rng.next()) {
+    this.lasers.push({ x: this.cx(col), y0: surface * TILE - 50, y1: surface * TILE, on, off, phase });
+  }
+
+  /** Laser from `height` rows up down to just above the ground: slide under it. */
+  laserHigh(col: number, surface: number, height = 4, on = 1.4, off = 0.8, phase = this.rng.next()) {
+    this.lasers.push({ x: this.cx(col), y0: (surface - height) * TILE, y1: surface * TILE - 32, on, off, phase });
+  }
+
   /** Cannon block `up` rows above the ground (top row `surface`). */
   cannonAt(col: number, surface: number, up: number, dir: -1 | 1, period = 2.2, range = 14) {
     this.set(col, surface - up, Tile.Solid);
