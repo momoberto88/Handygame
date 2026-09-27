@@ -1,0 +1,37 @@
+[
+ {
+  "file": "note-72.wav",
+  "midi": 72.058,
+  "len": 0.375
+ },
+ {
+  "file": "note-84.wav",
+  "midi": 84.475,
+  "len": 1.703
+ },
+ {
+  "file": "note-88.wav",
+  "midi": 88.233,
+  "len": 0.695
+ },
+ {
+  "file": "note-89.wav",
+  "midi": 89.315,
+  "len": 0.353
+ },
+ {
+  "file": "note-91.wav",
+  "midi": 91.077,
+  "len": 0.457
+ },
+ {
+  "file": "note-95.wav",
+  "midi": 95.252,
+  "len": 0.405
+ },
+ {
+  "file": "note-96.wav",
+  "midi": 96.058,
+  "len": 1.531
+ }
+]
