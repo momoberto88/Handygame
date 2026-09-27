@@ -125,29 +125,36 @@
    "death": [
     "Scheiße, falsches Kabel!",
     "Upsi. Das war ein Körperteil.",
-    "Hab mich selbst gezündet. Klassiker."
+    "Hab mich selbst gezündet. Klassiker.",
+    "Autsch, voll auf den Sack!"
    ],
    "win": [
     "Alles in die Luft, nur ich nicht!",
-    "Wer zuletzt explodiert, gewinnt."
+    "Wer zuletzt explodiert, gewinnt.",
+    "Sheesh!"
    ],
    "hit": [
     "Kawumm! Hihihi!",
-    "Zerlegt, du Wurst!"
+    "Zerlegt, du Wurst!",
+    "Headshot!",
+    "Gotcha, gotcha!"
    ],
    "pass": [
     "Platz da, ich bin geladen!",
-    "Hihi, zu langsam, Fleischklops!"
+    "Hihi, zu langsam, Fleischklops!",
+    "Tschüss, Digger!"
    ],
    "passed": [
     "Hey! Ich spreng dich gleich!",
-    "Na warte, du Pisser!"
+    "Na warte, du Pisser!",
+    "Du Lappen!"
    ],
    "swallowed": [
     "Das Chaos hat mich gefressen. Hihi!"
    ],
    "stunned": [
-    "Ohren klingeln … geil!"
+    "Ohren klingeln … geil!",
+    "WTF?!"
    ],
    "start": [
     "Lunte brennt. Hihihi!"
@@ -157,28 +164,35 @@
    "ability": [
     "Probier mal. Schmeckt nach Tod!",
     "Frisch aus dem Labor, Baby.",
-    "Nicht legal, aber geil."
+    "Nicht legal, aber geil.",
+    "Yolo!"
    ],
    "death": [
     "Shit, die Dosis war zu hoch.",
     "Nebenwirkung: sterben.",
-    "Das war nicht das Gegengift."
+    "Das war nicht das Gegengift.",
+    "WTF?!"
    ],
    "win": [
     "Chemie, du Opfer!",
-    "Doping? Nennen wir es Wissenschaft."
+    "Doping? Nennen wir es Wissenschaft.",
+    "Sheesh, Digger!"
    ],
    "hit": [
     "Experiment geglückt!",
-    "Versuchskaninchen erledigt."
+    "Versuchskaninchen erledigt.",
+    "Du Otto!",
+    "Zu easy!"
    ],
    "pass": [
     "Die Formel wirkt!",
-    "Überholt, dank Chemie."
+    "Überholt, dank Chemie.",
+    "Läuft bei dir … nicht!"
    ],
    "passed": [
     "Unmöglich! Meine Berechnungen!",
-    "Du bist gedopt, du Sau!"
+    "Du bist gedopt, du Sau!",
+    "Alter!"
    ],
    "swallowed": [
     "Faszinierend. Und ekelhaft."
@@ -194,28 +208,35 @@
    "ability": [
     "Deine Mutter lutscht Schwänze in der Hölle!",
     "Verflucht! Gegen Aufpreis doppelt.",
-    "Dein Pech ist mein Geschäftsmodell."
+    "Dein Pech ist mein Geschäftsmodell.",
+    "Sheesh!"
    ],
    "death": [
     "Wer hat mich verflucht?! Ich will Provision!",
     "Verdammter Mist, Rabattaktion vorbei.",
-    "Das war nicht im Angebot!"
+    "Das war nicht im Angebot!",
+    "Bruh."
    ],
    "win": [
     "Glück kann man kaufen. Bei mir.",
-    "Eure Seelen gehören mir. AGB lesen!"
+    "Eure Seelen gehören mir. AGB lesen!",
+    "Gönn dir … nicht."
    ],
    "hit": [
     "Fluch zugestellt. Unterschrift bitte!",
-    "Das kostet extra, Schätzchen."
+    "Das kostet extra, Schätzchen.",
+    "Gotcha!",
+    "Headshot."
    ],
    "pass": [
     "Ciao, du Sonderangebot!",
-    "Hinter mir, wo du hingehörst."
+    "Hinter mir, wo du hingehörst.",
+    "Bye, du Lappen!"
    ],
    "passed": [
     "Dich verfluch ich bis ins siebte Glied!",
-    "Du Mistvieh, das kostet dich!"
+    "Du Mistvieh, das kostet dich!",
+    "Ehrenlos!"
    ],
    "swallowed": [
     "Das Chaos schuldet mir Geld!"
@@ -236,29 +257,36 @@
    "death": [
     "Böse Ratten! Kein Käse heute!",
     "Verdammte Viecher, ihr solltet DIE beißen!",
-    "Au! Das war mein Knie, du Ratte!"
+    "Au! Das war mein Knie, du Ratte!",
+    "Autsch, voll auf den Sack!"
    ],
    "win": [
     "Applaus für die Ratten. Und für mich.",
-    "Dressur ist alles, ihr Amateure."
+    "Dressur ist alles, ihr Amateure.",
+    "Läuft bei mir!"
    ],
    "hit": [
     "Braver Treffer!",
-    "Platz! Und liegen bleiben!"
+    "Platz! Und liegen bleiben!",
+    "Du Opfer!",
+    "Hops genommen!"
    ],
    "pass": [
     "Bei Fuß, du Köter!",
-    "Aus dem Weg, Futter!"
+    "Aus dem Weg, Futter!",
+    "Yolo!"
    ],
    "passed": [
     "Zurück in den Käfig mit dir!",
-    "Na warte, du Floh!"
+    "Na warte, du Floh!",
+    "Ey, Digger!"
    ],
    "swallowed": [
     "Das Chaos stinkt schlimmer als meine Ratten."
    ],
    "stunned": [
-    "Wer hat meine Peitsche geklaut?"
+    "Wer hat meine Peitsche geklaut?",
+    "Alter, was?!"
    ],
    "start": [
     "Manege frei, ihr Ratten!"
@@ -268,28 +296,35 @@
    "ability": [
     "Der Herr vergibt. Ich nicht.",
     "Steine heilen. Dich nicht.",
-    "Unverwundbar durch Quarz, Bitch!"
+    "Unverwundbar durch Quarz, Bitch!",
+    "Yolo!"
    ],
    "death": [
     "Amen, Arschloch!",
     "Der Stein war wohl gefälscht.",
-    "Scheiße, falsches Chakra."
+    "Scheiße, falsches Chakra.",
+    "Digger, echt jetzt?"
    ],
    "win": [
     "Gesegnet sei mein Vorsprung.",
-    "Gott ist mit mir. Ihr seid mit euch."
+    "Gott ist mit mir. Ihr seid mit euch.",
+    "Ehrenmann!"
    ],
    "hit": [
     "Ruhe in Frieden, du Sünder.",
-    "Tu Buße, du Wurm!"
+    "Tu Buße, du Wurm!",
+    "Headshot!",
+    "Du Otto!"
    ],
    "pass": [
     "Die Letzten werden die Letzten sein.",
-    "Geh mit Gott. Aber hinter mir."
+    "Geh mit Gott. Aber hinter mir.",
+    "Sheesh!"
    ],
    "passed": [
     "Du wirst in der Hölle schmoren!",
-    "Herrgott, du Bastard!"
+    "Herrgott, du Bastard!",
+    "WTF?!"
    ],
    "swallowed": [
     "Das Fegefeuer ist echt kacke."
@@ -310,29 +345,36 @@
    "death": [
     "Das hab ich nicht kommen sehen. Peinlich.",
     "Meine Kristallkugel ist kaputt, verdammt!",
-    "Mon dieu, meine Frisur!"
+    "Mon dieu, meine Frisur!",
+    "WTF?!"
    ],
    "win": [
     "Ich sah es voraus, Schätzchen.",
-    "Die Karten sagen: Ihr seid Opfer."
+    "Die Karten sagen: Ihr seid Opfer.",
+    "Sheesh."
    ],
    "hit": [
     "Vorhergesehen, mon chéri.",
-    "Das Schicksal hat dich gefickt."
+    "Das Schicksal hat dich gefickt.",
+    "Gotcha, Schätzchen!",
+    "Du Lappen!"
    ],
    "pass": [
     "Au revoir, du Landei!",
-    "Adieu, Versager!"
+    "Adieu, Versager!",
+    "Läuft bei dir … nicht."
    ],
    "passed": [
     "Das stand nicht in den Karten!",
-    "Merde! Du kleiner Wicht!"
+    "Merde! Du kleiner Wicht!",
+    "Alter?!"
    ],
    "swallowed": [
     "Quelle horreur! Wie ordinär!"
    ],
    "stunned": [
-    "Ich sehe … Sternchen."
+    "Ich sehe … Sternchen.",
+    "Bruh."
    ],
    "start": [
     "Ich sehe deine Niederlage, Schätzchen."
@@ -342,28 +384,35 @@
    "ability": [
     "DAS WIRD FARBENFROH!",
     "Feuerwerk ist Kunst, du Banause!",
-    "Ohren zu, Arsch auf!"
+    "Ohren zu, Arsch auf!",
+    "Sheesh!"
    ],
    "death": [
     "Oh shit, zu früh gezündet.",
     "Panzer hilft auch nicht gegen alles.",
-    "Meine Augenbrauen! Schon wieder!"
+    "Meine Augenbrauen! Schon wieder!",
+    "Autsch, voll auf den Sack!"
    ],
    "win": [
     "Langsam? Ich? Fick dich, Hase!",
-    "Das große Finale, Baby!"
+    "Das große Finale, Baby!",
+    "Läuft bei mir, Digger!"
    ],
    "hit": [
     "Volltreffer! Silvester!",
-    "Hat’s gekracht? Hat’s gekracht!"
+    "Hat’s gekracht? Hat’s gekracht!",
+    "Headshot, ihr Rotzlöffel!",
+    "Du Otto!"
    ],
    "pass": [
     "Die Schildkröte überholt! Heul doch!",
-    "Langsam, aber gewaltig!"
+    "Langsam, aber gewaltig!",
+    "Yolo, sagt man doch so?"
    ],
    "passed": [
     "Du Drecksack, ich zünd dich an!",
-    "Na warte, du Rakete!"
+    "Na warte, du Rakete!",
+    "Alter!"
    ],
    "swallowed": [
     "Zurück ins Chaos? Scheißdreck!"

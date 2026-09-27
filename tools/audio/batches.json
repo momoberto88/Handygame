@@ -310,5 +310,159 @@
    "TEAMSIEG!",
    "Team verloren. Schämt euch."
   ]
+ },
+ "kurz-ratte": {
+  "voice": "YypU2axAT21dZtyJyNGA",
+  "prompt": "[manic, giggling] Headshot!\n\nGotcha, gotcha!\n\nTschüss, Digger!\n\nDu Lappen!\n\nAutsch, voll auf den Sack!\n\nSheesh!\n\nWTF?!",
+  "files": [
+   "voice/ratte/hit-2.mp3",
+   "voice/ratte/hit-3.mp3",
+   "voice/ratte/pass-2.mp3",
+   "voice/ratte/passed-2.mp3",
+   "voice/ratte/death-3.mp3",
+   "voice/ratte/win-2.mp3",
+   "voice/ratte/stunned-1.mp3"
+  ],
+  "texts": [
+   "Headshot!",
+   "Gotcha, gotcha!",
+   "Tschüss, Digger!",
+   "Du Lappen!",
+   "Autsch, voll auf den Sack!",
+   "Sheesh!",
+   "WTF?!"
+  ]
+ },
+ "kurz-otter": {
+  "voice": "8tJgFGd1nr7H5KLTvjjt",
+  "prompt": "[excited] Du Otto!\n\nZu easy!\n\nLäuft bei dir … nicht!\n\nAlter!\n\nWTF?!\n\nSheesh, Digger!\n\nYolo!",
+  "files": [
+   "voice/otter/hit-2.mp3",
+   "voice/otter/hit-3.mp3",
+   "voice/otter/pass-2.mp3",
+   "voice/otter/passed-2.mp3",
+   "voice/otter/death-3.mp3",
+   "voice/otter/win-2.mp3",
+   "voice/otter/ability-3.mp3"
+  ],
+  "texts": [
+   "Du Otto!",
+   "Zu easy!",
+   "Läuft bei dir … nicht!",
+   "Alter!",
+   "WTF?!",
+   "Sheesh, Digger!",
+   "Yolo!"
+  ]
+ },
+ "kurz-kraehe": {
+  "voice": "BOXom31b0dZ8zv6QJFfQ",
+  "prompt": "[mischievously] Gotcha!\n\nHeadshot.\n\nBye, du Lappen!\n\nEhrenlos!\n\nBruh.\n\nGönn dir … nicht.\n\nSheesh!",
+  "files": [
+   "voice/kraehe/hit-2.mp3",
+   "voice/kraehe/hit-3.mp3",
+   "voice/kraehe/pass-2.mp3",
+   "voice/kraehe/passed-2.mp3",
+   "voice/kraehe/death-3.mp3",
+   "voice/kraehe/win-2.mp3",
+   "voice/kraehe/ability-3.mp3"
+  ],
+  "texts": [
+   "Gotcha!",
+   "Headshot.",
+   "Bye, du Lappen!",
+   "Ehrenlos!",
+   "Bruh.",
+   "Gönn dir … nicht.",
+   "Sheesh!"
+  ]
+ },
+ "kurz-dachs": {
+  "voice": "BDqe1qZiwPi7xspRxTgh",
+  "prompt": "[yelling] Du Opfer!\n\nHops genommen!\n\nYolo!\n\nEy, Digger!\n\nAutsch, voll auf den Sack!\n\nLäuft bei mir!\n\nAlter, was?!",
+  "files": [
+   "voice/dachs/hit-2.mp3",
+   "voice/dachs/hit-3.mp3",
+   "voice/dachs/pass-2.mp3",
+   "voice/dachs/passed-2.mp3",
+   "voice/dachs/death-3.mp3",
+   "voice/dachs/win-2.mp3",
+   "voice/dachs/stunned-1.mp3"
+  ],
+  "texts": [
+   "Du Opfer!",
+   "Hops genommen!",
+   "Yolo!",
+   "Ey, Digger!",
+   "Autsch, voll auf den Sack!",
+   "Läuft bei mir!",
+   "Alter, was?!"
+  ]
+ },
+ "kurz-maulwurf": {
+  "voice": "DUAKkudcC2PI6KEqJ60K",
+  "prompt": "[shouting] Headshot!\n\nDu Otto!\n\nSheesh!\n\nWTF?!\n\nDigger, echt jetzt?\n\nEhrenmann!\n\nYolo!",
+  "files": [
+   "voice/maulwurf/hit-2.mp3",
+   "voice/maulwurf/hit-3.mp3",
+   "voice/maulwurf/pass-2.mp3",
+   "voice/maulwurf/passed-2.mp3",
+   "voice/maulwurf/death-3.mp3",
+   "voice/maulwurf/win-2.mp3",
+   "voice/maulwurf/ability-3.mp3"
+  ],
+  "texts": [
+   "Headshot!",
+   "Du Otto!",
+   "Sheesh!",
+   "WTF?!",
+   "Digger, echt jetzt?",
+   "Ehrenmann!",
+   "Yolo!"
+  ]
+ },
+ "kurz-chinchilla": {
+  "voice": "Zi7dUK1wmV84QNPgB6Hc",
+  "prompt": "[sassy] Gotcha, Schätzchen!\n\nDu Lappen!\n\nLäuft bei dir … nicht.\n\nAlter?!\n\nWTF?!\n\nSheesh.\n\nBruh.",
+  "files": [
+   "voice/chinchilla/hit-2.mp3",
+   "voice/chinchilla/hit-3.mp3",
+   "voice/chinchilla/pass-2.mp3",
+   "voice/chinchilla/passed-2.mp3",
+   "voice/chinchilla/death-3.mp3",
+   "voice/chinchilla/win-2.mp3",
+   "voice/chinchilla/stunned-1.mp3"
+  ],
+  "texts": [
+   "Gotcha, Schätzchen!",
+   "Du Lappen!",
+   "Läuft bei dir … nicht.",
+   "Alter?!",
+   "WTF?!",
+   "Sheesh.",
+   "Bruh."
+  ]
+ },
+ "kurz-schildkroete": {
+  "voice": "09BJBPASOGbr1evokbCu",
+  "prompt": "[yelling] Headshot, ihr Rotzlöffel!\n\nDu Otto!\n\nYolo, sagt man doch so?\n\nAlter!\n\nAutsch, voll auf den Sack!\n\nLäuft bei mir, Digger!\n\nSheesh!",
+  "files": [
+   "voice/schildkroete/hit-2.mp3",
+   "voice/schildkroete/hit-3.mp3",
+   "voice/schildkroete/pass-2.mp3",
+   "voice/schildkroete/passed-2.mp3",
+   "voice/schildkroete/death-3.mp3",
+   "voice/schildkroete/win-2.mp3",
+   "voice/schildkroete/ability-3.mp3"
+  ],
+  "texts": [
+   "Headshot, ihr Rotzlöffel!",
+   "Du Otto!",
+   "Yolo, sagt man doch so?",
+   "Alter!",
+   "Autsch, voll auf den Sack!",
+   "Läuft bei mir, Digger!",
+   "Sheesh!"
+  ]
  }
 }
