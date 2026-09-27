@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -37,8 +38,25 @@ function clipVersions(): Plugin {
 // BASE_PATH is set by the GitHub Pages workflow (e.g. "/Handygame/").
 const base = process.env.BASE_PATH ?? '/';
 
+/** Shown in the menu, so everybody can see which version their phone runs. */
+function buildLabel(): string {
+  let sha = (process.env.GITHUB_SHA ?? '').slice(0, 7);
+  if (!sha) {
+    try {
+      sha = execSync('git rev-parse --short HEAD').toString().trim();
+    } catch {
+      sha = 'lokal';
+    }
+  }
+  const when = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date());
+  return `${when.replace(',', '')} · ${sha}`;
+}
+
 export default defineConfig({
   base,
+  define: {
+    __BUILD__: JSON.stringify(buildLabel()),
+  },
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 2000,
@@ -46,7 +64,8 @@ export default defineConfig({
   plugins: [
     clipVersions(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // new versions are applied in the menu, never in the middle of a race (see src/update.ts)
+      registerType: 'prompt',
       includeAssets: ['icons/*.png'],
       manifest: {
         name: 'Runaway Rivals',

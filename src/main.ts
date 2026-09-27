@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { registerSW } from 'virtual:pwa-register';
 import { canvasSize, fitGame } from './layout';
 import { BootScene } from './scenes/BootScene';
 import { MenuScene } from './scenes/MenuScene';
@@ -13,6 +12,8 @@ import { LineupScene } from './scenes/LineupScene';
 import { WardrobeScene } from './scenes/WardrobeScene';
 import { SettingsScene } from './scenes/SettingsScene';
 import { EditorScene } from './scenes/EditorScene';
+import { currentRoom } from './net/room';
+import { setupUpdates } from './update';
 
 const { w, h, dpr } = canvasSize();
 
@@ -38,7 +39,8 @@ window.addEventListener('resize', () => {
   resizeTimer = window.setTimeout(() => fitGame(game), 120);
 });
 
-registerSW({ immediate: true });
+// a new version loads in the menu only, never during a race or in a room
+setupUpdates(() => game.scene.isActive('menu') && !currentRoom());
 
 // Handy for debugging from the browser console and for automated browser tests.
 (window as unknown as { game: Phaser.Game }).game = game;

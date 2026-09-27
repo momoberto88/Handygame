@@ -17,6 +17,7 @@ import { WORLD_ORDER } from '../render/worlds';
 import { iconButton, panel, textButton } from '../ui/widgets';
 import { startLocalRace, startTutorial } from './flow';
 import { uiText } from './HudScene';
+import { applyUpdateIfSafe, updateWaiting } from '../update';
 
 export class MenuScene extends Phaser.Scene {
   private bg!: BackgroundView;
@@ -120,6 +121,12 @@ export class MenuScene extends Phaser.Scene {
     this.coinLabel = uiText(this, W - 134, 14, String(save.coins), 22, '#ffe68a');
     this.ui.add(this.coinLabel);
     this.ui.add(uiText(this, W - 74, 14, `🏆 ${save.trophies}`, 22, '#ffffff'));
+
+    // which version runs on this phone (and a note while a new one is being loaded)
+    const version = uiText(this, W - 12, H - 24, `Version ${__BUILD__}`, 13, '#ffffff').setOrigin(1, 0).setAlpha(0.75);
+    this.ui.add(version);
+    if (updateWaiting()) version.setText('🔄 Neue Version wird geladen …').setAlpha(1);
+    this.time.delayedCall(300, applyUpdateIfSafe);
 
     applyAudioSettings();
     // menu music: the tune of the world in the background, a bit quieter
