@@ -36,6 +36,40 @@ export const TUNES = {
             C5:.25 D5:.25 D#5:.25 E5:.25 C5:.25 D5:.25 E5:.5 B4:.25 D5:.5 C5:1.5`,
     transpose: 7,
   },
+  mountainking: {
+    title: 'In der Halle des Bergkönigs (Grieg)',
+    bpm: 150,
+    legato: 0.75,
+    notes: `B3:.5 C#4:.5 D4:.5 E4:.5 F#4:.5 D4:.5 F#4:1 | F4:.5 C#4:.5 F4:1 E4:.5 C4:.5 E4:1 |
+            B3:.5 C#4:.5 D4:.5 E4:.5 F#4:.5 D4:.5 F#4:.5 B4:.5 | A4:.5 F#4:.5 D4:.5 F#4:.5 A4:2 |
+            B3:.3 C#4:.3 D4:.3 E4:.3 F#4:.3 D4:.3 F#4:.6 | F4:.3 C#4:.3 F4:.6 E4:.3 C4:.3 E4:.6 |
+            B3:.3 C#4:.3 D4:.3 E4:.3 F#4:.3 D4:.3 F#4:.3 B4:.3 | A4:.3 F#4:.3 D4:.3 F#4:.3 B3:1.2`,
+    transpose: 12,
+  },
+  bumblebee: {
+    title: 'Hummelflug (Rimski-Korsakow)',
+    bpm: 84,
+    legato: 0.9,
+    cleanStart: 8,
+    notes: `E5:.25 D#5:.25 D5:.25 C#5:.25 D5:.25 C#5:.25 C5:.25 B4:.25 | C5:.25 B4:.25 Bb4:.25 A4:.25 G#4:.25 G4:.25 F#4:.25 F4:.25 |
+            E4:.25 D#4:.25 D4:.25 C#4:.25 C4:.25 F4:.25 E4:.25 D#4:.25 | E4:.25 D#4:.25 D4:.25 C#4:.25 C4:.25 F4:.25 E4:.25 D#4:.25 | E4:1`,
+    transpose: 7,
+  },
+  fuchs: {
+    title: 'Fuchs, du hast die Gans gestohlen (Kinderlied)',
+    bpm: 170,
+    legato: 0.85,
+    notes: `C5:1 D5:1 E5:1 F5:1 | G5:1 G5:1 G5:1 G5:1 | A5:1 F5:1 C6:1 A5:1 | G5:4 | A5:1 F5:1 C6:1 A5:1 | G5:4 |
+            G5:1 F5:1 F5:1 F5:1 | F5:1 E5:1 E5:1 E5:1 | E5:1 D5:1 E5:1 D5:1 | C5:4`,
+    transpose: -2,
+  },
+  entchen: {
+    title: 'Alle meine Entchen (Kinderlied)',
+    bpm: 180,
+    legato: 0.85,
+    notes: `C5:1 D5:1 E5:1 F5:1 | G5:2 G5:2 | A5:1 A5:1 A5:1 A5:1 | G5:4 | A5:1 A5:1 A5:1 A5:1 | G5:4 |
+            F5:1 F5:1 F5:1 F5:1 | E5:2 E5:2 | D5:1 D5:1 D5:1 D5:1 | C5:4`,
+  },
   // ---- last place: mockery --------------------------------------------------------------------
   funeral: {
     title: 'Trauermarsch (Chopin)',
