@@ -44,9 +44,10 @@ describe('2 vs 2', () => {
   it('a saw flies through the teammate and hits the rival', () => {
     const race = teamRace();
     const [me, mate, rival, other] = race.runners;
-    mate.x = me.x + 120;
+    // both stay on the start platform (the course behind it is a landscape)
+    mate.x = me.x + 80;
     mate.y = me.y;
-    rival.x = me.x + 320;
+    rival.x = me.x + 200;
     rival.y = me.y;
     other.x = me.x - 400;
     me.item = 'saw';
