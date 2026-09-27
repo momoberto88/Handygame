@@ -471,3 +471,92 @@ free('water', 'water-columns', 2, (b, x) => {
   flood(b, x, L.c - x);
   return done(L, x);
 });
+
+// =============================================================================================
+// Luftpiraten: airships in the sky (the abyss between them is deadly), cannons, balloons, rigging.
+
+// Two ships: across the rickety plank (it breaks!) or jump the gap; the second ship has a raised
+// quarterdeck and a crow's nest above.
+free('pirates', 'pirate-ships', 1, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(14);
+  plank(b, x + 5, x + 9, G - 5);
+  b.coinsAt(x + 5, x + 9, G - 5, 1);
+  b.boxAt(x + 7, G);
+  const p0 = L.c;
+  L.pit(5);
+  for (let c = p0; c < p0 + 5; c++) b.set(c, G, Tile.Crumble);
+  L.flat(6).step(G - 2).flat(8);
+  b.coinsAt(L.c - 8, L.c - 1, G - 2, 1);
+  L.step(G).flat(6);
+  plank(b, p0 + 8, p0 + 16, G - 7);
+  b.coinsAt(p0 + 9, p0 + 15, G - 7, 1);
+  b.boxAt(p0 + 12, G - 7);
+  return done(L, x);
+});
+
+// Broadside: an enemy cannon at the far end fires along the deck (jump the balls); the upper deck
+// has its own cannon, and a hole in the main deck.
+free('pirates', 'pirate-broadside', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(12).pit(3).flat(15);
+  b.cannonAt(L.c - 2, G, 1, -1, 2.0, 26);
+  plank(b, x + 6, x + 24, G - 5);
+  b.cannonAt(x + 25, G - 4, 1, -1, 2.4, 20);
+  b.padAt(x + 4, G, 'boost');
+  b.coinsAt(x + 7, x + 23, G - 5, 1);
+  b.boxAt(x + 15, G - 5);
+  b.coinsAt(x + 16, x + 24, G, 0.4);
+  L.flat(4);
+  return done(L, x);
+});
+
+// Rigging: rope planks climb up the mast to the crow's nest and down again; the deck below has a
+// hole and a cargo crate to jump.
+free('pirates', 'pirate-mast', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(6);
+  const d0 = L.c;
+  L.flat(8).pit(3).flat(12);
+  const steps: [number, number, number][] = [[0, 3, G - 3], [4, 7, G - 6], [9, 13, G - 8], [15, 18, G - 6], [19, 22, G - 3]];
+  for (const [a, e, row] of steps) plank(b, d0 + a, d0 + e, row);
+  b.coinsAt(d0 + 9, d0 + 13, G - 8, 2);
+  b.boxAt(d0 + 11, G - 8);
+  b.fill(d0 + 16, d0 + 17, G - 1, G - 1, Tile.Solid);
+  b.sawAt(d0 + 5, G, 1, 'horizontal', 60);
+  L.flat(4);
+  return done(L, x);
+});
+
+// Balloons lift you from the low ship up to the high one; then down the gangway.
+free('pirates', 'pirate-balloon', 1, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(6);
+  const p0 = L.c;
+  L.pit(12);
+  b.moverAt(p0 + 1, G - 1, 3, 'y', 2, 2.8);
+  b.moverAt(p0 + 6, G - 3, 3, 'y', 2, 3.2);
+  b.coinsAt(p0 + 2, p0 + 9, G - 6, 1, 1);
+  L.step(G - 4).flat(10);
+  b.boxAt(L.c - 5, G - 4);
+  b.cannonAt(L.c - 1, G - 4, 1, -1, 2.6, 12);
+  L.down(4).flat(6);
+  return done(L, x);
+});
+
+// Pirate island: a floating rock with sandy hills, palm-leaf planks and a fort whose cannon fires
+// at you.
+free('pirates', 'pirate-island', 2, (b, x) => {
+  const L = new Land(b, x);
+  L.flat(4);
+  L.pit(4);
+  L.flat(3).up(2).flat(3).down(2).flat(4);
+  b.coinsAt(L.c - 10, L.c - 6, G - 2, 2, 1);
+  plank(b, L.c - 4, L.c + 1, G - 5);
+  b.boxAt(L.c - 2, G - 5);
+  L.flat(2).step(G - 3).flat(8);
+  b.cannonAt(L.c - 1, G - 3, 1, -1, 2.2, 22);
+  b.coinsAt(L.c - 7, L.c - 3, G - 3, 1);
+  L.step(G).flat(4).pit(3).flat(5);
+  return done(L, x);
+});

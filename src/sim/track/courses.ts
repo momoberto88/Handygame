@@ -102,7 +102,8 @@ export const COURSES: CourseDef[] = [
     world: 'pirates',
     difficulty: 3,
     seed: 601,
-    modules: ['decks', 'cannon-deck', 'rigging', 'balloon-lift', 'plank-walk', 'broadside', 'decks', 'rigging', 'cannon-deck', 'plank-walk', 'balloon-lift', 'broadside', 'broadside', 'rigging', 'plank-walk', 'decks'],
+    terrain: false,
+    modules: ['pirate-ships', 'pirate-broadside', 'pirate-mast', 'pirate-balloon', 'pirate-island', 'pirate-broadside', 'pirate-ships', 'pirate-mast', 'pirate-island', 'pirate-balloon', 'pirate-broadside', 'pirate-mast', 'pirate-ships'],
   },
   {
     id: 'pyramiden-rallye',
