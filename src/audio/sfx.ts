@@ -1,4 +1,5 @@
 import clipList from './clips.json';
+import CLIP_VERSIONS from 'virtual:clip-versions';
 
 /**
  * Sound effects: recorded clips (public/assets/audio, made with ElevenLabs) where they exist,
@@ -135,7 +136,7 @@ class Synth {
     for (const path of paths) {
       if (!CLIPS.has(path) || this.buffers.has(path)) continue;
       this.buffers.set(path, 'loading');
-      fetch(`${import.meta.env.BASE_URL}assets/audio/${path}.mp3`)
+      fetch(`${import.meta.env.BASE_URL}assets/audio/${path}.mp3?v=${CLIP_VERSIONS[path] ?? '0'}`)
         .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
         .then((data) => ctx.decodeAudioData(data))
         .then((buf) => {
