@@ -81,7 +81,60 @@ def process(src, dst, voice):
         run(chain[1:])
 
 
+def speech_islands(src, n):
+    """Start/end (s) of the n spoken lines: loud runs of the envelope, merged across short breaths."""
+    raw = subprocess.run([FFMPEG, '-v', 'error', '-i', src, '-ac', '1', '-ar', '8000', '-f', 's16le', '-'],
+                         capture_output=True).stdout
+    samples = memoryview(raw).cast('h')
+    win = 160  # 20 ms
+    env = []
+    for i in range(0, len(samples) - win, win):
+        chunk = samples[i:i + win]
+        env.append((sum(v * v for v in chunk) / win) ** 0.5)
+    peak = max(env) or 1
+    for drop_db in (35, 30, 25, 20, 40, 45):
+        thr = peak * 10 ** (-drop_db / 20)
+        runs, start = [], None
+        for k, e in enumerate(env + [0]):
+            if e > thr and start is None:
+                start = k
+            elif e <= thr and start is not None:
+                runs.append([start, k])
+                start = None
+        # a breath inside a line is short: glue runs closer than 100 ms, drop clicks under 60 ms
+        merged = []
+        for r in runs:
+            if merged and r[0] - merged[-1][1] < 5:
+                merged[-1][1] = r[1]
+            else:
+                merged.append(r)
+        merged = [r for r in merged if r[1] - r[0] >= 3]
+        # too many: glue the pairs with the smallest gaps
+        while len(merged) > n:
+            k = min(range(len(merged) - 1), key=lambda j: merged[j + 1][0] - merged[j][1])
+            merged[k][1] = merged[k + 1][1]
+            del merged[k + 1]
+        if len(merged) == n:
+            return [(a * 0.02, b * 0.02) for a, b in merged]
+    return None
+
+
 def split_batch(src, files, texts):
+    """Cuts one recording with len(files) lines into its spoken lines."""
+    islands = speech_islands(src, len(files))
+    if islands:
+        for i, f in enumerate(files):
+            start = max(0.0, islands[i][0] - 0.06)
+            end = islands[i][1] + 0.12
+            with tempfile.NamedTemporaryFile(suffix='.wav') as part:
+                subprocess.run([FFMPEG, '-y', '-loglevel', 'error', '-i', src, '-ss', str(start), '-to', str(end), part.name],
+                               check=True)
+                process(part.name, os.path.join(OUT, f), True)
+        return
+    split_batch_by_pauses(src, files, texts)
+
+
+def split_batch_by_pauses(src, files, texts):
     """Cuts one recording with len(files) lines at its len(files)-1 longest pauses."""
     def gaps_for(noise, dur):
         log = subprocess.run(
