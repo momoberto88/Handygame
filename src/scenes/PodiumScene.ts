@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { fluteLong } from '../audio/flute';
 import { sfx } from '../audio/sfx';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
 import { characterById } from '../meta/characters';
@@ -61,6 +62,8 @@ export class PodiumScene extends Phaser.Scene {
     sfx.play(myPlace === 1 ? 'finish' : 'go');
     const cheer = myPlace === 1 ? announce('cupWin') : null;
     if (cheer) this.time.delayedCall(1500, () => sfx.speak(cheer.clip, 5));
+    // the ceremony gets the long flute solo
+    this.time.delayedCall(cheer ? 3200 : 1800, () => fluteLong());
 
     // background: evening sky with light beams
     const bg = this.add.graphics();

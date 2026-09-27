@@ -306,6 +306,29 @@ class Synth {
     return this.buses?.[name] ?? this.master!;
   }
 
+  /** Where a custom sound source (e.g. the flute) plugs in; null before the first tap. */
+  input(name: Bus): AudioNode | null {
+    return this.ctx && this.enabled && this.ctx.state === 'running' ? this.bus(name) : null;
+  }
+
+  /** Current volume of a bus from the settings (0…1). */
+  level(name: Bus): number {
+    return this.levels[name];
+  }
+
+  /** Turns the background music down for a moment (while a jingle plays). */
+  duck(seconds: number, to = 0.25) {
+    const m = this.music;
+    if (!m || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    const v = m.gain.gain.value;
+    m.gain.gain.cancelScheduledValues(t);
+    m.gain.gain.setValueAtTime(v, t);
+    m.gain.gain.linearRampToValueAtTime(v * to, t + 0.25);
+    m.gain.gain.setValueAtTime(v * to, t + seconds);
+    m.gain.gain.linearRampToValueAtTime(v, t + seconds + 0.8);
+  }
+
   /**
    * Mixer: effects, voices and music each have their own volume. Effects get their harsh top
    * softened, effects and voices share a little room reverb, and a compressor glues it all together.

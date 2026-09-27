@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { fluteShort } from '../audio/flute';
 import { sfx } from '../audio/sfx';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
 import { characterById } from '../meta/characters';
@@ -68,6 +69,8 @@ export class ResultScene extends Phaser.Scene {
     const koOut = cup && lastOut(cup);
     const shout = teams && !watching ? announce(teamWin ? 'teamWin' : 'teamLose') : koOut ? announce('out') : null;
     if (shout) this.time.delayedCall(700, () => sfx.speak(shout.clip, 5));
+    // a badly played flute tune to round it off
+    this.time.delayedCall(shout ? 2200 : 1300, () => fluteShort());
 
     this.add.rectangle(0, 0, W, H, 0x0d0a1a, 0.55).setOrigin(0, 0);
     const pw = Math.min(560, W - 40);
