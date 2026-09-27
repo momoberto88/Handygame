@@ -6,3 +6,4 @@ dev-dist
 test-results
 playwright-report
 tools/raw
+__pycache__/
