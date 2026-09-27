@@ -38,7 +38,14 @@ export function parseClientMsg(raw: unknown): ClientMsg | null {
   switch (raw.t) {
     case 'hello':
       if (!Number.isInteger(raw.v)) return null;
-      return { t: 'hello', v: raw.v as number, name: cleanName(raw.name), character: cleanCharacter(raw.character), cosmetics: cleanCosmetics(raw.cosmetics) };
+      return {
+        t: 'hello',
+        v: raw.v as number,
+        name: cleanName(raw.name),
+        character: cleanCharacter(raw.character),
+        cosmetics: cleanCosmetics(raw.cosmetics),
+        k: typeof raw.k === 'string' && /^[a-z0-9]{16,40}$/.test(raw.k) ? raw.k : undefined,
+      };
     case 'profile':
       return { t: 'profile', name: cleanName(raw.name), character: cleanCharacter(raw.character), cosmetics: cleanCosmetics(raw.cosmetics) };
     case 'in':

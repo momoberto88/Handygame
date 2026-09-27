@@ -56,7 +56,8 @@ export type AgainAnswer = 'again' | 'cup' | 'wait' | 'leave';
 export const AGAIN_COUNTDOWN = 5;
 
 export type ClientMsg =
-  | { t: 'hello'; v: number; name: string; character: string; cosmetics?: RacerInfo['cosmetics'] }
+  /** `k`: random id of the phone, so the host recognises a friend coming back after a restart. */
+  | { t: 'hello'; v: number; name: string; character: string; cosmetics?: RacerInfo['cosmetics']; k?: string }
   | { t: 'in'; s: number; j: 0 | 1; d: 0 | 1 }
   | { t: 'use'; dir: -1 | 1 }
   | { t: 'ab' }

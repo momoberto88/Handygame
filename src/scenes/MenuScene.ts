@@ -1,4 +1,6 @@
 import { isRoomCode } from '../net/protocol';
+import { loadRoom } from '../net/resume';
+import { currentRoom } from '../net/room';
 import Phaser from 'phaser';
 import { sfx } from '../audio/sfx';
 import { viewWidth, viewZoom, VIEW_H } from '../layout';
@@ -100,7 +102,13 @@ export class MenuScene extends Phaser.Scene {
     const bw = Math.min(330, W * 0.36);
     this.ui.add(textButton(this, bx, 172, bw, 60, loadSave().teamMode ? 'Schnelles Rennen 👥' : 'Schnelles Rennen', 0x5fd35a, () => startLocalRace(this), 25).container);
     this.ui.add(textButton(this, bx, 246, bw, 60, '🏆 Cups & Strecken', 0xffd84a, () => this.scene.start('courses', { mode: 'solo' }), 25).container);
-    const friends = textButton(this, bx, 320, bw, 60, 'Mit Freunden', 0x4aa3ff, () => this.scene.start('lobby'), 25);
+    // a room is open (or can be reopened after a restart): the button leads straight back into it
+    const open = currentRoom();
+    const saved = open ? null : loadRoom();
+    const roomCode = open?.code ?? saved?.code;
+    const friends = roomCode
+      ? textButton(this, bx, 320, bw, 60, `🚪 Zurück in Raum ${roomCode.slice(0, 3)} ${roomCode.slice(3)}`, 0x5fd35a, () => this.scene.start('lobby', saved ? { resume: saved } : undefined), 21)
+      : textButton(this, bx, 320, bw, 60, 'Mit Freunden', 0x4aa3ff, () => this.scene.start('lobby'), 25);
     friends.setEnabled(this.scene.manager.keys['lobby'] !== undefined);
     this.ui.add(friends.container);
     const wardrobe = textButton(this, bx, 394, bw, 60, '👕 Garderobe & Shop', 0xffa94a, () => this.scene.start('wardrobe'), 25);
@@ -136,6 +144,16 @@ export class MenuScene extends Phaser.Scene {
       history.replaceState(null, '', url.toString());
       this.scene.start('lobby', { join: invite });
       return;
+    }
+    // the phone restarted the game while a room was open (e.g. after sharing the invitation):
+    // straight back into that room, same code
+    if (!this.registry.get('resumeTried')) {
+      this.registry.set('resumeTried', true);
+      const saved = loadRoom();
+      if (saved) {
+        this.scene.start('lobby', { resume: saved });
+        return;
+      }
     }
     // very first start: offer the practice run
     if (!save.tutorialDone && save.stats.races === 0 && !this.registry.get('tutorialAsked') && !location.search.includes('autoplay')) {

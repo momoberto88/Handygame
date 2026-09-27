@@ -14,6 +14,7 @@ import {
 import type { RacerInfo } from './session';
 import { chatText } from '../meta/chat';
 import { walkieFor } from './voice';
+import { forgetRoom, playerKey, saveRoom } from './resume';
 import { parseClientMsg, parseHostMsg } from './validate';
 
 export interface ChatMessage {
@@ -157,6 +158,10 @@ export class NetRoom {
   requests: JoinRequest[] = [];
   readonly requestListeners = new Set<() => void>();
   private requestId = 0;
+  /** Host: players let in before (their phone ids); they come back in without knocking. */
+  readonly knownKeys = new Set<string>();
+  /** Saves the room for a restart of the app (set while it is the current room). */
+  persist: (() => void) | null = null;
   /** Host: recent chat times per seat (spam guard). */
   private chatTimes = new Map<number, number[]>();
 
@@ -170,10 +175,15 @@ export class NetRoom {
     });
   }
 
-  static async host(profile: Profile): Promise<NetRoom> {
+  /**
+   * Opens a room. With `reopen` the same code as before (after the app was restarted); the
+   * matchmaking service may still hold the old connection for a few seconds, so that is retried.
+   */
+  static async host(profile: Profile, reopen?: string): Promise<NetRoom> {
     let lastError: unknown = null;
-    for (let attempt = 0; attempt < 6; attempt++) {
-      const code = randomRoomCode();
+    for (let attempt = 0; attempt < (reopen ? 12 : 6); attempt++) {
+      if (reopen && attempt > 0) await new Promise((r) => window.setTimeout(r, 2500));
+      const code = reopen ?? randomRoomCode();
       const peer = new Peer(peerIdForCode(code), peerOptions());
       try {
         await withTimeout(waitOpen(peer), 12000, 'Der Vermittlungsdienst antwortet nicht.');
@@ -241,7 +251,7 @@ export class NetRoom {
         failed(new Error(''));
         room.close();
       });
-      room.send({ t: 'hello', v: PROTOCOL_VERSION, ...profile });
+      room.send({ t: 'hello', v: PROTOCOL_VERSION, ...profile, k: playerKey() || undefined });
       // first the host answers at all, then a person decides (that may take a while)
       await withTimeout(Promise.race([welcome, asked]), 10000, 'Keine Antwort vom Gastgeber.');
       onWaiting?.();
@@ -286,6 +296,20 @@ export class NetRoom {
         // the host decides who gets in: a guessed code alone is not enough
         knocked = true;
         const hello = msg;
+        const letIn = () => {
+          seat = this.freeSeat();
+          if (seat < 0) return refuse('Der Raum ist schon voll (4 Spieler).');
+          if (hello.k) this.knownKeys.add(hello.k);
+          const player: LobbyPlayer = { seat, name: hello.name, character: hello.character, cosmetics: hello.cosmetics };
+          this.seats.set(seat, { conn, player });
+          this.players.push(player);
+          this.players.sort((a, b) => a.seat - b.seat);
+          this.rawSend(conn, { t: 'welcome', seat });
+          this.broadcastLobby();
+          this.persist?.();
+        };
+        // somebody who was let in before (and only lost the connection) comes straight back
+        if (hello.k && this.knownKeys.has(hello.k)) return letIn();
         request = {
           id: ++this.requestId,
           name: hello.name,
@@ -294,14 +318,7 @@ export class NetRoom {
             if (!request || this.closed) return;
             dropRequest();
             if (!yes) return refuse('Der Gastgeber hat dich nicht reingelassen.');
-            seat = this.freeSeat();
-            if (seat < 0) return refuse('Der Raum ist schon voll (4 Spieler).');
-            const player: LobbyPlayer = { seat, name: hello.name, character: hello.character, cosmetics: hello.cosmetics };
-            this.seats.set(seat, { conn, player });
-            this.players.push(player);
-            this.players.sort((a, b) => a.seat - b.seat);
-            this.rawSend(conn, { t: 'welcome', seat });
-            this.broadcastLobby();
+            letIn();
           },
         };
         this.requests.push(request);
@@ -385,6 +402,8 @@ export class NetRoom {
     const vote = this.vote ? { options: this.vote.options, votes: this.vote.votes, left: Math.max(0, (this.vote.endsAt - Date.now()) / 1000) } : undefined;
     const againLeft = this.againEndsAt !== null ? Math.max(0, (this.againEndsAt - Date.now()) / 1000) : undefined;
     this.peers = [[0, this.peer.id], ...[...this.seats.entries()].map(([s, v]) => [s, v.conn.peer] as [number, string])];
+    // playlist or players changed: remember it for a restart of the app
+    this.persist?.();
     this.broadcast({ t: 'lobby', players: this.players, playlist: this.playlist, racing: this.racing, vote, again: this.again, againLeft, peers: this.peers });
     this.onLobby?.();
   }
@@ -554,9 +573,49 @@ export function currentRoom(): NetRoom | null {
   return current && !current.isClosed ? current : null;
 }
 
+/** Remembers the open room (for a restart of the app) until it is left on purpose. */
+function remember(room: NetRoom) {
+  if (room !== current || room.isClosed) return;
+  saveRoom({
+    role: room.role,
+    code: room.code,
+    at: Date.now(),
+    known: room.role === 'host' ? [...room.knownKeys] : undefined,
+    playlist: room.role === 'host' ? room.playlist : undefined,
+  });
+}
+let rememberTimer = 0;
+
+/**
+ * While in a room, the phone's back button must not close the game (it did, right after sharing
+ * the invitation): an extra history entry catches it.
+ */
+let backTrap = false;
+let backListener = false;
+function trapBackButton() {
+  if (backTrap) return;
+  backTrap = true;
+  history.pushState({ rr: 'room' }, '');
+  if (backListener) return;
+  backListener = true;
+  window.addEventListener('popstate', () => {
+    if (currentRoom()) history.pushState({ rr: 'room' }, '');
+    else backTrap = false;
+  });
+}
+
 export function setCurrentRoom(room: NetRoom | null) {
   if (current && current !== room) current.close();
   current = room;
+  window.clearInterval(rememberTimer);
+  if (room) {
+    room.persist = () => remember(room);
+    remember(room);
+    rememberTimer = window.setInterval(() => remember(room), 5000);
+    trapBackButton();
+  } else {
+    forgetRoom();
+  }
   // answer the friends' walkie-talkie calls from the start
   if (room) walkieFor(room);
   (window as unknown as { chaosRoom: NetRoom | null }).chaosRoom = room;

@@ -5,6 +5,7 @@ import { characterById } from '../meta/characters';
 import { MAX_PLAYERS, type Playlist } from '../net/protocol';
 import { NetRoom, currentRoom, setCurrentRoom } from '../net/room';
 import { ROOM_CODE_LENGTH, isRoomCode } from '../net/protocol';
+import { forgetRoom, type SavedRoom } from '../net/resume';
 import { headIcon } from '../render/art/skins';
 import { panel, textButton } from '../ui/widgets';
 import { goToMenu, hostStartRace, myProfile, wireClientRoom } from './flow';
@@ -45,7 +46,7 @@ export class LobbyScene extends Phaser.Scene {
     super('lobby');
   }
 
-  create(data?: { join?: string }) {
+  create(data?: { join?: string; resume?: SavedRoom }) {
     setupUiCamera(this);
     this.W = viewWidth(this);
     this.add.rectangle(0, 0, this.W, VIEW_H, 0x241d3d).setOrigin(0, 0);
@@ -57,6 +58,8 @@ export class LobbyScene extends Phaser.Scene {
     this.alive = true;
     this.events.once('shutdown', () => {
       this.alive = false;
+      // the chat belongs to this scene run (a restart builds it again)
+      this.chat = undefined;
       const r = currentRoom();
       if (r) {
         r.onLobby = null;
@@ -72,6 +75,13 @@ export class LobbyScene extends Phaser.Scene {
     if (!room && data?.join && isRoomCode(data.join)) {
       this.code = data.join;
       void this.joinRoom();
+    } else if (!room && data?.resume && isRoomCode(data.resume.code)) {
+      // the game was restarted while a room was open: back into it
+      if (data.resume.role === 'host') void this.reopenRoom(data.resume);
+      else {
+        this.code = data.resume.code;
+        void this.joinRoom(40000);
+      }
     }
   }
 
@@ -92,6 +102,20 @@ export class LobbyScene extends Phaser.Scene {
     }
   }
 
+  private inviteUrl(room: NetRoom): string {
+    return `${window.location.origin}${window.location.pathname}?raum=${room.code}`;
+  }
+
+  private async copyLink(room: NetRoom) {
+    const url = this.inviteUrl(room);
+    try {
+      await navigator.clipboard.writeText(`Komm in mein Runaway-Rivals-Rennen! Raum ${room.code}: ${url}`);
+      this.flash('Link kopiert – jetzt in WhatsApp einfügen!');
+    } catch {
+      this.flash(url);
+    }
+  }
+
   private flash(text: string) {
     const t = uiText(this, this.W / 2, VIEW_H - 60, text, 18, '#9fff9a').setOrigin(0.5).setDepth(50);
     this.tweens.add({ targets: t, alpha: 0, delay: 2600, duration: 400, onComplete: () => t.destroy() });
@@ -108,6 +132,12 @@ export class LobbyScene extends Phaser.Scene {
     room.onLobby = () => this.render();
     room.onClosed = (reason) => {
       setCurrentRoom(null);
+      if (room.role === 'client' && this.alive) {
+        // the host's phone probably restarted the game: it reopens the room, knock again
+        this.code = room.code;
+        void this.joinRoom(40000);
+        return;
+      }
       this.error = reason;
       this.view = 'choose';
       this.render();
@@ -281,6 +311,8 @@ export class LobbyScene extends Phaser.Scene {
     this.ui.add(uiText(this, W / 2, 106, 'Raum-Code', 16, '#3a3228').setOrigin(0.5).setStroke('#a39c8c', 0));
     this.ui.add(uiText(this, W / 2, 138, `${room.code.slice(0, 3)} ${room.code.slice(3)}`, 40, '#ffffff').setOrigin(0.5));
     this.ui.add(textButton(this, W / 2 + 280, 128, 190, 50, '📨 Einladen', 0x5fd35a, () => void this.invite(room), 19).container);
+    // copy the link and paste it yourself (no share sheet, the game stays in front)
+    this.ui.add(textButton(this, W / 2 - 280, 128, 190, 50, '🔗 Link kopieren', 0x4aa3ff, () => void this.copyLink(room), 17).container);
 
     const slotW = Math.min(170, (W - 80) / 4);
     const teams = room.playlist.teams !== undefined && !room.playlist.ko;
@@ -369,23 +401,36 @@ export class LobbyScene extends Phaser.Scene {
     }
   }
 
-  private async joinRoom() {
+  /** Host after a restart of the game: the same room again, same code, same friends. */
+  private async reopenRoom(saved: SavedRoom) {
     this.error = '';
-    this.busyText = `Verbinde mit Raum ${this.code} …`;
+    this.busyText = `Raum ${saved.code} wird wieder geöffnet …`;
+    this.setView('busy');
+    try {
+      const room = await NetRoom.host(myProfile(), saved.code);
+      if (saved.playlist) room.playlist = saved.playlist;
+      for (const k of saved.known ?? []) room.knownKeys.add(k);
+      setCurrentRoom(room);
+      this.attach(room);
+      this.setView('room');
+      this.flash('Raum wieder offen – dein Link gilt weiter!');
+    } catch (e) {
+      forgetRoom();
+      if (!this.scene.isActive()) return;
+      this.error = `Raum ${saved.code} ließ sich nicht wieder öffnen: ${(e as Error).message}`;
+      this.setView('choose');
+    }
+  }
+
+  /** `retryMs`: keep trying that long (the host may be reopening the room right now). */
+  private async joinRoom(retryMs = 0) {
+    this.error = '';
+    this.busyText = retryMs ? `Zurück in Raum ${this.code} …` : `Verbinde mit Raum ${this.code} …`;
     this.setView('busy');
     const cancel = new AbortController();
+    const until = Date.now() + retryMs;
     try {
-      const room = await NetRoom.join(
-        this.code,
-        myProfile(),
-        () => {
-          // the host's phone now asks "let them in?"
-          this.cancelJoin = cancel;
-          this.busyText = `Angeklopft bei Raum ${this.code} 🚪\nWarte, bis der Gastgeber dich reinlässt …`;
-          if (this.scene.isActive()) this.setView('busy');
-        },
-        cancel.signal,
-      );
+      const room = await this.tryJoin(cancel, until);
       this.cancelJoin = null;
       setCurrentRoom(room);
       this.attach(room);
@@ -396,5 +441,33 @@ export class LobbyScene extends Phaser.Scene {
       this.error = cancel.signal.aborted ? '' : (e as Error).message;
       this.setView('join');
     }
+  }
+
+  private async tryJoin(cancel: AbortController, until: number): Promise<NetRoom> {
+    for (;;) {
+      try {
+        return await this.knock(cancel);
+      } catch (e) {
+        if (cancel.signal.aborted || Date.now() > until || !this.scene.isActive()) throw e;
+        this.cancelJoin = cancel;
+        this.busyText = `Raum ${this.code} ist gleich wieder da …\nEinen Moment`;
+        this.setView('busy');
+        await new Promise((r) => window.setTimeout(r, 3000));
+      }
+    }
+  }
+
+  private knock(cancel: AbortController): Promise<NetRoom> {
+    return NetRoom.join(
+      this.code,
+      myProfile(),
+      () => {
+        // the host's phone now asks "let them in?"
+        this.cancelJoin = cancel;
+        this.busyText = `Angeklopft bei Raum ${this.code} 🚪\nWarte, bis der Gastgeber dich reinlässt …`;
+        if (this.scene.isActive()) this.setView('busy');
+      },
+      cancel.signal,
+    );
   }
 }
