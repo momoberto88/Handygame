@@ -1,4 +1,4 @@
-import { BotBrain, botProfile, type BotLevel } from '../sim/bot';
+import { BOT_PACE, BotBrain, botProfile, paceFor, type BotLevel } from '../sim/bot';
 import { DT } from '../sim/constants';
 import { Race } from '../sim/race';
 import type { RunnerInput, SimEvent, WorldId } from '../sim/types';
@@ -58,7 +58,7 @@ export class HostSession implements RaceSession {
     private room: NetRoom,
     setup: HostSetup,
   ) {
-    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers), teams: teamsOf(setup.racers), humans: setup.racers.map((r) => !r.isBot), wallSpeed: setup.botLevel === 'easy' ? 0.85 : 1 });
+    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers), teams: teamsOf(setup.racers), humans: setup.racers.map((r) => !r.isBot), wallSpeed: setup.botLevel === 'easy' ? 0.85 : 1, pace: paceFor(setup.racers.map((r) => r.isBot), setup.botLevel ?? 'normal') });
     this.racers = setup.racers.map((r) => ({ ...r }));
     this.spectator = setup.spectator ?? false;
     this.botLevel = setup.botLevel ?? 'normal';
@@ -100,6 +100,7 @@ export class HostSession implements RaceSession {
     if (id < 0) return;
     this.remotes.delete(id);
     this.brains[id] = new BotBrain(this.race.tick + id, botProfile(this.botLevel, id));
+    this.race.runners[id].pace = BOT_PACE[this.botLevel];
     this.racers[id].isBot = true;
     this.notice = { text: `${name} ist weg – ein Bot übernimmt`, until: performance.now() + 4000 };
   }

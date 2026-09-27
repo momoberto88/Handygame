@@ -11,7 +11,7 @@ const LONG = 'sfx/flute-long';
 
 function play(path: string) {
   if (sfx.level('music') <= 0) return;
-  const len = sfx.playClip(path, 0.9, 0, 1, 'music');
+  const len = sfx.playClip(path, 0.45, 0, 1, 'music');
   if (len > 0) sfx.duck(len);
 }
 

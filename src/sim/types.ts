@@ -182,6 +182,8 @@ export interface RunnerState {
   finishTime: number;
   place: number;
   deaths: number;
+  /** Running speed factor (easy bots run a little slower than people; 1 for everybody else). */
+  pace: number;
 }
 
 export interface RunnerInput {

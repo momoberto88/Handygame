@@ -41,7 +41,7 @@ import {
   CRUMBLE_RESPAWN,
   TILE,
 } from './constants';
-import { applyPads, circleHitsBox, findSafeSpot, isSafeSpot, levelHazard, lowerBound, runnerBox } from './hazards';
+import { applyPads, circleHitsBox, findSafeSpot, isSafeSpot, respawnSpotNear, levelHazard, lowerBound, runnerBox } from './hazards';
 import { rollItem } from './items';
 import { findFloor, solidInColumn, stepRunnerPhysics } from './physics';
 import { Rng } from './rng';
@@ -79,6 +79,8 @@ export interface RaceSetup {
   humans?: boolean[];
   /** Chaos wall speed factor (easy bots: a slower wall). */
   wallSpeed?: number;
+  /** Running speed factor of each runner (slower bots on easy/normal); 1 when left out. */
+  pace?: number[];
 }
 
 export const SAW_PROJECTILE_RADIUS = 18;
@@ -126,6 +128,7 @@ export function createRunner(id: number, x: number, y: number): RunnerState {
     finishTime: -1,
     place: 0,
     deaths: 0,
+    pace: 1,
   };
 }
 
@@ -164,6 +167,7 @@ export class Race {
     this.runners = [];
     for (let i = 0; i < setup.runnerCount; i++) {
       this.runners.push(createRunner(i, this.track.startX - i * 4, this.track.startY));
+      this.runners[i].pace = setup.pace?.[i] ?? 1;
     }
     this.boxCooldown = this.track.boxes.map(() => 0);
     this.coinTaken = this.runners.map(() => new Uint8Array(this.track.coins.length));
@@ -423,13 +427,20 @@ export class Race {
   }
 
   private respawn(r: RunnerState, events: SimEvent[]) {
+    // back on your feet right before the spot where you died (not at the last flat, hazard-free
+    // ground, which could be far back); after a fall the height you fell from counts
+    const fell = r.deathKind === 'fall';
+    const near = respawnSpotNear(this.track, r.x, fell ? r.safeY : r.y, fell ? 4 * TILE : 0);
+    const spot = near && near.x >= r.safeX ? near : { x: r.safeX, y: r.safeY };
     r.mode = 'run';
     r.deathKind = null;
-    if (r.safeX < this.wallX + 40) {
+    if (spot.x < this.wallX + 40) {
       this.placeAhead(r);
     } else {
-      r.x = r.safeX;
-      r.y = r.safeY;
+      r.x = spot.x;
+      r.y = spot.y;
+      r.safeX = spot.x;
+      r.safeY = spot.y;
       r.vx = RESPAWN_SPEED;
       r.vy = 0;
       r.grounded = true;

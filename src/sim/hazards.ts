@@ -1,5 +1,6 @@
 import {
   CRUSHER_HALF_W,
+  RESPAWN_BACK,
   CRUSHER_HEAD_H,
   CRUSHER_PERIOD,
   CANNONBALL_RADIUS,
@@ -189,6 +190,40 @@ export function isSafeSpot(track: Track, x: number, feetY: number): boolean {
   for (const l of track.lasers) if (Math.abs(l.x - x) < 70) return false;
   for (const z of track.zones) if (x > z.x0 - 20 && x < z.x1 + 20 && feetY > z.y0 && feetY - 40 < z.y1 && z.kind === 'wind') return false;
   return true;
+}
+
+/**
+ * Where to come back after a death: standing ground (planks count) just before the spot where you
+ * died, never past it, so a failed jump isn't skipped. Hazards nearby are fine: a respawned runner
+ * blinks and can't be hurt for a moment. `runUp` moves it further back (a run-up after falling
+ * into a pit). Null when there's nothing to stand on close by.
+ */
+export function respawnSpotNear(track: Track, x: number, preferFeetY: number, runUp = 0): { x: number; y: number } | null {
+  x -= runUp;
+  const c0 = Math.max(1, Math.floor((x - RESPAWN_BACK) / TILE));
+  const c1 = Math.floor((x + 20) / TILE);
+  let best: { x: number; y: number } | null = null;
+  let bestScore = Infinity;
+  for (let col = c1; col >= c0; col--) {
+    for (let row = 3; row < track.rows; row++) {
+      const ground = tileAt(track, col, row);
+      if (!(isSolidTile(ground) || ground === Tile.Platform) || ground === Tile.Crumble) continue;
+      // room to stand: two free rows above, no spikes around
+      const a1 = tileAt(track, col, row - 1);
+      const a2 = tileAt(track, col, row - 2);
+      if (isSolidTile(a1) || isSolidTile(a2) || a1 === Tile.Spikes) continue;
+      if (tileAt(track, col - 1, row - 1) === Tile.Spikes || tileAt(track, col + 1, row - 1) === Tile.Spikes) continue;
+      const px = col * TILE + TILE / 2;
+      const py = row * TILE;
+      // close to where you died, a bit behind is fine, the same height is best
+      const score = Math.abs(py - preferFeetY) * 1.5 + Math.max(0, x - px) * 0.5;
+      if (score < bestScore) {
+        best = { x: px, y: py };
+        bestScore = score;
+      }
+    }
+  }
+  return best;
 }
 
 /** First safe standing spot at or after x, preferring surfaces close to `preferRow`. */

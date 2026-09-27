@@ -242,6 +242,17 @@ const PERSONALITIES: Pick<BotProfile, 'lanePref' | 'coinLover'>[] = [
 
 export type BotLevel = 'easy' | 'normal' | 'hard';
 
+/**
+ * How fast bots run compared to people. Bots on easy make mistakes but never tire and never hesitate,
+ * so a beginner still lost to them: on easy and normal they also run a bit slower.
+ */
+export const BOT_PACE: Record<BotLevel, number> = { easy: 0.88, normal: 0.95, hard: 1 };
+
+/** Speed factor of every runner: bots by level, people 1. */
+export function paceFor(isBot: boolean[], level: BotLevel): number[] {
+  return isBot.map((bot) => (bot ? BOT_PACE[level] : 1));
+}
+
 export function botProfile(level: BotLevel, index: number): BotProfile {
   const base = level === 'easy' ? 0.1 : level === 'normal' ? 0.45 : 0.9;
   return { skill: Math.max(0, Math.min(1, base + (index - 1) * 0.05)), ...PERSONALITIES[index % PERSONALITIES.length] };

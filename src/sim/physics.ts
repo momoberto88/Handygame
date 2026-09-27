@@ -62,6 +62,51 @@ export function solidInColumn(track: Track, x: number, top: number, bottom: numb
   return false;
 }
 
+/** How far feet may sit below a hillside and still be lifted onto it instead of hitting it. */
+const HILL_LIFT = 24;
+
+/** Surface height of a 45° slope tile at pixel x (null when the tile is no slope). */
+function slopeSurface(t: number, row: number, x: number, col: number): number | null {
+  const fx = x - col * TILE;
+  if (t === Tile.SlopeUp) return (row + 1) * TILE - fx;
+  if (t === Tile.SlopeDown) return row * TILE + fx;
+  return null;
+}
+
+/**
+ * The hillside surface in column x near feet height y: the slope tile at the feet's row or the one
+ * above or below it. Used so the ground under a slope isn't mistaken for a wall.
+ */
+function hillSurfaceAt(track: Track, x: number, y: number): number | null {
+  const col = Math.floor(x / TILE);
+  const row = Math.floor(y / TILE);
+  for (let r = row - 1; r <= row + 1; r++) {
+    const s = slopeSurface(tileAt(track, col, r), r, x, col);
+    if (s !== null) return s;
+  }
+  return null;
+}
+
+/**
+ * A wall in column x between top and bottom? The ground right under a hillside is no wall as long
+ * as the feet are close enough to the hillside to be lifted onto it.
+ */
+function wallInColumn(track: Track, x: number, top: number, bottom: number, feetY: number): boolean {
+  const col = Math.floor(x / TILE);
+  const r0 = Math.floor(top / TILE);
+  const r1 = Math.floor(bottom / TILE);
+  for (let r = r0; r <= r1; r++) {
+    if (!isSolid(track, col, r)) continue;
+    const above = tileAt(track, col, r - 1);
+    if (above === Tile.SlopeUp || above === Tile.SlopeDown) {
+      const s = slopeSurface(above, r - 1, x, col)!;
+      if (feetY - s <= HILL_LIFT) continue;
+    }
+    return true;
+  }
+  return false;
+}
+
 /** Any solid tile in the horizontal strip [left, right] at pixel row y? */
 export function solidInRow(track: Track, left: number, right: number, y: number): boolean {
   const row = Math.floor(y / TILE);
@@ -261,7 +306,7 @@ export function stepRunnerPhysics(r: RunnerState, input: RunnerInput, track: Tra
     r.sliding = false;
   }
   if (!r.sliding) {
-    let max = r.slope < 0 ? RUN_MAX_UPHILL : r.slope > 0 ? RUN_MAX_DOWNHILL : RUN_MAX;
+    let max = (r.slope < 0 ? RUN_MAX_UPHILL : r.slope > 0 ? RUN_MAX_DOWNHILL : RUN_MAX) * r.pace;
     if (r.boost > 0) max = BOOST_SPEED;
     if (mud) max *= MUD_SPEED;
     if (r.inWater) max *= WATER_SPEED;
@@ -353,17 +398,23 @@ export function stepRunnerPhysics(r: RunnerState, input: RunnerInput, track: Tra
   }
   let nx = r.x + (r.vx + push) * dt;
   let hitWall = false;
-  if (nx > r.x && bodyBottom >= bodyTop && solidInColumn(track, nx + half, bodyTop, bodyBottom)) {
+  if (nx > r.x && bodyBottom >= bodyTop && wallInColumn(track, nx + half, bodyTop, bodyBottom, r.y)) {
     const col = Math.floor((nx + half) / TILE);
     nx = col * TILE - half - 0.01;
     if (nx < r.x) nx = r.x;
     hitWall = true;
     r.vx = 0;
-  } else if (nx < r.x && bodyBottom >= bodyTop && solidInColumn(track, nx - half, bodyTop, bodyBottom)) {
+  } else if (nx < r.x && bodyBottom >= bodyTop && wallInColumn(track, nx - half, bodyTop, bodyBottom, r.y)) {
     // Pushed backwards (conveyor) into a wall.
     nx = r.x;
   }
   r.x = nx;
+  // ran or jumped into a hillside: step up onto it instead of stopping
+  const hill = hillSurfaceAt(track, r.x, r.y);
+  if (hill !== null && r.y > hill && r.y - hill <= HILL_LIFT) {
+    r.y = hill;
+    if (r.vy > 0) r.vy = 0;
+  }
 
   // --- move vertically --------------------------------------------------------------
   const wasGrounded = r.grounded;
@@ -411,7 +462,7 @@ export function stepRunnerPhysics(r: RunnerState, input: RunnerInput, track: Tra
 
   // --- wall contact -----------------------------------------------------------------
   const probeTop = r.y - runnerHeight(r) + 2;
-  const touching = hitWall || solidInColumn(track, r.x + half + 1.5, probeTop, r.y - STEP_UP);
+  const touching = hitWall || wallInColumn(track, r.x + half + 1.5, probeTop, r.y - STEP_UP, r.y);
   r.onWall = touching && !r.grounded && !r.inWater;
   r.blocked = touching && r.grounded;
   if (r.onWall && r.vy > 0) r.canCut = false;

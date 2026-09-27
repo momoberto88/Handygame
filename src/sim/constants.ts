@@ -33,6 +33,8 @@ export const AIR_ACCEL = 300;
 export const AIR_OVERSPEED_DECAY = 0.6;
 export const OVERSPEED_DECAY = 240;
 export const RESPAWN_SPEED = 170;
+/** After a death you come back at most this far behind the spot where you died. */
+export const RESPAWN_BACK = 200;
 
 export const JUMP_V = 780;
 export const DOUBLE_JUMP_V = 640;

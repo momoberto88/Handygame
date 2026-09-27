@@ -1,4 +1,4 @@
-import { BotBrain, botProfile } from '../sim/bot';
+import { BotBrain, botProfile, paceFor } from '../sim/bot';
 import { DT } from '../sim/constants';
 import { Race } from '../sim/race';
 import type { RunnerInput, SimEvent, WorldId } from '../sim/types';
@@ -52,7 +52,7 @@ export class LocalSession implements RaceSession {
   private pendingAbility = false;
 
   constructor(setup: LocalSetup) {
-    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers), teams: teamsOf(setup.racers), humans: setup.racers.map((r) => !r.isBot), wallSpeed: setup.botLevel === 'easy' ? 0.85 : 1, noWall: setup.tutorial });
+    this.race = new Race({ seed: setup.seed, world: setup.world, runnerCount: setup.racers.length, courseId: setup.courseId, abilities: abilitiesOf(setup.racers), teams: teamsOf(setup.racers), humans: setup.racers.map((r) => !r.isBot), wallSpeed: setup.botLevel === 'easy' ? 0.85 : 1, pace: paceFor(setup.racers.map((r) => r.isBot), setup.botLevel), noWall: setup.tutorial });
     this.racers = setup.racers;
     this.tutorial = setup.tutorial ?? false;
     this.localId = setup.localId;

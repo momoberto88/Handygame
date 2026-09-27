@@ -436,7 +436,8 @@ def('pirates', 'cannon-deck', 2, 32, (b, x) => {
 def('pirates', 'rigging', 2, 30, (b, x) => {
   b.block(MID, x + 10, x + 10, 1, 4);
   b.block(MID, x + 20, x + 20, 1, 4);
-  b.floor(TOP, x + 8, x + 22, 'crumble');
+  // the crumbling planks stay clear of the posts, so there's room to jump over them from below
+  b.floor(TOP, x + 12, x + 18, 'crumble');
   b.gap(LOW, x + 12, x + 17);
   b.coins(x + 11, x + 19, TOP);
   b.box(x + 15, MID);
@@ -496,6 +497,8 @@ def('desert', 'pyramid', 2, 38, (b, x) => {
   b.coins(x + 12, x + 26, TOP, 1);
   b.box(x + 19, LOW);
   b.box(x + 30, TOP);
+  // the halls are slower (waiting for the crushers): a boost strip makes up for it
+  b.pad(x + 28, LOW, 'boost');
 });
 
 def('desert', 'quicksand', 2, 32, (b, x) => {
