@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { sfx } from '../audio/sfx';
 import { CHAT_LINES, CHAT_MAX, chatChoices, cleanChat } from '../meta/chat';
 import type { ChatMessage, NetRoom } from '../net/room';
+import { walkieFor, type Walkie } from '../net/voice';
 import { uiText } from '../scenes/HudScene';
 import { panel, textButton } from './widgets';
 import { VIEW_H, viewWidth } from '../layout';
@@ -20,14 +21,27 @@ export interface ChatOptions {
   depth?: number;
   /** Width the feed lines wrap at. */
   wrap?: number;
+  /** Side of the 💬 button the 🎙️ button sits on (default left). */
+  micSide?: 1 | -1;
 }
+
+/** Distance between the 💬 and 🎙️ buttons. */
+const MIC_GAP = 50;
 
 /**
  * Chat with the friends in the room: 💬 opens quick phrases and "✏️ own text" (a real text field,
  * so the phone keyboard works). Messages show up in a small feed that fades after a few seconds.
+ * Next to it, 🎙️ is the walkie-talkie: hold to talk, "🎙️ Name spricht" shows who is talking.
  */
 export class ChatUI {
   private button: Phaser.GameObjects.Text;
+  private micButton: Phaser.GameObjects.Arc;
+  private micIcon: Phaser.GameObjects.Graphics;
+  private talkLabel: Phaser.GameObjects.Text;
+  private walkie: Walkie;
+  private readonly micSide: 1 | -1;
+  /** Shows "Mikro nicht erlaubt" instead of the speakers until then. */
+  private noticeUntil = 0;
   private picker?: Phaser.GameObjects.Container;
   private feed?: Phaser.GameObjects.Container;
   private input?: HTMLDivElement;
@@ -52,6 +66,45 @@ export class ChatUI {
       if (this.picker) this.closePicker();
       else this.openPicker();
     });
+    this.micSide = opts.micSide ?? -1;
+    this.walkie = walkieFor(room);
+    this.micButton = scene.add.circle(0, 0, 21, 0x1d1a2f, 0.75).setStrokeStyle(3, 0xffffff, 0.9).setDepth(this.depth);
+    this.micButton.setInteractive({ useHandCursor: true });
+    // a drawn microphone (emoji sizes differ a lot between phones)
+    this.micIcon = scene.add.graphics().setDepth(this.depth);
+    this.micIcon.fillStyle(0xffffff, 1).fillRoundedRect(-5, -13, 10, 16, 5);
+    this.micIcon.lineStyle(2.5, 0xffffff, 1).beginPath().arc(0, -3, 8.5, 0.15, Math.PI - 0.15).strokePath();
+    this.micIcon.lineBetween(0, 5.5, 0, 10).lineBetween(-5, 11, 5, 11);
+    this.talkLabel = uiText(scene, 0, 0, '', 15, '#ffd84a').setDepth(this.depth).setVisible(false);
+    // the finger holding 🎙️ (the other thumb keeps jumping during a race)
+    let micPointer = -1;
+    this.micButton.on('pointerdown', (p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => {
+      ev.stopPropagation();
+      micPointer = p.id;
+      sfx.unlock();
+      this.closePicker();
+      void this.walkie.start().then((ok) => {
+        if (!ok && this.walkie.denied) {
+          this.noticeUntil = Date.now() + 3500;
+          scene.time.delayedCall(3600, () => this.renderTalk());
+        }
+        this.renderTalk();
+      });
+      this.renderTalk();
+    });
+    const letGo = (p?: Phaser.Input.Pointer) => {
+      if (!this.walkie.on || (p && p.id !== micPointer)) return;
+      this.walkie.stop();
+      this.renderTalk();
+    };
+    // talking goes on while the finger stays down, even if it slides off the button
+    scene.input.on('pointerup', letGo);
+    const talk = () => {
+      sfx.play('click', 0.5);
+      this.renderTalk();
+    };
+    room.talkListeners.add(talk);
+    this.setPosition(opts.x, opts.y);
     if (opts.feed) {
       this.feed = scene.add.container(opts.feed.x, opts.feed.y).setDepth(this.depth);
       this.renderFeed();
@@ -65,6 +118,10 @@ export class ChatUI {
     room.chatListeners.add(listener);
     scene.events.once('shutdown', () => {
       room.chatListeners.delete(listener);
+      room.talkListeners.delete(talk);
+      scene.input.off('pointerup', letGo);
+      // a scene change while holding the button must not leave the microphone open
+      letGo();
       this.closeInput();
     });
   }
@@ -74,9 +131,32 @@ export class ChatUI {
     return !!this.picker || !!this.input;
   }
 
-  /** Moves the 💬 button (HUD layout on resize). */
+  /** Moves the 💬 and 🎙️ buttons (HUD layout on resize). */
   setPosition(x: number, y: number) {
     this.button.setPosition(x, y);
+    this.micButton.setPosition(x + this.micSide * MIC_GAP, y);
+    this.micIcon.setPosition(x + this.micSide * MIC_GAP, y);
+    // the label hangs below the buttons, growing away from the screen edge
+    this.talkLabel.setPosition(x - this.micSide * 16, y + 24).setOrigin(this.micSide < 0 ? 1 : 0, 0);
+  }
+
+  /** Mic button look and "🎙️ Name spricht". */
+  private renderTalk() {
+    if (!this.micButton.scene) return;
+    const on = this.walkie.on;
+    const others = this.walkie.speakers().length > 0;
+    this.micButton
+      .setFillStyle(on ? 0xe0304a : 0x1d1a2f, on ? 1 : 0.75)
+      .setStrokeStyle(3, on || others ? 0xffd84a : 0xffffff, 0.9)
+      .setScale(on ? 1.15 : 1);
+    let text = '';
+    if (Date.now() < this.noticeUntil) text = '🎙️ Mikro nicht erlaubt';
+    else if (this.walkie.on) text = '🔴 Du sprichst …';
+    else {
+      const names = this.walkie.speakers();
+      if (names.length) text = `🎙️ ${names.join(', ')} ${names.length > 1 ? 'sprechen' : 'spricht'} …`;
+    }
+    this.talkLabel.setText(text).setVisible(!!text);
   }
 
   private send(q?: number, x?: string) {

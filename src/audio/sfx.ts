@@ -111,6 +111,8 @@ function roomImpulse(ctx: AudioContext): AudioBuffer {
 class Synth {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  /** Turns the whole game down while a friend talks on the walkie-talkie. */
+  private talkGain: GainNode | null = null;
   private buses: Record<Bus, GainNode> | null = null;
   /** Volume of each bus (0…1), from the settings. */
   private levels: Record<Bus, number> = { sfx: 0.7, voice: 1, music: 0.8 };
@@ -325,6 +327,12 @@ class Synth {
     m.gain.gain.linearRampToValueAtTime(v, t + seconds + 0.8);
   }
 
+  /** The whole game gets quieter while somebody talks on the walkie-talkie. */
+  talkDuck(on: boolean) {
+    if (!this.talkGain || !this.ctx) return;
+    this.talkGain.gain.setTargetAtTime(on ? 0.3 : 1, this.ctx.currentTime, on ? 0.08 : 0.3);
+  }
+
   /**
    * Mixer: effects, voices and music each have their own volume. Effects get their harsh top
    * softened, effects and voices share a little room reverb, and a compressor glues it all together.
@@ -338,7 +346,8 @@ class Synth {
     glue.ratio.value = 3;
     glue.attack.value = 0.005;
     glue.release.value = 0.2;
-    this.master.connect(glue).connect(ctx.destination);
+    this.talkGain = ctx.createGain();
+    this.master.connect(glue).connect(this.talkGain).connect(ctx.destination);
 
     const room = ctx.createConvolver();
     room.buffer = roomImpulse(ctx);

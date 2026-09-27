@@ -64,6 +64,7 @@ export type ClientMsg =
   | { t: 'vote'; i: number }
   | { t: 'again'; a: AgainAnswer }
   | { t: 'chat'; q?: number; x?: string }
+  | { t: 'talk'; on: boolean }
   | { t: 'profile'; name: string; character: string; cosmetics?: RacerInfo['cosmetics'] };
 
 export interface SnapshotMsg {
@@ -99,10 +100,14 @@ export type HostMsg =
       /** "Again?" answers [seat, answer] and, once everybody said yes, seconds to the next start. */
       again?: [number, AgainAnswer][];
       againLeft?: number;
+      /** Peer id of every seat (for the walkie-talkie calls). */
+      peers?: [number, string][];
     }
   | { t: 'toLobby' }
   /** A chat message from seat `s`: phrase id `q` or free text `x`. */
   | { t: 'chat'; s: number; q?: number; x?: string }
+  /** Seat `s` started / stopped talking on the walkie-talkie. */
+  | { t: 'talk'; s: number; on: boolean }
   | { t: 'start'; seed: number; world: WorldId; courseId?: string; racers: RacerInfo[]; you: number; cup?: CupState; spectator?: boolean }
   | { t: 'emote'; r: number; e: number }
   | SnapshotMsg;

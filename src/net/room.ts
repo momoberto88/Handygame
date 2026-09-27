@@ -13,6 +13,7 @@ import {
 } from './protocol';
 import type { RacerInfo } from './session';
 import { chatText } from '../meta/chat';
+import { walkieFor } from './voice';
 
 export interface ChatMessage {
   seat: number;
@@ -95,7 +96,7 @@ export function describeError(e: unknown): string {
 export class NetRoom {
   readonly role: 'host' | 'client';
   readonly code: string;
-  private peer: Peer;
+  readonly peer: Peer;
   private closed = false;
 
   // host side
@@ -129,6 +130,13 @@ export class NetRoom {
   chat: ChatMessage[] = [];
   /** Everyone who shows chat messages (lobby, results, race HUD …). */
   readonly chatListeners = new Set<(m: ChatMessage) => void>();
+  /** Peer id of every seat ([seat, id]); the walkie-talkie calls them. */
+  peers: [number, string][] = [];
+  /** Seats talking on the walkie-talkie right now. */
+  readonly talking = new Set<number>();
+  readonly talkListeners = new Set<() => void>();
+  /** Run once when the room closes (the walkie-talkie lets go of the microphone). */
+  readonly onCloseHooks = new Set<() => void>();
 
   private constructor(role: 'host' | 'client', code: string, peer: Peer) {
     this.role = role;
@@ -244,6 +252,10 @@ export class NetRoom {
         this.relayChat(seat, msg.q, msg.x);
         return;
       }
+      if (msg.t === 'talk') {
+        this.relayTalk(seat, msg.on);
+        return;
+      }
       if (msg.t === 'profile') {
         const p = this.players.find((x) => x.seat === seat);
         if (p) Object.assign(p, { name: msg.name, character: msg.character, cosmetics: msg.cosmetics });
@@ -259,6 +271,7 @@ export class NetRoom {
       this.seats.delete(seat);
       this.players = this.players.filter((p) => p.seat !== seat);
       this.again = this.again.filter(([s]) => s !== seat);
+      if (this.talking.delete(seat)) for (const l of this.talkListeners) l();
       this.onSeatLeft?.(seat, name);
       this.broadcastLobby();
     };
@@ -291,7 +304,8 @@ export class NetRoom {
   broadcastLobby() {
     const vote = this.vote ? { options: this.vote.options, votes: this.vote.votes, left: Math.max(0, (this.vote.endsAt - Date.now()) / 1000) } : undefined;
     const againLeft = this.againEndsAt !== null ? Math.max(0, (this.againEndsAt - Date.now()) / 1000) : undefined;
-    this.broadcast({ t: 'lobby', players: this.players, playlist: this.playlist, racing: this.racing, vote, again: this.again, againLeft });
+    this.peers = [[0, this.peer.id], ...[...this.seats.entries()].map(([s, v]) => [s, v.conn.peer] as [number, string])];
+    this.broadcast({ t: 'lobby', players: this.players, playlist: this.playlist, racing: this.racing, vote, again: this.again, againLeft, peers: this.peers });
     this.onLobby?.();
   }
 
@@ -328,6 +342,28 @@ export class NetRoom {
     const m: ChatMessage = { seat, name, text, at: Date.now() };
     this.chat = [...this.chat.slice(-5), m];
     for (const l of this.chatListeners) l(m);
+  }
+
+  /** Walkie-talkie: tell everybody that this phone starts / stops talking. */
+  sendTalk(on: boolean) {
+    if (this.role === 'host') this.relayTalk(0, on);
+    else this.send({ t: 'talk', on });
+  }
+
+  private relayTalk(seat: number, on: boolean) {
+    this.broadcast({ t: 'talk', s: seat, on });
+    this.receiveTalk(seat, on);
+  }
+
+  private receiveTalk(seat: number, on: boolean) {
+    if (on) this.talking.add(seat);
+    else this.talking.delete(seat);
+    for (const l of this.talkListeners) l();
+  }
+
+  /** This phone's seat (the host is 0). */
+  get seat(): number {
+    return this.role === 'host' ? 0 : this.mySeat;
   }
 
   /** Host: forget the answers (a race starts). */
@@ -371,6 +407,7 @@ export class NetRoom {
         this.playlist = msg.playlist;
         this.racing = msg.racing;
         this.again = msg.again ?? [];
+        this.peers = msg.peers ?? this.peers;
         this.againEndsAt = msg.againLeft !== undefined ? Date.now() + msg.againLeft * 1000 : null;
         {
           const started = !this.vote && !!msg.vote;
@@ -392,6 +429,9 @@ export class NetRoom {
         break;
       case 'chat':
         this.receiveChat(msg.s, chatText(msg.q, msg.x));
+        break;
+      case 'talk':
+        this.receiveTalk(msg.s, msg.on);
         break;
       default:
         this.onHostMessage?.(msg);
@@ -421,6 +461,8 @@ export class NetRoom {
     this.seats.clear();
     this.hostConn?.close();
     this.peer.destroy();
+    for (const h of this.onCloseHooks) h();
+    this.onCloseHooks.clear();
     if (current === this) current = null;
   }
 }
@@ -434,5 +476,7 @@ export function currentRoom(): NetRoom | null {
 export function setCurrentRoom(room: NetRoom | null) {
   if (current && current !== room) current.close();
   current = room;
+  // answer the friends' walkie-talkie calls from the start
+  if (room) walkieFor(room);
   (window as unknown as { chaosRoom: NetRoom | null }).chaosRoom = room;
 }
