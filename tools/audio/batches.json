@@ -464,5 +464,27 @@
    "Läuft bei mir, Digger!",
    "Sheesh!"
   ]
+ },
+ "kurz-katze": {
+  "voice": "JRIj9I6iNUE54uwAYd1w",
+  "prompt": "[yelling] Gotcha!\n\nDu Opfer!\n\nSheesh!\n\nWTF?!\n\nAlter!\n\nLäuft bei dir? Nee, bei MIR!\n\nYolo!",
+  "files": [
+   "voice/katze/hit-2.mp3",
+   "voice/katze/hit-3.mp3",
+   "voice/katze/pass-2.mp3",
+   "voice/katze/passed-2.mp3",
+   "voice/katze/death-3.mp3",
+   "voice/katze/win-2.mp3",
+   "voice/katze/ability-3.mp3"
+  ],
+  "texts": [
+   "Gotcha!",
+   "Du Opfer!",
+   "Sheesh!",
+   "WTF?!",
+   "Alter!",
+   "Läuft bei dir? Nee, bei MIR!",
+   "Yolo!"
+  ]
  }
 }

@@ -83,28 +83,35 @@
    "ability": [
     "NEUN ESPRESSO, FICK DICH!",
     "Koffein ist stärker als Talent!",
-    "Zu langsam, Schlafmütze!"
+    "Zu langsam, Schlafmütze!",
+    "Yolo!"
    ],
    "death": [
     "Verdammt, mein Becher!",
     "Ich brauch mehr Kaffee. Und ’ne Waffe.",
-    "Fuck. Einfach nur fuck."
+    "Fuck. Einfach nur fuck.",
+    "Alter!"
    ],
    "win": [
     "Morgens halb zehn, und du bist Letzter.",
-    "Wach sein ist ein Vorteil, du Penner."
+    "Wach sein ist ein Vorteil, du Penner.",
+    "Läuft bei dir? Nee, bei MIR!"
    ],
    "hit": [
     "Guten Morgen, du Opfer!",
-    "Das war der Wachmacher!"
+    "Das war der Wachmacher!",
+    "Gotcha!",
+    "Du Opfer!"
    ],
    "pass": [
     "Aus dem Weg, ich hab Herzrasen!",
-    "Bye-bye, Schnarchnase!"
+    "Bye-bye, Schnarchnase!",
+    "Sheesh!"
    ],
    "passed": [
     "Was?! Ich bin doch auf Koffein!",
-    "Du Arsch, das war MEIN Platz!"
+    "Du Arsch, das war MEIN Platz!",
+    "WTF?!"
    ],
    "swallowed": [
     "Scheiße, wer hat mich entkoffeiniert?"
