@@ -104,6 +104,15 @@ const ROCKET_SPEED = 720;
 const ROCKET_TURN = 4.5;
 const MAX_RACE_TIME = 150;
 
+/** True while `r` runs in someone's slipstream (close behind another runner at about the same height). */
+export function isDrafting(runners: readonly RunnerState[], r: RunnerState): boolean {
+  if (r.mode !== 'run') return false;
+  return runners.some((o) => {
+    const dx = o.x - r.x;
+    return o !== r && o.mode === 'run' && dx > DRAFT_MIN && dx < DRAFT_MAX && Math.abs(o.y - r.y) < DRAFT_DY;
+  });
+}
+
 export function createRunner(id: number, x: number, y: number): RunnerState {
   return {
     id,
@@ -328,13 +337,7 @@ export class Race {
     const step = PACE_RATE * DT;
     for (const r of running) {
       let bonus = ramp(leadX - r.x, CATCHUP_START, CATCHUP_FULL) * CATCHUP_BONUS;
-      if (r.mode === 'run') {
-        const drafting = running.some((o) => {
-          const dx = o.x - r.x;
-          return o !== r && o.mode === 'run' && dx > DRAFT_MIN && dx < DRAFT_MAX && Math.abs(o.y - r.y) < DRAFT_DY;
-        });
-        if (drafting) bonus = Math.max(bonus, DRAFT_BONUS);
-      }
+      if (isDrafting(this.runners, r)) bonus = Math.max(bonus, DRAFT_BONUS);
       let target = this.basePace[r.id] * (1 + bonus);
       if (!this.humans[r.id] && bestPerson !== null && lastPerson !== null) {
         // bots stay in the race with the people: no running away, no falling hopelessly behind

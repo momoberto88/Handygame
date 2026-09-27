@@ -21,7 +21,7 @@ import type { HudScene } from './HudScene';
 import { BotBrain } from '../sim/bot';
 import { debugParam } from './flow';
 import { GhostRecorder, ghostAt, loadGhost, offerGhost, type Ghost } from '../meta/ghost';
-import { createRunner } from '../sim/race';
+import { createRunner, isDrafting } from '../sim/race';
 import { MASK_TIME } from '../sim/constants';
 import { LocalSession } from '../net/LocalSession';
 
@@ -188,6 +188,7 @@ export class RaceScene extends Phaser.Scene {
       this.views[i].update(r, x, y, dt, race.clock);
       if (r.boost > 0 && r.mode === 'run') this.fx.boostTrail(x, y);
     });
+    this.updateDraft(dt);
     this.fx.update();
     this.updateGhost(dt);
     this.updateBubbles();
@@ -338,6 +339,32 @@ export class RaceScene extends Phaser.Scene {
     text.setPosition(0, -22);
     const bubble = this.add.container(0, 0, [g, text]).setScale(0.66).setDepth(60);
     this.bubbles.push({ id, bubble, h: (h + 14) * 0.66, until: now + 2600 });
+  }
+
+  private draftTimer = 0;
+  /** How long the own runner has been in a slipstream, and when the hint may show again. */
+  private draftFor = 0;
+  private draftHintAt = 0;
+
+  /** Slipstream: air lines around everyone in it, and now and then a hint for the own runner. */
+  private updateDraft(dt: number) {
+    const { race, localId } = this.session;
+    this.draftTimer -= dt;
+    const emit = this.draftTimer <= 0;
+    if (emit) this.draftTimer = 0.045;
+    race.runners.forEach((r, i) => {
+      const drafting = isDrafting(race.runners, r);
+      if (i === localId && !this.session.spectator) {
+        this.draftFor = drafting ? this.draftFor + dt : 0;
+        if (this.draftFor > 0.4 && race.time > this.draftHintAt) {
+          this.draftHintAt = race.time + 12;
+          this.fx.riderWord('💨 WINDSCHATTEN!', () => this.renderPos(i), '#bfe9ff');
+        }
+      }
+      if (!drafting || !emit || r.boost > 0 || !this.nearCamera(r.x)) return;
+      const { x, y } = this.renderPos(i);
+      this.fx.draftTrail(x, y);
+    });
   }
 
   private trailTimers: number[] = [];

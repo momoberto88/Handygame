@@ -27,6 +27,9 @@ export class Effects {
   private confetti: Emitter;
   private coinSparkle: Emitter;
   private speedLines: Emitter;
+  private airLines: Emitter;
+  /** Words that ride along above a runner. */
+  private riders: { obj: Phaser.GameObjects.Text; pos: () => { x: number; y: number }; until: number }[] = [];
   /** Sprites that stay on a runner for a while (crystal shell …). */
   private attached: { obj: Phaser.GameObjects.Image; pos: () => { x: number; y: number }; until: number; dy: number }[] = [];
 
@@ -107,6 +110,18 @@ export class Effects {
         tint: 0xfff2a8,
       })
       .setDepth(29);
+    this.airLines = scene.add
+      .particles(0, 0, 'p-dust', {
+        emitting: false,
+        lifespan: 260,
+        speedX: { min: -420, max: -300 },
+        speedY: { min: -6, max: 6 },
+        scaleX: { start: 4, end: 1.2 },
+        scaleY: 0.3,
+        alpha: { start: 0.95, end: 0 },
+        tint: 0xf4fbff,
+      })
+      .setDepth(31);
   }
 
   private has(name: FxSprite) {
@@ -196,9 +211,27 @@ export class Effects {
     this.attached.push({ obj: img, pos, until: this.scene.time.now + ms, dy });
   }
 
+  /** A comic word that rides along above a runner for `ms`, then fades. */
+  riderWord(text: string, pos: () => { x: number; y: number }, color = '#ffd84a', ms = 1400) {
+    const p = pos();
+    const t = this.scene.add.text(p.x, p.y - 96, text, { ...textStyle(34, color), strokeThickness: 14 }).setOrigin(0.5).setDepth(47).setScale(0.1);
+    this.scene.tweens.add({ targets: t, scale: 0.42, duration: 160, ease: 'Back.Out' });
+    this.scene.tweens.add({ targets: t, alpha: 0, delay: ms - 320, duration: 320 });
+    this.riders.push({ obj: t, pos, until: this.scene.time.now + ms });
+  }
+
   /** Moves attached sprites along with their runners (call every frame). */
   update() {
     const now = this.scene.time.now;
+    // near the top of the view the word goes below the runner instead, clear of the HUD
+    const top = this.scene.cameras.main.worldView.y + 90;
+    this.riders = this.riders.filter((w) => {
+      const p = w.pos();
+      w.obj.setPosition(p.x, p.y - 96 < top ? p.y + 40 : p.y - 96);
+      if (now < w.until) return true;
+      w.obj.destroy();
+      return false;
+    });
     this.attached = this.attached.filter((a) => {
       const p = a.pos();
       a.obj.setPosition(p.x, p.y + a.dy);
@@ -222,6 +255,12 @@ export class Effects {
 
   boostTrail(x: number, y: number) {
     this.speedLines.explode(1, x - 10, y - 10 - Math.random() * 30);
+  }
+
+  /** Air streaming past a runner in someone's slipstream. */
+  draftTrail(x: number, y: number) {
+    this.airLines.explode(1, x + 8 - Math.random() * 20, y - 6 - Math.random() * 52);
+    this.airLines.explode(1, x + 14 - Math.random() * 10, y - 58 - Math.random() * 10);
   }
 
   coin(x: number, y: number) {
