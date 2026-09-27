@@ -4,6 +4,7 @@ import { makeCharacterArt, makeEyes } from '../render/art/characterArt';
 import { makeEntityArt, preloadObjectArt } from '../render/art/entityArt';
 import { preloadPainted } from '../render/art/skins';
 import { preloadWorldArt } from '../render/art/worldArt';
+import { FX_SPRITES } from '../render/Effects';
 import { sharedTrackFromUrl } from './EditorScene';
 
 export class BootScene extends Phaser.Scene {
@@ -16,6 +17,7 @@ export class BootScene extends Phaser.Scene {
     preloadWorldArt(this);
     preloadObjectArt(this);
     this.load.image('brand-title', 'assets/brand/title.png');
+    for (const f of FX_SPRITES) this.load.image(`fx-${f}`, `assets/fx/${f}.png`);
     this.load.image('brand-emblem', 'assets/brand/emblem.png');
   }
 

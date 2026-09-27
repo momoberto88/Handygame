@@ -22,6 +22,8 @@ import { BotBrain } from '../sim/bot';
 import { debugParam } from './flow';
 import { GhostRecorder, ghostAt, loadGhost, offerGhost, type Ghost } from '../meta/ghost';
 import { createRunner } from '../sim/race';
+import { MASK_TIME } from '../sim/constants';
+import { LocalSession } from '../net/LocalSession';
 
 /** World pixels visible from top to bottom of the race view (camera distance setting). */
 function raceViewH(): number {
@@ -162,9 +164,19 @@ export class RaceScene extends Phaser.Scene {
     }
   }
 
+  /** Hit-stop: after a big hit the local race runs in slow motion for a moment (ms left). */
+  private hitStop = 0;
+
+  private punch(ms = 90) {
+    // only offline: online everyone shares the host's clock
+    if (this.session instanceof LocalSession) this.hitStop = Math.max(this.hitStop, ms);
+  }
+
   update(_time: number, delta: number) {
     const dt = delta / 1000;
-    const events = this.session.update(delta, this.readInput());
+    const simDelta = this.hitStop > 0 ? delta * 0.15 : delta;
+    this.hitStop = Math.max(0, this.hitStop - delta);
+    const events = this.session.update(simDelta, this.readInput());
     this.lastEvents = events;
     const { race } = this.session;
     for (const e of events) this.handleEvent(e);
@@ -174,6 +186,7 @@ export class RaceScene extends Phaser.Scene {
       this.views[i].update(r, x, y, dt, race.clock);
       if (r.boost > 0 && r.mode === 'run') this.fx.boostTrail(x, y);
     });
+    this.fx.update();
     this.updateGhost(dt);
     this.updateBubbles();
     this.updateTalk();
@@ -454,13 +467,18 @@ export class RaceScene extends Phaser.Scene {
           const snd = { squash: 'squash', boom: 'boom', zap: 'zap', trap: 'trap', slice: 'slice', fall: 'fall', spike: 'death' } as const;
           sfx.play(snd[e.kind] ?? 'death');
         }
-        if (e.by === this.session.localId && e.by !== e.r) this.stats.hits++;
+        if (e.by === this.session.localId && e.by !== e.r) {
+          this.stats.hits++;
+          this.punch(80);
+        }
         // whoever threw the item gloats
         if (e.by !== undefined && e.by !== e.r && race.isRival(e.by, e.r) && Math.random() < (this.isLocal(e.by) ? 0.8 : 0.5)) {
           this.say(e.by, 'hit', this.isLocal(e.by));
         }
         if (this.isLocal(e.r)) {
           this.camera.shake(1);
+          this.punch(110);
+          if (e.kind === 'zap' || e.kind === 'boom') this.cameras.main.flash(90, 255, 255, 255);
           if (vib) navigator.vibrate?.(120);
           const line = deathLine(e.kind);
           if (line) this.hud?.toast(line, '#ff9a8a');
@@ -529,8 +547,11 @@ export class RaceScene extends Phaser.Scene {
       }
       case 'shieldBlock': {
         const r = race.runners[e.r];
-        this.fx.box(r.x, r.y - 24);
-        if (this.nearCamera(r.x)) sfx.play('shieldblock');
+        this.fx.shatter(r.x, r.y - 24);
+        if (this.nearCamera(r.x)) {
+          sfx.play('shieldblock');
+          this.fx.word('PLONK!', r.x, r.y - 80, '#9fdcff');
+        }
         if (this.isLocal(e.r)) this.hud?.toast(shieldLine(), '#7fd0ff');
         break;
       }
@@ -549,6 +570,8 @@ export class RaceScene extends Phaser.Scene {
         break;
       case 'ability': {
         this.fx.ability(e.kind, e.x, e.y);
+        // healing quartz: a crystal shell around the runner while it lasts
+        if (e.kind === 'mask') this.fx.attach('ice', () => this.renderPos(e.r), MASK_TIME * 1000, 78);
         if (this.isLocal(e.r)) this.stats.abilities++;
         this.say(e.r, 'ability', true);
         if (this.nearCamera(e.x)) sfx.play(`ab-${e.kind}`);
@@ -564,6 +587,7 @@ export class RaceScene extends Phaser.Scene {
       case 'stunned': {
         const r = race.runners[e.r];
         this.fx.dizzy(r.x, r.y);
+        if (this.nearCamera(r.x)) this.fx.word(Math.random() < 0.5 ? 'BONK!' : 'DOING!', r.x, r.y - 80, '#ffd84a');
         if (this.nearCamera(r.x)) sfx.play('stunned', 0.7);
         if (e.by !== undefined && e.by !== e.r && Math.random() < 0.4) this.say(e.by, 'hit');
         if (this.isLocal(e.r)) {

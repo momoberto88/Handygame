@@ -1,7 +1,22 @@
 import Phaser from 'phaser';
+import { textStyle } from '../scenes/HudScene';
 import type { AbilityKind, DeathKind } from '../sim/types';
 
 type Emitter = Phaser.GameObjects.Particles.ParticleEmitter;
+
+/** Painted effect sprites (public/assets/fx/<name>.png, loaded as "fx-<name>"). */
+export const FX_SPRITES = ['skelRun', 'skelShock', 'flash', 'kaboom', 'splat', 'drops', 'bolt', 'ice', 'shards', 'slash', 'smoke', 'dust'] as const;
+type FxSprite = (typeof FX_SPRITES)[number];
+
+/** Comic word that pops up for each way to die. */
+const DEATH_WORDS: Partial<Record<DeathKind, { text: string[]; color: string }>> = {
+  slice: { text: ['RATSCH!', 'SCHNIPP!', 'ZACK!'], color: '#ff5a4a' },
+  boom: { text: ['KABUMM!', 'BÄM!', 'WUMMS!'], color: '#ffb21a' },
+  zap: { text: ['BZZZT!', 'ZISCH!', 'KNISTER!'], color: '#9ff3ff' },
+  squash: { text: ['PLATT!', 'MATSCH!', 'KNIRSCH!'], color: '#ffd84a' },
+  trap: { text: ['SCHNAPP!', 'KLACK!'], color: '#ffd84a' },
+  spike: { text: ['AUTSCH!', 'PIEKS!'], color: '#ff9a8a' },
+};
 
 /** Particle bursts and one-shot effects (explosions, lightning, puffs). */
 export class Effects {
@@ -12,6 +27,8 @@ export class Effects {
   private confetti: Emitter;
   private coinSparkle: Emitter;
   private speedLines: Emitter;
+  /** Sprites that stay on a runner for a while (crystal shell …). */
+  private attached: { obj: Phaser.GameObjects.Image; pos: () => { x: number; y: number }; until: number; dy: number }[] = [];
 
   constructor(private scene: Phaser.Scene) {
     this.dust = scene.add
@@ -92,6 +109,113 @@ export class Effects {
       .setDepth(29);
   }
 
+  private has(name: FxSprite) {
+    return this.scene.textures.exists(`fx-${name}`);
+  }
+
+  /** A painted effect sprite that pops in, holds and fades out. */
+  private pop(name: FxSprite, x: number, y: number, size: number, opts: { hold?: number; depth?: number; angle?: number; grow?: number; add?: boolean } = {}) {
+    if (!this.has(name)) return null;
+    const img = this.scene.add.image(x, y, `fx-${name}`).setDepth(opts.depth ?? 42).setAngle(opts.angle ?? 0);
+    const base = size / Math.max(img.width, img.height);
+    img.setScale(base * 0.4);
+    if (opts.add) img.setBlendMode('ADD');
+    this.scene.tweens.add({ targets: img, scale: base, duration: 110, ease: 'Back.Out' });
+    this.scene.tweens.add({
+      targets: img,
+      alpha: 0,
+      scale: base * (opts.grow ?? 1.15),
+      delay: 110 + (opts.hold ?? 220),
+      duration: 260,
+      onComplete: () => img.destroy(),
+    });
+    return img;
+  }
+
+  /** Comic word ("BZZZT!") that pops up, wobbles and floats away. */
+  word(text: string, x: number, y: number, color = '#ffd84a') {
+    const t = this.scene.add.text(x, y, text, { ...textStyle(34, color), strokeThickness: 14 }).setOrigin(0.5).setDepth(47);
+    t.setScale(0.1).setAngle((Math.random() - 0.5) * 24);
+    this.scene.tweens.add({ targets: t, scale: 0.5, duration: 160, ease: 'Back.Out' });
+    this.scene.tweens.add({ targets: t, y: y - 36, alpha: 0, delay: 520, duration: 320, onComplete: () => t.destroy() });
+  }
+
+  /** Jam drops flying out of a hit (with gravity). */
+  private drops(x: number, y: number, n: number) {
+    if (!this.has('drops')) return;
+    for (let i = 0; i < n; i++) {
+      const d = this.scene.add.image(x, y, 'fx-drops').setDepth(41).setScale(0.07 + Math.random() * 0.06).setAngle(Math.random() * 360);
+      const vx = (Math.random() - 0.3) * 320;
+      const vy = -180 - Math.random() * 260;
+      const t0 = this.scene.time.now;
+      const ev = this.scene.time.addEvent({
+        delay: 16,
+        loop: true,
+        callback: () => {
+          const t = (this.scene.time.now - t0) / 1000;
+          d.setPosition(x + vx * t, y + vy * t + 700 * t * t);
+          d.rotation += 0.15;
+          if (t > 0.7) {
+            ev.remove();
+            d.destroy();
+          }
+        },
+      });
+    }
+  }
+
+  /** X-ray flash: the skeleton blinks over the runner a few times. */
+  private xray(x: number, y: number) {
+    if (!this.has('skelShock')) return;
+    const glow = this.scene.add.circle(x, y - 26, 40, 0x9fe8ff, 0.3).setDepth(36).setBlendMode('ADD');
+    const skel = this.scene.add.image(x, y - 28, 'fx-skelShock').setDepth(37);
+    skel.setScale(70 / skel.height);
+    let n = 0;
+    this.scene.time.addEvent({
+      delay: 70,
+      repeat: 6,
+      callback: () => {
+        n++;
+        skel.setVisible(n % 2 === 0);
+        glow.setVisible(n % 2 === 0);
+        if (n >= 7) {
+          skel.destroy();
+          glow.destroy();
+        }
+      },
+    });
+  }
+
+  /** Sprite that sticks to a runner for `ms` (follows `pos`). */
+  attach(name: FxSprite, pos: () => { x: number; y: number }, ms: number, size: number, dy = -26) {
+    if (!this.has(name)) return;
+    const p = pos();
+    const img = this.scene.add.image(p.x, p.y + dy, `fx-${name}`).setDepth(37).setAlpha(0.85);
+    img.setScale((size / Math.max(img.width, img.height)) * 0.5);
+    this.scene.tweens.add({ targets: img, scale: size / Math.max(img.width, img.height), duration: 160, ease: 'Back.Out' });
+    this.attached.push({ obj: img, pos, until: this.scene.time.now + ms, dy });
+  }
+
+  /** Moves attached sprites along with their runners (call every frame). */
+  update() {
+    const now = this.scene.time.now;
+    this.attached = this.attached.filter((a) => {
+      const p = a.pos();
+      a.obj.setPosition(p.x, p.y + a.dy);
+      if (now < a.until) return true;
+      // the shell shatters when it runs out
+      this.shatter(p.x, p.y + a.dy);
+      a.obj.destroy();
+      return false;
+    });
+  }
+
+  /** Glass/ice shards flying apart (shield blocked, crystal shell over). */
+  shatter(x: number, y: number) {
+    this.pop('shards', x, y, 70, { hold: 120, grow: 1.6 });
+    this.sparks.explode(8, x, y);
+  }
+
   footDust(x: number, y: number, n = 4) {
     this.dust.explode(n, x, y - 2);
   }
@@ -118,14 +242,23 @@ export class Effects {
     this.sparks.explode(18, x, y);
     const flash = this.scene.add.circle(x, y, 26, 0xfff0a0, 0.9).setDepth(42).setBlendMode('ADD');
     this.scene.tweens.add({ targets: flash, scale: 2.2, alpha: 0, duration: 260, onComplete: () => flash.destroy() });
+    this.pop('kaboom', x, y, 120, { hold: 180, angle: (Math.random() - 0.5) * 30 });
+    this.pop('smoke', x - 20, y - 10, 90, { depth: 39, hold: 400, grow: 1.5 });
+    const ring = this.scene.add.circle(x, y, 20).setStrokeStyle(6, 0xffe08a, 0.9).setDepth(41);
+    this.scene.tweens.add({ targets: ring, scale: 4, alpha: 0, duration: 380, onComplete: () => ring.destroy() });
   }
 
   death(kind: DeathKind, x: number, y: number) {
     const cy = y - 22;
+    const w = DEATH_WORDS[kind];
+    if (w) this.word(w.text[Math.floor(Math.random() * w.text.length)], x + 10, y - 78, w.color);
     switch (kind) {
       case 'slice':
         this.sparks.explode(16, x, cy);
         this.stars.explode(4, x, cy);
+        this.pop('slash', x, cy, 90, { hold: 80, angle: -20 + Math.random() * 40, add: true });
+        this.pop('splat', x, cy, 80, { depth: 31, hold: 700 });
+        this.drops(x, cy, 6);
         break;
       case 'boom':
         this.explosion(x, cy);
@@ -133,10 +266,13 @@ export class Effects {
       case 'squash':
         this.dust.explode(10, x, y);
         this.stars.explode(5, x, y - 10);
+        this.pop('dust', x, y - 14, 90, { depth: 39, hold: 250, grow: 1.4 });
         break;
       case 'zap':
         this.smoke.explode(6, x, cy);
         this.sparks.explode(10, x, cy);
+        this.pop('flash', x, cy, 110, { hold: 120, angle: Math.random() * 40, add: true });
+        this.xray(x, y);
         break;
       case 'trap': {
         this.stars.explode(4, x, cy);
@@ -146,6 +282,7 @@ export class Effects {
       }
       case 'spike':
         this.stars.explode(5, x, cy);
+        this.drops(x, cy, 4);
         break;
       case 'fall':
         break;
@@ -240,6 +377,14 @@ export class Effects {
   }
 
   lightning(x: number, top: number, bottom: number) {
+    // a golden column of light from the sky, then the bolt inside it
+    const h = bottom - top;
+    const column = this.scene.add.rectangle(x, top + h / 2, 70, h, 0xffc93a, 0.55).setDepth(42).setBlendMode('ADD');
+    const core = this.scene.add.rectangle(x, top + h / 2, 22, h, 0xffffff, 0.85).setDepth(42).setBlendMode('ADD');
+    column.scaleX = core.scaleX = 0.2;
+    this.scene.tweens.add({ targets: [column, core], scaleX: 1, duration: 90, ease: 'Cubic.Out' });
+    this.scene.tweens.add({ targets: [column, core], scaleX: 0, alpha: 0, delay: 260, duration: 220, onComplete: () => (column.destroy(), core.destroy()) });
+    this.pop('bolt', x + 26, bottom - 40, 60, { hold: 160, add: true });
     const g = this.scene.add.graphics().setDepth(43).setBlendMode('ADD');
     const draw = () => {
       g.clear();
