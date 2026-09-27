@@ -44,7 +44,7 @@ describe('track generator', () => {
   });
 
   it('courses rise and fall: every course uses at least three terrain heights', () => {
-    for (const course of COURSES) {
+    for (const course of COURSES.filter((c) => c.terrain !== false)) {
       const heights = new Set(terrainProfile(course.world, course.seed, course.modules.length));
       expect(heights.size, course.id).toBeGreaterThanOrEqual(3);
     }
@@ -53,7 +53,7 @@ describe('track generator', () => {
   it('has 8 worlds with their own pieces', () => {
     const worlds = new Set(MODULES.map((m) => m.world));
     expect(worlds.size).toBe(8);
-    expect(COURSES.length).toBe(12);
+    expect(COURSES.length).toBe(13);
   });
 });
 

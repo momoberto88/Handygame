@@ -290,6 +290,30 @@ export class TrackBuilder {
     });
   }
 
+  // ---------------------------------------------------------------------------------------
+  // free placement by absolute rows (free-form pieces that ignore the three storeys)
+
+  /** Pad standing on the ground whose top tile row is `surface`. */
+  padAt(col: number, surface: number, kind: Pad['kind'] = 'jump') {
+    this.pads.push({ kind, x: this.cx(col), y: surface * TILE });
+  }
+
+  boxAt(col: number, surface: number, up = 2) {
+    this.boxes.push({ x: this.cx(col), y: (surface - up) * TILE + TILE / 2 });
+  }
+
+  coinsAt(c0: number, c1: number, surface: number, up = 2, arc = 0) {
+    for (let c = c0; c <= c1; c++) {
+      const t = c1 > c0 ? (c - c0) / (c1 - c0) : 0.5;
+      const lift = arc ? Math.sin(t * Math.PI) * arc : 0;
+      this.coinList.push({ x: this.cx(c), y: (surface - up) * TILE + TILE / 2 - lift * TILE });
+    }
+  }
+
+  sawAt(col: number, surface: number, up: number, motion: SawMotion = 'still', range = 0) {
+    this.saws.push({ x: this.cx(col), y: (surface - up) * TILE - TILE / 2, motion, range, phase: this.rng.next() * 6 });
+  }
+
   mark(name: string, col: number, width: number) {
     this.parts.push({ name, col, width });
   }

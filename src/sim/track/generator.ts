@@ -79,8 +79,10 @@ export function generateTrack(opts: TrackOptions): Track {
   let detailSeed = opts.seed;
   let pieces: ModuleDef[] | null = null;
   let pieceHeights: number[] | null = null;
+  let flat = false;
   if (opts.courseId) {
     const course = courseById(opts.courseId);
+    flat = course.terrain === false;
     world = course.world;
     names = course.modules;
     detailSeed = course.seed;
@@ -94,13 +96,13 @@ export function generateTrack(opts: TrackOptions): Track {
   b.standard(0, START_WIDTH - 1);
   b.mark('start', 0, START_WIDTH);
   const modules = pieces ?? (names ? names.map((n) => moduleByName(world, n)) : pickSequence(rng, world, opts.lengthTiles ?? 380));
-  const terrain = opts.terrain ?? (!opts.chunkNames || !!opts.courseId);
+  const terrain = !flat && (opts.terrain ?? (!opts.chunkNames || !!opts.courseId));
   const heights = pieceHeights ?? (terrain ? terrainProfile(world, detailSeed, modules.length) : modules.map(() => 0));
   let x = START_WIDTH;
   modules.forEach((m, i) => {
     if (heights[i] !== b.dy) x += b.shiftTerrain(x, heights[i]);
-    // an item box at the entrance of every piece, on a varying storey
-    b.box(x + 1, ([0, 1, 2] as const)[rng.int(3)]);
+    // an item box at the entrance of every piece, on a varying storey (free pieces place their own)
+    if (!m.free) b.box(x + 1, ([0, 1, 2] as const)[rng.int(3)]);
     x += m.build(b, x);
   });
   if (b.dy !== 0) x += b.shiftTerrain(x, 0);

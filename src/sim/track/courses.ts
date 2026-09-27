@@ -10,6 +10,8 @@ export interface CourseDef {
   /** Seed for small details (saw phases etc.) so the course looks the same every time. */
   seed: number;
   modules: string[];
+  /** false: the pieces bring their own landscape (free-form pieces), no terrain steps between them. */
+  terrain?: false;
   /** Editor tracks: pieces from any world, each with its own terrain height. */
   pieces?: { world: WorldId; name: string; dy: number }[];
 }
@@ -102,6 +104,15 @@ export const COURSES: CourseDef[] = [
     difficulty: 2,
     seed: 701,
     modules: ['dunes', 'cactus-field', 'pyramid', 'quicksand', 'sandstorm', 'dunes', 'obelisks', 'pyramid', 'cactus-field', 'sandstorm', 'quicksand', 'dunes', 'dunes', 'pyramid', 'sandstorm', 'dunes'],
+  },
+  {
+    id: 'testgelaende',
+    name: 'Testgelände',
+    world: 'jungle',
+    difficulty: 2,
+    seed: 901,
+    terrain: false,
+    modules: ['free-valley', 'free-tunnel', 'free-islands', 'free-cliff', 'free-fork', 'free-slide', 'free-islands', 'free-valley', 'free-tunnel', 'free-fork'],
   },
   {
     id: 'pilz-trampolin',

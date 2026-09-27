@@ -1,4 +1,5 @@
 import type { WorldId } from '../types';
+import { FREE } from './freeform';
 import { LOW, MID, TOP, type TrackBuilder } from './builder';
 
 /**
@@ -12,6 +13,8 @@ export interface ModuleDef {
   name: string;
   world: WorldId;
   difficulty: 1 | 2 | 3;
+  /** Free-form piece (landscape instead of the three storeys, see freeform.ts). */
+  free?: boolean;
   /** Writes the piece starting at column x and returns its width. */
   build(b: TrackBuilder, x: number): number;
 }
@@ -599,7 +602,7 @@ export function modulesFor(world: WorldId): ModuleDef[] {
 }
 
 export function moduleByName(world: WorldId, name: string): ModuleDef {
-  const m = M.find((d) => d.world === world && d.name === name);
+  const m = M.find((d) => d.world === world && d.name === name) ?? FREE.find((d) => d.world === world && d.name === name);
   if (!m) throw new Error(`Unknown module ${world}/${name}`);
   return m;
 }
