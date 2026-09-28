@@ -8,6 +8,7 @@ import { FX_SPRITES } from '../render/Effects';
 import { sharedTrackFromUrl } from './EditorScene';
 import { loadSave, writeSave } from '../meta/save';
 import { playIntro } from '../ui/intro';
+import { HAND, MARKER } from '../render/film/kit';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -24,6 +25,8 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
+    // the hand-lettering of the coronation after a cup: fetch it now, so it is ready by then
+    for (const font of [HAND, MARKER]) void document.fonts?.load(`40px ${font}`).catch(() => undefined);
     makeEyes(this);
     for (const c of CHARACTERS) makeCharacterArt(this, c);
     makeEntityArt(this);

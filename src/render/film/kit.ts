@@ -81,6 +81,18 @@ export class Actor {
       .setRotation(this.lean);
   }
 
+  /** Tints every part (e.g. black for a lightning strike); null restores the colours. */
+  tint(color: number | null) {
+    const walk = (o: Phaser.GameObjects.GameObject) => {
+      if (o instanceof Phaser.GameObjects.Container) o.list.forEach(walk);
+      else if (o instanceof Phaser.GameObjects.Image) {
+        if (color === null) o.clearTint();
+        else o.setTint(color);
+      }
+    };
+    walk(this.view.root);
+  }
+
   /** Where the top of the head is on screen (for the crown). */
   headTop(): { x: number; y: number } {
     const head = (

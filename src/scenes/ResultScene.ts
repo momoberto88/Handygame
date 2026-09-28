@@ -159,7 +159,7 @@ export class ResultScene extends Phaser.Scene {
           // a knocked-out spectator watches someone else: find this phone's own racer key
           const mySeat = !online ? 0 : room!.role === 'host' ? 0 : room!.mySeat;
           const mine = watching ? cup.table.find((e) => !e.isBot && e.key.startsWith(`p:${mySeat}:`))?.key : racerKey(session.racers[session.localId]);
-          mgr.start('podium', { cup, me: mine ?? '', online: !!online });
+          mgr.start('coronation', { cup, me: mine ?? '', online: !!online });
         } else if (isHost) hostStartRace(this, room);
         else if (cup) startCupRace(this);
         else startLocalRace(this);

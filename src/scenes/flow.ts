@@ -114,7 +114,7 @@ export function startCupRace(scene: Phaser.Scene) {
 
 export function startRace(scene: Phaser.Scene, session: RaceSession) {
   const mgr = scene.game.scene;
-  for (const key of ['result', 'hud', 'race', 'menu', 'lobby', 'wardrobe', 'courses', 'podium', 'editor']) {
+  for (const key of ['result', 'hud', 'race', 'menu', 'lobby', 'wardrobe', 'courses', 'podium', 'coronation', 'editor']) {
     if (mgr.isActive(key) || mgr.isPaused(key)) mgr.stop(key);
   }
   mgr.start('race', { session });
@@ -123,7 +123,7 @@ export function startRace(scene: Phaser.Scene, session: RaceSession) {
 /** Leaves any race/result/lobby scenes and returns to the main menu. */
 export function goToMenu(scene: Phaser.Scene, message?: string) {
   const mgr = scene.game.scene;
-  for (const key of ['result', 'hud', 'race', 'lobby', 'wardrobe', 'courses', 'podium', 'editor', 'settings']) {
+  for (const key of ['result', 'hud', 'race', 'lobby', 'wardrobe', 'courses', 'podium', 'coronation', 'editor', 'settings']) {
     if (mgr.isActive(key) || mgr.isPaused(key)) mgr.stop(key);
   }
   mgr.start('menu', { message });
@@ -220,7 +220,7 @@ export function leaveRoom(scene: Phaser.Scene, room: NetRoom) {
 /** Leaves race / result screens and opens the lobby. */
 export function showLobby(scene: Phaser.Scene) {
   const mgr = scene.game.scene;
-  for (const key of ['result', 'hud', 'race', 'menu', 'wardrobe', 'courses', 'podium', 'editor']) {
+  for (const key of ['result', 'hud', 'race', 'menu', 'wardrobe', 'courses', 'podium', 'coronation', 'editor']) {
     if (mgr.isActive(key) || mgr.isPaused(key)) mgr.stop(key);
   }
   if (!mgr.isActive('lobby')) mgr.start('lobby');

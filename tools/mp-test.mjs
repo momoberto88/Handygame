@@ -128,7 +128,8 @@ const table = (page) => page.evaluate(() => window.chaosCup && { i: window.chaos
 if (process.env.CUP) {
   console.log('cup after race 1 host  ', JSON.stringify(await table(host)));
   console.log('cup after race 1 client', JSON.stringify(await table(client)));
-  await tap(host, W / 2 - 110, 430); // Weiter
+  // online the next race starts once everybody votes 👍 Nochmal!
+  await Promise.all([tap(host, W - 142, 238), tap(client, W - 142, 238)]);
   for (let i = 0; i < 100; i++) {
     const k = await client.evaluate(() => window.chaosCup?.index ?? -1);
     if (k === 1 && !(await client.evaluate(() => window.game.scene.isActive('result')))) break;
@@ -142,8 +143,18 @@ if (process.env.CUP) {
   await Promise.all([host.screenshot({ path: `${shots}/host-result-2.png` }), client.screenshot({ path: `${shots}/client-result-2.png` })]);
   console.log('cup after race 2 host  ', JSON.stringify(await table(host)));
   console.log('cup after race 2 client', JSON.stringify(await table(client)));
-  await tap(client, W / 2 - 110, 430); // Siegerehrung
+  // the coronation first: the client taps it away, the host watches it to the end
+  const active = (page) => page.evaluate(() => ['coronation', 'podium'].filter((k) => window.game.scene.isActive(k)).join(','));
+  await Promise.all([tap(client, W / 2 - 110, 430), tap(host, W / 2 - 110, 430)]); // Siegerehrung
   await client.waitForTimeout(3500);
+  console.log('after 3.5 s client/host', await active(client), '/', await active(host));
+  await client.screenshot({ path: `${shots}/client-coronation.png` });
+  await tap(client, W / 2, 200); // skip
+  await client.waitForTimeout(1500);
+  console.log('client after tap', await active(client));
   await client.screenshot({ path: `${shots}/client-podium.png` });
+  await host.waitForTimeout(9000);
+  console.log('host after 14 s', await active(host));
+  await host.screenshot({ path: `${shots}/host-podium.png` });
 }
 await browser.close();

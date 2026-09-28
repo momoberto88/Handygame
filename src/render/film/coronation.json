@@ -1,0 +1,15 @@
+{
+  "length": 12,
+  "caption": [0.3, 2.2],
+  "walkStart": 2.3,
+  "walkEnd": 5.2,
+  "crownPop": 5.6,
+  "crownLand": 6.45,
+  "cloud": 6.0,
+  "bolt": 6.55,
+  "confetti": 6.5,
+  "throneJump": 7.9,
+  "onThrone": 8.4,
+  "stamp": 8.7,
+  "fade": 11.3
+}

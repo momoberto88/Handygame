@@ -123,7 +123,7 @@ class Synth {
   volume = 0.6;
   private buffers = new Map<string, AudioBuffer | 'loading' | 'failed'>();
   /** Looping background music and the track that should play (also while it is still loading). */
-  private music: { path: string; src: AudioBufferSourceNode; gain: GainNode } | null = null;
+  private music: { path: string; src: AudioBufferSourceNode; gain: GainNode; once: boolean } | null = null;
   private musicWanted: { path: string; vol: number } | null = null;
   musicOn = true;
   /** Clip currently speaking (voices don't talk over each other). */
@@ -154,34 +154,56 @@ class Synth {
 
   /** Loops a music track (fades over from the current one); keeps playing if it is already on. */
   playMusic(path: string, vol = 0.35) {
-    this.musicWanted = { path, vol };
-    const ctx = this.ctx;
-    if (!ctx || !this.master) return;
-    const t = ctx.currentTime;
-    if (!this.enabled || !this.musicOn || !CLIPS.has(path)) {
-      this.stopMusic();
-      this.musicWanted = { path, vol };
-      return;
+    this.startMusic(path, vol, false);
+  }
+
+  /**
+   * Plays a music track once, from its very start, if it is loaded (true) – for sound tracks that
+   * run in sync with a scene. stopMusic() ends it early.
+   */
+  playTrack(path: string, vol = 0.9): boolean {
+    if (!(this.buffers.get(path) instanceof AudioBuffer)) {
+      this.preload([path]);
+      return false;
     }
-    if (this.music?.path === path) {
+    this.stopMusic(0.05);
+    return this.startMusic(path, vol, true);
+  }
+
+  private startMusic(path: string, vol: number, once: boolean): boolean {
+    // a one-off track is never wanted again afterwards (refreshMusic must not restart it)
+    this.musicWanted = once ? null : { path, vol };
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return false;
+    const t = ctx.currentTime;
+    if (!this.enabled || !this.musicOn || !CLIPS.has(path) || (once && ctx.state !== 'running')) {
+      this.stopMusic();
+      if (!once) this.musicWanted = { path, vol };
+      return false;
+    }
+    if (this.music?.path === path && !once) {
       this.music.gain.gain.setTargetAtTime(vol, t, 0.3);
-      return;
+      return true;
     }
     const buf = this.buffers.get(path);
     if (!(buf instanceof AudioBuffer)) {
       this.preload([path]);
-      return;
+      return false;
     }
     this.stopMusic();
     const src = ctx.createBufferSource();
     src.buffer = buf;
-    src.loop = true;
+    src.loop = !once;
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.linearRampToValueAtTime(vol, t + 1.2);
+    if (once) gain.gain.setValueAtTime(vol, t);
+    else {
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.linearRampToValueAtTime(vol, t + 1.2);
+    }
     src.connect(gain).connect(this.bus('music'));
     src.start();
-    this.music = { path, src, gain };
+    this.music = { path, src, gain, once };
+    return true;
   }
 
   stopMusic(fade = 0.8) {
@@ -198,8 +220,11 @@ class Synth {
 
   /** Call after switching sound or music on/off. */
   refreshMusic() {
-    const want = this.musicWanted ?? (this.music ? { path: this.music.path, vol: 0.35 } : null);
-    if (!want) return;
+    const want = this.musicWanted ?? (this.music && !this.music.once ? { path: this.music.path, vol: 0.35 } : null);
+    if (!want) {
+      if (!this.enabled || !this.musicOn) this.stopMusic();
+      return;
+    }
     if (!this.enabled || !this.musicOn) {
       this.stopMusic();
       this.musicWanted = want;

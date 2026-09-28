@@ -84,7 +84,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,webp,jpg,json,mp3,ogg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,png,webp,jpg,json,mp3,ogg,woff2,ttf}'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         // audio is cached under its versioned address (see clipVersions)
         manifestTransforms: [
