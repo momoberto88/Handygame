@@ -46,13 +46,14 @@ export class SettingsScene extends Phaser.Scene {
 
     // sound
     this.toggle(left, colW, 170, 'Ton', s.sound, (v) => (v ? 'an' : 'aus'), (st) => (st.sound = !st.sound));
-    this.volume(left, colW, 240, 'Musik', 'volMusic', () => {});
-    this.volume(left, colW, 310, 'Effekte', 'volSfx', () => sfx.play('coin'));
-    this.volume(left, colW, 380, 'Stimmen', 'volVoice', () => {
+    this.volume(left, colW, 226, 'Musik', 'volMusic', () => {});
+    this.volume(left, colW, 282, 'Effekte', 'volSfx', () => sfx.play('coin'));
+    this.volume(left, colW, 338, 'Stimmen', 'volVoice', () => {
       const line = announce('count3');
       if (line) sfx.speak(line.clip, 9);
     });
-    this.toggle(left, colW, 450, 'Derbe Sprüche', s.rude !== false, (v) => (v ? '🤬 an' : '😇 aus'), (st) => (st.rude = st.rude === false));
+    this.toggle(left, colW, 394, 'Derbe Sprüche', s.rude !== false, (v) => (v ? '🤬 an' : '😇 aus'), (st) => (st.rude = st.rude === false));
+    this.toggle(left, colW, 450, 'Intro beim Start', s.intro, (v) => (v ? '🎬 an' : 'aus'), (st) => (st.intro = !st.intro));
 
     // game
     const botLabel = BOT_SETTINGS.find((b) => b.id === s.bots)?.label ?? 'Automatisch';
@@ -79,7 +80,6 @@ export class SettingsScene extends Phaser.Scene {
         this.input.enabled = false;
         void playIntro(false).then(() => {
           this.input.enabled = true;
-          writeSave((st) => (st.introSeen = true));
         });
       }, 17).container,
     );

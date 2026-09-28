@@ -6,8 +6,9 @@ import { preloadPainted } from '../render/art/skins';
 import { preloadWorldArt } from '../render/art/worldArt';
 import { FX_SPRITES } from '../render/Effects';
 import { sharedTrackFromUrl } from './EditorScene';
-import { loadSave, writeSave } from '../meta/save';
+import { loadSave } from '../meta/save';
 import { playIntro } from '../ui/intro';
+import { reloadedForUpdate } from '../update';
 import { HAND, MARKER } from '../render/film/kit';
 
 export class BootScene extends Phaser.Scene {
@@ -38,10 +39,7 @@ export class BootScene extends Phaser.Scene {
     const params = new URLSearchParams(window.location.search);
     const next = () => this.scene.start(params.has('lineup') ? 'lineup' : 'menu');
     if (showIntro(params)) {
-      void playIntro(true).then(() => {
-        writeSave((s) => (s.introSeen = true));
-        next();
-      });
+      void playIntro(true).then(next);
       return;
     }
     next();
@@ -54,6 +52,8 @@ export class BootScene extends Phaser.Scene {
  */
 function showIntro(params: URLSearchParams): boolean {
   if (params.has('intro')) return true;
-  if (loadSave().introSeen || navigator.webdriver) return false;
+  // not when the app only reloaded into a new version, nor in automated tests
+  if (reloadedForUpdate() || navigator.webdriver) return false;
+  if (!loadSave().settings.intro) return false;
   return !['raum', 'autoplay', 'lineup', 'course', 'world'].some((k) => params.has(k));
 }

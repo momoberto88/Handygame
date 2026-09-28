@@ -37,7 +37,27 @@ export function updateWaiting(): boolean {
   return ready;
 }
 
+const UPDATE_FLAG = 'rr-updated';
+
 /** Call when the player reaches a calm place (the menu): reloads into the new version. */
 export function applyUpdateIfSafe() {
-  if (ready && apply && isSafe()) void apply(true);
+  if (!ready || !apply || !isSafe()) return;
+  // the reload is no fresh start: no intro film afterwards
+  try {
+    sessionStorage.setItem(UPDATE_FLAG, '1');
+  } catch {
+    // storage blocked: the intro simply plays once more
+  }
+  void apply(true);
+}
+
+/** True (once) right after the app reloaded into a new version. */
+export function reloadedForUpdate(): boolean {
+  try {
+    const was = sessionStorage.getItem(UPDATE_FLAG) === '1';
+    sessionStorage.removeItem(UPDATE_FLAG);
+    return was;
+  } catch {
+    return false;
+  }
 }

@@ -51,6 +51,8 @@ export interface SaveData {
     bots: BotSetting;
     /** Number of opponents in quick races ("auto": 1 at first, then 2, then 3). */
     opponents: OpponentSetting;
+    /** The intro film plays whenever the app starts (with "Überspringen"). */
+    intro: boolean;
   };
   stats: { races: number; wins: number };
   /** Best finishing time per course id (seconds). */
@@ -65,8 +67,6 @@ export interface SaveData {
   daily: DailyState;
   /** The practice run was finished once. */
   tutorialDone: boolean;
-  /** The intro film was shown (it plays by itself only the very first time). */
-  introSeen?: boolean;
 }
 
 const DEFAULT: SaveData = {
@@ -78,7 +78,7 @@ const DEFAULT: SaveData = {
   owned: [],
   equipped: { outfit: null },
   skins: {},
-  settings: { sound: true, music: true, leftHanded: false, vibration: true, camera: 'mid', rude: true, volMusic: 0.8, volSfx: 0.7, volVoice: 1, bots: 'auto', opponents: 'auto' },
+  settings: { sound: true, music: true, leftHanded: false, vibration: true, camera: 'mid', rude: true, volMusic: 0.8, volSfx: 0.7, volVoice: 1, bots: 'auto', opponents: 'auto', intro: true },
   stats: { races: 0, wins: 0 },
   best: {},
   cups: {},
