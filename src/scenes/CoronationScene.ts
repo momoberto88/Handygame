@@ -117,7 +117,7 @@ export class CoronationScene extends Phaser.Scene {
     // the stamp: "LANG LEBE" small, the name big (and a small aside when Hoppel wins again)
     this.stamps.push(filmText(this, MID_X, 118, 'LANG LEBE', 66, MARKER, '#c8102e'));
     this.stamps.push(filmText(this, MID_X, 222, `${this.title}!`, this.title.length > 12 ? 90 : 116, MARKER, '#c8102e'));
-    if (this.hoppelAgain) this.stamps.push(filmText(this, MID_X + 330, 305, '… wie immer.', 44, HAND, INK));
+    if (this.hoppelAgain) this.stamps.push(filmText(this, MID_X + 410, 330, '… wie immer.', 60, HAND, INK));
     for (const s of this.stamps) s.setVisible(false);
 
     this.captionBox = this.add.graphics();
