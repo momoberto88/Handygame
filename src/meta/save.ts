@@ -65,6 +65,8 @@ export interface SaveData {
   daily: DailyState;
   /** The practice run was finished once. */
   tutorialDone: boolean;
+  /** The intro film was shown (it plays by itself only the very first time). */
+  introSeen?: boolean;
 }
 
 const DEFAULT: SaveData = {

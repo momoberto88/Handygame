@@ -6,6 +6,8 @@ import { preloadPainted } from '../render/art/skins';
 import { preloadWorldArt } from '../render/art/worldArt';
 import { FX_SPRITES } from '../render/Effects';
 import { sharedTrackFromUrl } from './EditorScene';
+import { loadSave, writeSave } from '../meta/save';
+import { playIntro } from '../ui/intro';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -30,6 +32,25 @@ export class BootScene extends Phaser.Scene {
       this.scene.start('editor', { id: shared, message: 'Strecke empfangen! Tippe „Probelauf“ oder speichere sie mit „Prüfen & Speichern“.' });
       return;
     }
-    this.scene.start(new URLSearchParams(window.location.search).has('lineup') ? 'lineup' : 'menu');
+    const params = new URLSearchParams(window.location.search);
+    const next = () => this.scene.start(params.has('lineup') ? 'lineup' : 'menu');
+    if (showIntro(params)) {
+      void playIntro(true).then(() => {
+        writeSave((s) => (s.introSeen = true));
+        next();
+      });
+      return;
+    }
+    next();
   }
+}
+
+/**
+ * The intro plays by itself only on the very first start – not for a friend who opens an invitation
+ * (they want into the room), and not in automated tests (unless asked for with ?intro).
+ */
+function showIntro(params: URLSearchParams): boolean {
+  if (params.has('intro')) return true;
+  if (loadSave().introSeen || navigator.webdriver) return false;
+  return !['raum', 'autoplay', 'lineup', 'course', 'world'].some((k) => params.has(k));
 }

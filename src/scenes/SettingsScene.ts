@@ -4,6 +4,7 @@ import { sfx } from '../audio/sfx';
 import { setupUiCamera, viewWidth, VIEW_H } from '../layout';
 import { announce } from '../meta/lines';
 import { BOT_SETTINGS, CAMERA_DISTANCES, OPPONENT_SETTINGS, loadSave, writeSave, type SaveData } from '../meta/save';
+import { playIntro } from '../ui/intro';
 import { iconButton, panel, textButton } from '../ui/widgets';
 import { goToMenu, startTutorial } from './flow';
 import { uiText } from './HudScene';
@@ -71,7 +72,17 @@ export class SettingsScene extends Phaser.Scene {
     });
     this.toggle(right, colW, 338, 'Vibration', s.vibration, (v) => (v ? 'an' : 'aus'), (st) => (st.vibration = !st.vibration));
     this.toggle(right, colW, 394, 'Steuerung', s.leftHanded, (v) => (v ? 'Linkshänder' : 'Rechtshänder'), (st) => (st.leftHanded = !st.leftHanded));
-    this.ui.add(textButton(this, right, 454, colW - 60, 44, '🎓 Übungsrunde starten', 0x5fd35a, () => startTutorial(this), 18).container);
+    const half = (colW - 70) / 2;
+    this.ui.add(textButton(this, right - half / 2 - 5, 454, half, 44, '🎓 Übungsrunde', 0x5fd35a, () => startTutorial(this), 17).container);
+    this.ui.add(
+      textButton(this, right + half / 2 + 5, 454, half, 44, '🎬 Intro ansehen', 0xffa94a, () => {
+        this.input.enabled = false;
+        void playIntro(false).then(() => {
+          this.input.enabled = true;
+          writeSave((st) => (st.introSeen = true));
+        });
+      }, 17).container,
+    );
   }
 
   private label(x: number, colW: number, y: number, text: string) {
